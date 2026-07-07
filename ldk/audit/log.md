@@ -67,3 +67,14 @@ Registro compacto iniciado quando Audit log: on foi habilitado.
 - Decision: proof-pending
 - Known limitations: policy aberta a anon dentro do workspace default - aceita para v1 sem login; linter formal roda no proof da feature (T6).
 - Next: /ldk-build-task T2 (migracao 10 tabelas dominio).
+
+## build-task - F1 T2
+- Command: ldk-build-task
+- User intent: executar T2 (10 tabelas de dominio).
+- State before: F1 building; T1 proof-pending; T2 ready.
+- Actions: migracao criou `connections`, `agents`, `contacts`, `conversations`, `messages`, `templates`, `spreadsheets`, `spreadsheet_rows`, `campaigns`, `campaign_recipients` com id/workspace_id (default = default_workspace_id())/created_at/updated_at, FKs para workspaces e entre elas, GRANTs anon/authenticated/service_role, RLS on, policy workspace-default por tabela, trigger updated_at por tabela, indices em messages(conversation_id, created_at), spreadsheet_rows(spreadsheet_id, row_index) e campaign_recipients(campaign_id, status), UNIQUE (workspace_id, phone) em contacts.
+- Files changed: migracao Supabase, ldk/features/f1-base/plan.md, ldk/audit/log.md
+- Evidence: preview na; manual na; tests na; console na; diff na
+- Decision: proof-pending
+- Known limitations: policies abertas a anon dentro do workspace default (aceito v1); types.ts sera regenerado apos aprovacao/rodagem; linter formal roda em T6.
+- Next: /ldk-build-task T3 (registrar 5 secrets).
