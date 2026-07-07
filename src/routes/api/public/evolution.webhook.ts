@@ -25,6 +25,12 @@ function jidToPhone(jid: string): string {
   return jid.replace(/@.*$/, "").replace(/[^0-9]/g, "");
 }
 
+function isGroupJid(jid: string): boolean {
+  return jid.endsWith("@g.us");
+}
+
+const RUNTIME_HARD_CAP_MS = 12_000;
+
 export const Route = createFileRoute("/api/public/evolution/webhook")({
   server: {
     handlers: {
@@ -90,6 +96,21 @@ export const Route = createFileRoute("/api/public/evolution/webhook")({
           // Projeta mensagens em contacts + conversations + messages
           for (const m of parsed.messages) {
             const remote = m.direction === "inbound" ? m.from : m.to;
+            // Filtra grupos por conexao (default: ignora).
+            if (isGroupJid(remote)) {
+              // Se nao ha connection, aplica default (ignora).
+              let ignore = true;
+              if (instance) {
+                const { data: c } = await supabaseAdmin
+                  .from("connections")
+                  .select("ignore_groups")
+                  .eq("workspace_id", DEFAULT_WORKSPACE)
+                  .eq("instance_name", instance)
+                  .maybeSingle();
+                ignore = c?.ignore_groups ?? true;
+              }
+              if (ignore) continue;
+            }
             const phone = jidToPhone(remote);
             if (!phone) continue;
 
@@ -169,9 +190,41 @@ export const Route = createFileRoute("/api/public/evolution/webhook")({
               media_type: m.kind === "text" ? null : m.kind,
               status: "received",
               external_id: m.providerMessageId,
-            });
+            }).select("id").single();
             if (insErr) {
               console.error("[webhook/evolution] message insert failed:", insErr.code);
+              continue;
+            }
+
+            // Runtime do agente: so para inbound text. Nunca falha o 200.
+            if (m.direction === "inbound" && m.kind === "text") {
+              const { data: inserted } = await supabaseAdmin
+                .from("messages")
+                .select("id")
+                .eq("workspace_id", DEFAULT_WORKSPACE)
+                .eq("external_id", m.providerMessageId)
+                .maybeSingle();
+              if (inserted?.id) {
+                try {
+                  const { runAgentForMessage } = await import(
+                    "@/lib/agent-runtime.server"
+                  );
+                  await Promise.race([
+                    runAgentForMessage(inserted.id),
+                    new Promise((_, rej) =>
+                      setTimeout(
+                        () => rej(new Error("runtime timeout")),
+                        RUNTIME_HARD_CAP_MS,
+                      ),
+                    ),
+                  ]);
+                } catch (e) {
+                  console.error(
+                    "[webhook/evolution] runtime error:",
+                    (e as Error).message,
+                  );
+                }
+              }
             }
           }
 
