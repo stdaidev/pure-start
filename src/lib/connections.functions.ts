@@ -190,7 +190,7 @@ export const listConnections = createServerFn({ method: "GET" }).handler(
     );
     const { data, error } = await supabaseAdmin
       .from("connections")
-      .select("id, name, status, updated_at")
+      .select("id, name, status, default_agent_id, ignore_groups, updated_at")
       .eq("workspace_id", DEFAULT_WORKSPACE)
       .order("created_at", { ascending: false });
     if (error) throw new Error("Falha ao listar conexoes");

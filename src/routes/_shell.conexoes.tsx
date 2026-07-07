@@ -6,6 +6,15 @@ import { Plus, RefreshCw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,6 +30,11 @@ import {
   getConnectionStatus,
   listConnections,
 } from "@/lib/connections.functions";
+import {
+  listAgents,
+  setConnectionAgent,
+  setConnectionIgnoreGroups,
+} from "@/lib/agents.functions";
 import { StatusBadge } from "@/components/conexoes/status-badge";
 import { NewConnectionDialog } from "@/components/conexoes/new-connection-dialog";
 
@@ -42,11 +56,33 @@ function ConexoesPage() {
   const listFn = useServerFn(listConnections);
   const statusFn = useServerFn(getConnectionStatus);
   const deleteFn = useServerFn(deleteConnection);
+  const agentsFn = useServerFn(listAgents);
+  const setAgentFn = useServerFn(setConnectionAgent);
+  const setIgnoreFn = useServerFn(setConnectionIgnoreGroups);
 
   const listQuery = useQuery({
     queryKey: ["connections"],
     queryFn: () => listFn(),
     refetchInterval: 5000,
+  });
+
+  const agentsQuery = useQuery({
+    queryKey: ["agents"],
+    queryFn: () => agentsFn(),
+  });
+
+  const setAgentMut = useMutation({
+    mutationFn: (v: { connectionId: string; agentId: string | null }) =>
+      setAgentFn({ data: v }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["connections"] }),
+    onError: (e: Error) => toast.error(e.message || "Falha ao vincular agente"),
+  });
+
+  const setIgnoreMut = useMutation({
+    mutationFn: (v: { connectionId: string; ignoreGroups: boolean }) =>
+      setIgnoreFn({ data: v }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["connections"] }),
+    onError: (e: Error) => toast.error(e.message || "Falha ao atualizar"),
   });
 
   const refreshMut = useMutation({
@@ -66,6 +102,7 @@ function ConexoesPage() {
   });
 
   const connections = listQuery.data?.connections ?? [];
+  const agents = agentsQuery.data?.agents ?? [];
 
   return (
     <div className="mx-auto w-full max-w-5xl px-6 py-10">
@@ -118,35 +155,80 @@ function ConexoesPage() {
           {connections.map((c) => (
             <div
               key={c.id}
-              className="glass-card flex items-center justify-between gap-4 px-5 py-4"
+              className="glass-card flex flex-col gap-4 px-5 py-4"
             >
-              <div className="flex flex-col gap-1.5">
-                <span
-                  className="text-sm font-medium"
-                  style={{ fontFamily: "var(--font-display)" }}
-                >
-                  {c.name}
-                </span>
-                <StatusBadge status={c.status} />
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <span
+                    className="text-sm font-medium"
+                    style={{ fontFamily: "var(--font-display)" }}
+                  >
+                    {c.name}
+                  </span>
+                  <StatusBadge status={c.status} />
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => refreshMut.mutate(c.id)}
+                    disabled={refreshMut.isPending}
+                    aria-label="Atualizar status"
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setDeleteId(c.id)}
+                    aria-label="Remover conexao"
+                  >
+                    <Trash2 className="h-4 w-4 text-red-400" />
+                  </Button>
+                </div>
               </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => refreshMut.mutate(c.id)}
-                  disabled={refreshMut.isPending}
-                  aria-label="Atualizar status"
-                >
-                  <RefreshCw className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setDeleteId(c.id)}
-                  aria-label="Remover conexao"
-                >
-                  <Trash2 className="h-4 w-4 text-red-400" />
-                </Button>
+              <div className="grid gap-3 border-t border-border/40 pt-3 sm:grid-cols-[1fr_auto]">
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                    Agente default
+                  </Label>
+                  <Select
+                    value={c.default_agent_id ?? "__none"}
+                    onValueChange={(v) =>
+                      setAgentMut.mutate({
+                        connectionId: c.id,
+                        agentId: v === "__none" ? null : v,
+                      })
+                    }
+                  >
+                    <SelectTrigger className="w-full sm:w-64">
+                      <SelectValue placeholder="Nenhum" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none">Nenhum</SelectItem>
+                      {agents.map((a) => (
+                        <SelectItem key={a.id} value={a.id}>
+                          {a.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center gap-2 sm:justify-end">
+                  <Label className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                    Ignorar grupos
+                  </Label>
+                  <Switch
+                    checked={c.ignore_groups ?? true}
+                    onCheckedChange={(v) =>
+                      setIgnoreMut.mutate({
+                        connectionId: c.id,
+                        ignoreGroups: v,
+                      })
+                    }
+                    aria-label="Ignorar mensagens de grupos"
+                  />
+                </div>
               </div>
             </div>
           ))}
