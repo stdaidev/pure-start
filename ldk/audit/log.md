@@ -1,5 +1,15 @@
-
 ## 2026-07-07 - ldk-plan approve - F3
+
+## 2026-07-07 - ldk-build-task T9 - F3
+- Command: ldk-build-task
+- User intent: UI /agentes com CRUD, toggle active, humanizacao.
+- State before: T9 ready.
+- Actions: substituido placeholder de /agentes por lista HUD (glass-card) com toggle active, edit e delete; novo componente `AgentDialog` com form (nome, modelo select, temperatura slider, system_prompt textarea, tools multiselect [resetar, transferir_humano], humanizacao chunk+min/max ms sliders, ativo). Usa server functions de T8 via useServerFn/useQuery/useMutation. T9 -> proof-pending.
+- Files changed: src/routes/_shell.agentes.tsx, src/components/agentes/agent-dialog.tsx, ldk/features/f3-runtime-agente/plan.md
+- Evidence: preview na; manual na; tests na; console na; diff na
+- Decision: proof-pending
+- Known limitations: Playwright E2E do CRUD fica no T11 (prova P4). Vinculo agente<->conexao vem no T10.
+- Next: `/ldk-build-task T10` (UI conexoes: select agente default).
 
 ## 2026-07-07 - ldk-build-task T8 - F3
 - Command: ldk-build-task
