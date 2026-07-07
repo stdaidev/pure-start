@@ -10,38 +10,140 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ShellRouteImport } from './routes/_shell'
-import { Route as ShellIndexRouteImport } from './routes/_shell.index'
+import { Route as IndexRouteImport } from './routes/index'
+import { Route as ShellPlanilhasRouteImport } from './routes/_shell.planilhas'
+import { Route as ShellDisparosRouteImport } from './routes/_shell.disparos'
+import { Route as ShellDashboardRouteImport } from './routes/_shell.dashboard'
+import { Route as ShellConversasRouteImport } from './routes/_shell.conversas'
+import { Route as ShellContatosRouteImport } from './routes/_shell.contatos'
+import { Route as ShellConfiguracoesRouteImport } from './routes/_shell.configuracoes'
+import { Route as ShellConexoesRouteImport } from './routes/_shell.conexoes'
+import { Route as ShellAgentesRouteImport } from './routes/_shell.agentes'
 
 const ShellRoute = ShellRouteImport.update({
   id: '/_shell',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ShellIndexRoute = ShellIndexRouteImport.update({
+const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShellPlanilhasRoute = ShellPlanilhasRouteImport.update({
+  id: '/planilhas',
+  path: '/planilhas',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellDisparosRoute = ShellDisparosRouteImport.update({
+  id: '/disparos',
+  path: '/disparos',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellDashboardRoute = ShellDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellConversasRoute = ShellConversasRouteImport.update({
+  id: '/conversas',
+  path: '/conversas',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellContatosRoute = ShellContatosRouteImport.update({
+  id: '/contatos',
+  path: '/contatos',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellConfiguracoesRoute = ShellConfiguracoesRouteImport.update({
+  id: '/configuracoes',
+  path: '/configuracoes',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellConexoesRoute = ShellConexoesRouteImport.update({
+  id: '/conexoes',
+  path: '/conexoes',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellAgentesRoute = ShellAgentesRouteImport.update({
+  id: '/agentes',
+  path: '/agentes',
   getParentRoute: () => ShellRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof ShellIndexRoute
+  '/': typeof IndexRoute
+  '/agentes': typeof ShellAgentesRoute
+  '/conexoes': typeof ShellConexoesRoute
+  '/configuracoes': typeof ShellConfiguracoesRoute
+  '/contatos': typeof ShellContatosRoute
+  '/conversas': typeof ShellConversasRoute
+  '/dashboard': typeof ShellDashboardRoute
+  '/disparos': typeof ShellDisparosRoute
+  '/planilhas': typeof ShellPlanilhasRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof ShellIndexRoute
+  '/': typeof IndexRoute
+  '/agentes': typeof ShellAgentesRoute
+  '/conexoes': typeof ShellConexoesRoute
+  '/configuracoes': typeof ShellConfiguracoesRoute
+  '/contatos': typeof ShellContatosRoute
+  '/conversas': typeof ShellConversasRoute
+  '/dashboard': typeof ShellDashboardRoute
+  '/disparos': typeof ShellDisparosRoute
+  '/planilhas': typeof ShellPlanilhasRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
   '/_shell': typeof ShellRouteWithChildren
-  '/_shell/': typeof ShellIndexRoute
+  '/_shell/agentes': typeof ShellAgentesRoute
+  '/_shell/conexoes': typeof ShellConexoesRoute
+  '/_shell/configuracoes': typeof ShellConfiguracoesRoute
+  '/_shell/contatos': typeof ShellContatosRoute
+  '/_shell/conversas': typeof ShellConversasRoute
+  '/_shell/dashboard': typeof ShellDashboardRoute
+  '/_shell/disparos': typeof ShellDisparosRoute
+  '/_shell/planilhas': typeof ShellPlanilhasRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/agentes'
+    | '/conexoes'
+    | '/configuracoes'
+    | '/contatos'
+    | '/conversas'
+    | '/dashboard'
+    | '/disparos'
+    | '/planilhas'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/_shell' | '/_shell/'
+  to:
+    | '/'
+    | '/agentes'
+    | '/conexoes'
+    | '/configuracoes'
+    | '/contatos'
+    | '/conversas'
+    | '/dashboard'
+    | '/disparos'
+    | '/planilhas'
+  id:
+    | '__root__'
+    | '/'
+    | '/_shell'
+    | '/_shell/agentes'
+    | '/_shell/conexoes'
+    | '/_shell/configuracoes'
+    | '/_shell/contatos'
+    | '/_shell/conversas'
+    | '/_shell/dashboard'
+    | '/_shell/disparos'
+    | '/_shell/planilhas'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
   ShellRoute: typeof ShellRouteWithChildren
 }
 
@@ -54,27 +156,98 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShellRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_shell/': {
-      id: '/_shell/'
+    '/': {
+      id: '/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof ShellIndexRouteImport
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_shell/planilhas': {
+      id: '/_shell/planilhas'
+      path: '/planilhas'
+      fullPath: '/planilhas'
+      preLoaderRoute: typeof ShellPlanilhasRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/disparos': {
+      id: '/_shell/disparos'
+      path: '/disparos'
+      fullPath: '/disparos'
+      preLoaderRoute: typeof ShellDisparosRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/dashboard': {
+      id: '/_shell/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof ShellDashboardRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/conversas': {
+      id: '/_shell/conversas'
+      path: '/conversas'
+      fullPath: '/conversas'
+      preLoaderRoute: typeof ShellConversasRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/contatos': {
+      id: '/_shell/contatos'
+      path: '/contatos'
+      fullPath: '/contatos'
+      preLoaderRoute: typeof ShellContatosRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/configuracoes': {
+      id: '/_shell/configuracoes'
+      path: '/configuracoes'
+      fullPath: '/configuracoes'
+      preLoaderRoute: typeof ShellConfiguracoesRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/conexoes': {
+      id: '/_shell/conexoes'
+      path: '/conexoes'
+      fullPath: '/conexoes'
+      preLoaderRoute: typeof ShellConexoesRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/agentes': {
+      id: '/_shell/agentes'
+      path: '/agentes'
+      fullPath: '/agentes'
+      preLoaderRoute: typeof ShellAgentesRouteImport
       parentRoute: typeof ShellRoute
     }
   }
 }
 
 interface ShellRouteChildren {
-  ShellIndexRoute: typeof ShellIndexRoute
+  ShellAgentesRoute: typeof ShellAgentesRoute
+  ShellConexoesRoute: typeof ShellConexoesRoute
+  ShellConfiguracoesRoute: typeof ShellConfiguracoesRoute
+  ShellContatosRoute: typeof ShellContatosRoute
+  ShellConversasRoute: typeof ShellConversasRoute
+  ShellDashboardRoute: typeof ShellDashboardRoute
+  ShellDisparosRoute: typeof ShellDisparosRoute
+  ShellPlanilhasRoute: typeof ShellPlanilhasRoute
 }
 
 const ShellRouteChildren: ShellRouteChildren = {
-  ShellIndexRoute: ShellIndexRoute,
+  ShellAgentesRoute: ShellAgentesRoute,
+  ShellConexoesRoute: ShellConexoesRoute,
+  ShellConfiguracoesRoute: ShellConfiguracoesRoute,
+  ShellContatosRoute: ShellContatosRoute,
+  ShellConversasRoute: ShellConversasRoute,
+  ShellDashboardRoute: ShellDashboardRoute,
+  ShellDisparosRoute: ShellDisparosRoute,
+  ShellPlanilhasRoute: ShellPlanilhasRoute,
 }
 
 const ShellRouteWithChildren = ShellRoute._addFileChildren(ShellRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
   ShellRoute: ShellRouteWithChildren,
 }
 export const routeTree = rootRouteImport
