@@ -1,0 +1,286 @@
+/**
+ * EvolutionProvider — implementacao server-only do contrato ChannelProvider
+ * para Evolution API 2.3.7.
+ *
+ * REGRAS:
+ * - Nunca importar em bundle client (sufixo .server garante).
+ * - Nunca logar telefone, texto de mensagem, QR ou apikey.
+ * - Timeout curto (5s) em toda chamada externa.
+ * - Erros externos viram Error generico; detalhe fica em console server-side.
+ */
+
+import type {
+  ChannelProvider,
+  ChannelStatus,
+  CreateInstanceInput,
+  CreateInstanceResult,
+  InboundMessage,
+  OutboundAudio,
+  OutboundText,
+  QrPayload,
+  SendResult,
+  StatusPayload,
+  WebhookResult,
+} from "./types";
+
+const DEFAULT_TIMEOUT_MS = 5000;
+
+function getConfig(): { baseUrl: string; apiKey: string } {
+  const baseUrl = process.env.EVOLUTION_BASE_URL;
+  const apiKey = process.env.EVOLUTION_API_KEY;
+  if (!baseUrl || !apiKey) {
+    throw new Error("Evolution provider not configured");
+  }
+  return { baseUrl: baseUrl.replace(/\/+$/, ""), apiKey };
+}
+
+async function evoFetch(
+  path: string,
+  init: RequestInit & { timeoutMs?: number } = {},
+): Promise<unknown> {
+  const { baseUrl, apiKey } = getConfig();
+  const { timeoutMs = DEFAULT_TIMEOUT_MS, headers, ...rest } = init;
+
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+
+  try {
+    const res = await fetch(`${baseUrl}${path}`, {
+      ...rest,
+      signal: ctrl.signal,
+      headers: {
+        "Content-Type": "application/json",
+        apikey: apiKey,
+        ...(headers ?? {}),
+      },
+    });
+
+    const text = await res.text();
+    if (!res.ok) {
+      // Log opaco: nao expor apikey nem body do cliente
+      console.error(
+        `[evolution] ${rest.method ?? "GET"} ${path} -> ${res.status}`,
+      );
+      throw new Error(`Evolution upstream error (${res.status})`);
+    }
+    return text ? JSON.parse(text) : {};
+  } catch (err) {
+    if ((err as Error).name === "AbortError") {
+      throw new Error("Evolution upstream timeout");
+    }
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** Normaliza o estado bruto do Evolution para ChannelStatus. */
+function mapState(raw: unknown): ChannelStatus {
+  const s = (
+    (typeof raw === "string"
+      ? raw
+      : (raw as { state?: string; instance?: { state?: string } })?.state ??
+        (raw as { instance?: { state?: string } })?.instance?.state ??
+        "") as string
+  ).toLowerCase();
+
+  switch (s) {
+    case "open":
+    case "connected":
+      return "connected";
+    case "connecting":
+      return "connecting";
+    case "close":
+    case "closed":
+    case "disconnected":
+      return "disconnected";
+    case "qr":
+    case "qrcode":
+      return "qr";
+    default:
+      return s ? "error" : "pending";
+  }
+}
+
+function extractQr(raw: unknown): QrPayload | undefined {
+  const obj = (raw ?? {}) as Record<string, unknown>;
+  const qrcode = (obj.qrcode ?? obj.qr ?? {}) as Record<string, unknown>;
+  const base64 =
+    (qrcode.base64 as string | undefined) ??
+    (obj.base64 as string | undefined) ??
+    (obj.code as string | undefined);
+  if (!base64) return undefined;
+  return { base64 };
+}
+
+export const evolutionProvider: ChannelProvider = {
+  id: "evolution",
+
+  async createInstance(
+    input: CreateInstanceInput,
+  ): Promise<CreateInstanceResult> {
+    const raw = (await evoFetch("/instance/create", {
+      method: "POST",
+      body: JSON.stringify({
+        instanceName: input.name,
+        integration: "WHATSAPP-BAILEYS",
+        qrcode: true,
+        webhook: {
+          url: input.webhookUrl,
+          byEvents: false,
+          base64: true,
+          events: ["MESSAGES_UPSERT", "CONNECTION_UPDATE"],
+        },
+      }),
+    })) as Record<string, unknown>;
+
+    return {
+      providerInstanceId: input.name,
+      qr: extractQr(raw),
+      status: { status: mapState(raw) },
+    };
+  },
+
+  async getQrCode(providerInstanceId: string): Promise<QrPayload> {
+    const raw = await evoFetch(
+      `/instance/connect/${encodeURIComponent(providerInstanceId)}`,
+      { method: "GET" },
+    );
+    const qr = extractQr(raw);
+    if (!qr) throw new Error("QR indisponivel");
+    return qr;
+  },
+
+  async getStatus(providerInstanceId: string): Promise<StatusPayload> {
+    const raw = await evoFetch(
+      `/instance/connectionState/${encodeURIComponent(providerInstanceId)}`,
+      { method: "GET" },
+    );
+    return { status: mapState(raw), lastSeenAt: Date.now() };
+  },
+
+  async sendText(
+    providerInstanceId: string,
+    msg: OutboundText,
+  ): Promise<SendResult> {
+    const raw = (await evoFetch(
+      `/message/sendText/${encodeURIComponent(providerInstanceId)}`,
+      {
+        method: "POST",
+        body: JSON.stringify({ number: msg.to, text: msg.text }),
+      },
+    )) as Record<string, unknown>;
+    const key = (raw.key ?? {}) as Record<string, unknown>;
+    return { providerMessageId: (key.id as string) ?? String(Date.now()) };
+  },
+
+  async sendAudio(
+    providerInstanceId: string,
+    msg: OutboundAudio,
+  ): Promise<SendResult> {
+    const raw = (await evoFetch(
+      `/message/sendWhatsAppAudio/${encodeURIComponent(providerInstanceId)}`,
+      {
+        method: "POST",
+        body: JSON.stringify({ number: msg.to, audio: msg.audio }),
+      },
+    )) as Record<string, unknown>;
+    const key = (raw.key ?? {}) as Record<string, unknown>;
+    return { providerMessageId: (key.id as string) ?? String(Date.now()) };
+  },
+
+  async deleteInstance(providerInstanceId: string): Promise<void> {
+    // Best-effort: logout + delete (Evolution exige logout antes de delete).
+    try {
+      await evoFetch(
+        `/instance/logout/${encodeURIComponent(providerInstanceId)}`,
+        { method: "DELETE" },
+      );
+    } catch {
+      // ja pode estar deslogado; segue para delete
+    }
+    await evoFetch(
+      `/instance/delete/${encodeURIComponent(providerInstanceId)}`,
+      { method: "DELETE" },
+    );
+  },
+
+  async handleWebhook(rawBody: unknown): Promise<WebhookResult> {
+    const body = (rawBody ?? {}) as Record<string, unknown>;
+    const event = (body.event as string | undefined)?.toLowerCase() ?? "";
+    const data = (body.data ?? {}) as Record<string, unknown>;
+
+    // CONNECTION_UPDATE -> status change
+    if (event.includes("connection.update") || event.includes("connection_update")) {
+      return {
+        messages: [],
+        statusChange: { status: mapState(data), lastSeenAt: Date.now() },
+      };
+    }
+
+    // MESSAGES_UPSERT -> inbound messages
+    if (event.includes("messages.upsert") || event.includes("messages_upsert")) {
+      const list = Array.isArray(data)
+        ? (data as unknown[])
+        : Array.isArray((data as { messages?: unknown[] }).messages)
+          ? ((data as { messages: unknown[] }).messages)
+          : [data];
+
+      const messages: InboundMessage[] = [];
+      for (const raw of list) {
+        const m = (raw ?? {}) as Record<string, unknown>;
+        const key = (m.key ?? {}) as Record<string, unknown>;
+        const message = (m.message ?? {}) as Record<string, unknown>;
+        const remoteJid = (key.remoteJid as string | undefined) ?? "";
+        const fromMe = Boolean(key.fromMe);
+        const id =
+          (key.id as string | undefined) ??
+          (m.id as string | undefined) ??
+          `${Date.now()}`;
+
+        let kind: InboundMessage["kind"] = "other";
+        let text: string | undefined;
+        let mediaUrl: string | undefined;
+
+        if (typeof message.conversation === "string") {
+          kind = "text";
+          text = message.conversation;
+        } else if (
+          (message.extendedTextMessage as { text?: string } | undefined)?.text
+        ) {
+          kind = "text";
+          text = (message.extendedTextMessage as { text: string }).text;
+        } else if (message.audioMessage) {
+          kind = "audio";
+          mediaUrl = (message.audioMessage as { url?: string }).url;
+        } else if (message.imageMessage) {
+          kind = "image";
+          mediaUrl = (message.imageMessage as { url?: string }).url;
+        } else if (message.videoMessage) {
+          kind = "video";
+          mediaUrl = (message.videoMessage as { url?: string }).url;
+        } else if (message.documentMessage) {
+          kind = "document";
+          mediaUrl = (message.documentMessage as { url?: string }).url;
+        }
+
+        messages.push({
+          providerMessageId: id,
+          from: fromMe ? "self" : remoteJid,
+          to: fromMe ? remoteJid : "self",
+          direction: fromMe ? "outbound" : "inbound",
+          kind,
+          text,
+          mediaUrl,
+          timestamp:
+            typeof m.messageTimestamp === "number"
+              ? (m.messageTimestamp as number) * 1000
+              : Date.now(),
+        });
+      }
+      return { messages };
+    }
+
+    return { messages: [] };
+  },
+};
