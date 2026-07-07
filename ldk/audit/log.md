@@ -1,3 +1,14 @@
+
+## 2026-07-07 - ldk-plan - f2-conexoes
+- Command: ldk-plan
+- User intent: planejar F2 (Contratos + EvolutionProvider + modulo Conexoes)
+- State before: F2 idea no ledger
+- Actions: criado brief.md e plan.md com 7 tasks; ledger F2 -> approved
+- Files changed: ldk/features/f2-conexoes/brief.md, ldk/features/f2-conexoes/plan.md, ldk/ledger.md
+- Evidence: preview na; manual na; tests not run; console na; diff na
+- Decision: approved
+- Known limitations: EVOLUTION_BASE_URL/EVOLUTION_API_KEY ainda nao coletados (T1)
+- Next: /ldk-build-task T1 (coletar segredos F2)
 # LDK Audit Log - Substituto n8n WhatsApp
 
 Registro compacto iniciado quando Audit log: on foi habilitado.
