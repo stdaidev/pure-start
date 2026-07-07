@@ -1,5 +1,18 @@
 
 ## 2026-07-07 - ldk-plan approve - F3
+
+## 2026-07-07 - ldk-build-task T1 - F3
+- Command: ldk-build-task
+- User intent: coletar OPENAI_API_KEY.
+- State before: T1 blocked.
+- Actions: usuario adicionou OPENAI_API_KEY via add_secret; T1 blocked -> proof-pending. Modelo default assumido `gpt-4o-mini` (aguarda confirmacao no proof).
+- Files changed: ldk/features/f3-runtime-agente/plan.md
+- Evidence: preview na; manual yes (fetch_secrets lista OPENAI_API_KEY); tests na; console na; diff na
+- Decision: proof-pending
+- Known limitations: modelo default `gpt-4o-mini` [VERIFY] pendente.
+- Next: `/ldk-build-task T2` (migration agents.tools/humanization + connections.default_agent_id + conversation_markers).
+
+## 2026-07-07 - ldk-plan approve - F3
 - Command: ldk-plan
 - User intent: aprovar plano F3.
 - State before: F3 planned.
