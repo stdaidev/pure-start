@@ -12,7 +12,7 @@
 - Known limitations: modelo default `gpt-4o-mini` [VERIFY] pendente.
 - Next: `/ldk-build-task T2` (migration agents.tools/humanization + connections.default_agent_id + conversation_markers).
 
-## 2026-07-07 - ldk-plan approve - F3 (dup marker abaixo)
+## 2026-07-07 - ldk-plan approve - F3
 - Command: ldk-plan
 - User intent: aprovar plano F3.
 - State before: F3 planned.
