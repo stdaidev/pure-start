@@ -23,3 +23,14 @@ Registro compacto iniciado quando Audit log: on foi habilitado.
 - Decision: intake atualizado
 - Known limitations: nenhum CSS/fonte aplicado ainda; implementacao real acontece no build de F0.
 - Next: /ldk-roadmap para reconsolidar ou /ldk-plan F0 para planejar o design system.
+
+## plan - F0 design system
+- Command: ldk-plan
+- User intent: planejar F0 (design system dark terminal/HUD) antes de construir.
+- State before: F0 em idea no ledger; sem brief/plan.
+- Actions: criados ldk/features/f0-design-system/brief.md e plan.md com 5 tasks (tokens+@theme, fontes+dark, utilitarios, home visual, prova P1); ledger F0 movido idea -> planned aguardando aprovacao.
+- Files changed: ldk/features/f0-design-system/brief.md, ldk/features/f0-design-system/plan.md, ldk/ledger.md, ldk/audit/log.md
+- Evidence: preview na; manual na; tests na; console na; diff na
+- Decision: planned
+- Known limitations: plano ainda nao aprovado; nenhum codigo tocado.
+- Next: aprovacao do usuario para mover F0 para approved, depois /ldk-build F0.
