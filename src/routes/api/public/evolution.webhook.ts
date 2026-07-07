@@ -151,20 +151,28 @@ export const Route = createFileRoute("/api/public/evolution/webhook")({
 
             if (!conversationId) continue;
 
-            // Insert message (idempotente por external_id)
-            await supabaseAdmin.from("messages").upsert(
-              {
-                workspace_id: DEFAULT_WORKSPACE,
-                conversation_id: conversationId,
-                direction: m.direction,
-                content: m.text ?? null,
-                media_url: m.mediaUrl ?? null,
-                media_type: m.kind === "text" ? null : m.kind,
-                status: "received",
-                external_id: m.providerMessageId,
-              },
-              { onConflict: "workspace_id,external_id" },
-            );
+            // Idempotencia manual: verifica antes de inserir
+            const { data: dup } = await supabaseAdmin
+              .from("messages")
+              .select("id")
+              .eq("workspace_id", DEFAULT_WORKSPACE)
+              .eq("external_id", m.providerMessageId)
+              .maybeSingle();
+            if (dup) continue;
+
+            const { error: insErr } = await supabaseAdmin.from("messages").insert({
+              workspace_id: DEFAULT_WORKSPACE,
+              conversation_id: conversationId,
+              direction: m.direction,
+              content: m.text ?? null,
+              media_url: m.mediaUrl ?? null,
+              media_type: m.kind === "text" ? null : m.kind,
+              status: "received",
+              external_id: m.providerMessageId,
+            });
+            if (insErr) {
+              console.error("[webhook/evolution] message insert failed:", insErr.code);
+            }
           }
 
           if (evt) {
