@@ -1,6 +1,17 @@
 
 ## 2026-07-07 - ldk-plan approve - F3
 
+## 2026-07-07 - ldk-build-task T6 - F3
+- Command: ldk-build-task
+- User intent: runtime runAgentForMessage server-only.
+- State before: T6 ready.
+- Actions: criado src/lib/agent-runtime.server.ts com guards (outbound loop, humano, agent.active, sem agente, sem conexao), reset command "/resetar", historico apos ultimo marker (limit 20), tool loop (max 2 rounds), humanizacao (chunk+sleep) com cap 12s, envio via EvolutionProvider, persistencia outbound. Sem log de content.
+- Files changed: src/lib/agent-runtime.server.ts, ldk/features/f3-runtime-agente/plan.md
+- Evidence: preview na; manual na; tests na; console na; diff na
+- Decision: proof-pending
+- Known limitations: hook no webhook e prova E2E ficam em T7/T11.
+- Next: `/ldk-build-task T7` (hook no webhook Evolution).
+
 ## 2026-07-07 - ldk-build-task T5 - F3
 - Command: ldk-build-task
 - User intent: registry de tools server-only (resetar, transferir_humano).
