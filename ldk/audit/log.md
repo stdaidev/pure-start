@@ -1,6 +1,17 @@
 
 ## 2026-07-07 - ldk-plan approve - F3
 
+## 2026-07-07 - ldk-build-task T5 - F3
+- Command: ldk-build-task
+- User intent: registry de tools server-only (resetar, transferir_humano).
+- State before: T5 ready.
+- Actions: criado src/providers/tools/registry.server.ts com Zod-validated handlers; supabaseAdmin lazy-load. T5 -> proof-pending.
+- Files changed: src/providers/tools/registry.server.ts, ldk/features/f3-runtime-agente/plan.md
+- Evidence: preview na; manual na; tests na; console na; diff na
+- Decision: proof-pending
+- Known limitations: prova de execucao real (curl mock) fica no T11.
+- Next: `/ldk-build-task T6` (runtime runAgentForMessage).
+
 ## 2026-07-07 - ldk-build-task T4 - F3
 - Command: ldk-build-task
 - User intent: OpenAIProvider server-only (fetch chat completions).
