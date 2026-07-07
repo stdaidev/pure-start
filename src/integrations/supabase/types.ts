@@ -212,6 +212,7 @@ export type Database = {
           created_at: string
           default_agent_id: string | null
           id: string
+          ignore_groups: boolean
           instance_name: string | null
           metadata: Json
           name: string
@@ -226,6 +227,7 @@ export type Database = {
           created_at?: string
           default_agent_id?: string | null
           id?: string
+          ignore_groups?: boolean
           instance_name?: string | null
           metadata?: Json
           name: string
@@ -240,6 +242,7 @@ export type Database = {
           created_at?: string
           default_agent_id?: string | null
           id?: string
+          ignore_groups?: boolean
           instance_name?: string | null
           metadata?: Json
           name?: string
