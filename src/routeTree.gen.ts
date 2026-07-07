@@ -19,6 +19,7 @@ import { Route as ShellContatosRouteImport } from './routes/_shell.contatos'
 import { Route as ShellConfiguracoesRouteImport } from './routes/_shell.configuracoes'
 import { Route as ShellConexoesRouteImport } from './routes/_shell.conexoes'
 import { Route as ShellAgentesRouteImport } from './routes/_shell.agentes'
+import { Route as ApiPublicEvolutionWebhookRouteImport } from './routes/api/public/evolution.webhook'
 
 const ShellRoute = ShellRouteImport.update({
   id: '/_shell',
@@ -69,6 +70,12 @@ const ShellAgentesRoute = ShellAgentesRouteImport.update({
   path: '/agentes',
   getParentRoute: () => ShellRoute,
 } as any)
+const ApiPublicEvolutionWebhookRoute =
+  ApiPublicEvolutionWebhookRouteImport.update({
+    id: '/api/public/evolution/webhook',
+    path: '/api/public/evolution/webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -80,6 +87,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof ShellDashboardRoute
   '/disparos': typeof ShellDisparosRoute
   '/planilhas': typeof ShellPlanilhasRoute
+  '/api/public/evolution/webhook': typeof ApiPublicEvolutionWebhookRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -91,6 +99,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof ShellDashboardRoute
   '/disparos': typeof ShellDisparosRoute
   '/planilhas': typeof ShellPlanilhasRoute
+  '/api/public/evolution/webhook': typeof ApiPublicEvolutionWebhookRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -104,6 +113,7 @@ export interface FileRoutesById {
   '/_shell/dashboard': typeof ShellDashboardRoute
   '/_shell/disparos': typeof ShellDisparosRoute
   '/_shell/planilhas': typeof ShellPlanilhasRoute
+  '/api/public/evolution/webhook': typeof ApiPublicEvolutionWebhookRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -117,6 +127,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/disparos'
     | '/planilhas'
+    | '/api/public/evolution/webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -128,6 +139,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/disparos'
     | '/planilhas'
+    | '/api/public/evolution/webhook'
   id:
     | '__root__'
     | '/'
@@ -140,11 +152,13 @@ export interface FileRouteTypes {
     | '/_shell/dashboard'
     | '/_shell/disparos'
     | '/_shell/planilhas'
+    | '/api/public/evolution/webhook'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ShellRoute: typeof ShellRouteWithChildren
+  ApiPublicEvolutionWebhookRoute: typeof ApiPublicEvolutionWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -219,6 +233,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShellAgentesRouteImport
       parentRoute: typeof ShellRoute
     }
+    '/api/public/evolution/webhook': {
+      id: '/api/public/evolution/webhook'
+      path: '/api/public/evolution/webhook'
+      fullPath: '/api/public/evolution/webhook'
+      preLoaderRoute: typeof ApiPublicEvolutionWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -249,6 +270,7 @@ const ShellRouteWithChildren = ShellRoute._addFileChildren(ShellRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ShellRoute: ShellRouteWithChildren,
+  ApiPublicEvolutionWebhookRoute: ApiPublicEvolutionWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
