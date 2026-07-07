@@ -1,6 +1,17 @@
 
 ## 2026-07-07 - ldk-plan approve - F3
 
+## 2026-07-07 - ldk-build-task T4 - F3
+- Command: ldk-build-task
+- User intent: OpenAIProvider server-only (fetch chat completions).
+- State before: T4 ready.
+- Actions: criado src/providers/llm/openai.server.ts com timeout 12s, max_tokens 800, sem log de content, key lida em process.env dentro da funcao. Auto-registra no registry.
+- Files changed: src/providers/llm/openai.server.ts, ldk/features/f3-runtime-agente/plan.md
+- Evidence: preview na; manual na; tests na; console na; diff na
+- Decision: proof-pending
+- Known limitations: grep no bundle client sera feito no T11 (prova final).
+- Next: `/ldk-build-task T5` (registry de tools server-only).
+
 ## 2026-07-07 - ldk-build-task T3 - F3
 - Command: ldk-build-task
 - User intent: contrato LLMProvider + tipos + registry.
