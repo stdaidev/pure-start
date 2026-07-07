@@ -166,3 +166,13 @@ Registro compacto iniciado quando Audit log: on foi habilitado.
 - Decision: PARTIAL
 - Known limitations: AC3 partial (3 de 5 secrets pendentes ate F7 - Evolution/OpenAI/ElevenLabs); policies RLS abertas ao anon dentro do workspace default; hydration mismatch antigo do template.
 - Next: continuar com F2 (Evolution + Conexoes) ou voltar depois em F7 para fechar secrets. Rode /ldk-next.
+## 2026-07-07 - ldk-build-task T6 - F2 Conexoes
+- Command: ldk-build-task
+- User intent: implementar UI `/conexoes` com lista, modal QR, polling e acoes
+- State before: T6 ready; T2-T5 proof-pending
+- Actions: rota `/conexoes` real (lista + estado vazio), `NewConnectionDialog` com QR e polling `useQuery` refetchInterval 3s (para quando `connected`/`error`), `StatusBadge` HUD, `QrDisplay` (aceita raw base64 ou data URL), acoes refresh/delete via `useServerFn` + `useMutation`, `Toaster` sonner montado em `__root`.
+- Files changed: src/routes/_shell.conexoes.tsx, src/routes/__root.tsx, src/components/conexoes/status-badge.tsx, src/components/conexoes/qr-display.tsx, src/components/conexoes/new-connection-dialog.tsx, ldk/features/f2-conexoes/plan.md, ldk/audit/log.md
+- Evidence: preview no; manual no; tests not run; console na; diff na (tsgo verde)
+- Decision: proof-pending
+- Known limitations: sem Playwright end-to-end nesta task (fica para T7); depende de Evolution real para QR aparecer.
+- Next: /ldk-build-task T7 para prova P4.
