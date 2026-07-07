@@ -45,7 +45,7 @@ historico, execucao em endpoint publico do webhook). Cada task e checkpoint.
 
 | ID | Descricao | AC | Arquivos esperados | Verificacao | State |
 |----|-----------|----|--------------------|-------------|-------|
-| T1 | Coletar `OPENAI_API_KEY` via `add_secret`; confirmar modelo default `gpt-4o-mini` com usuario. | AC1 | (secrets store) | `fetch_secrets` lista `OPENAI_API_KEY`. | blocked |
+| T1 | Coletar `OPENAI_API_KEY` via `add_secret`; confirmar modelo default `gpt-4o-mini` com usuario. | AC1 | (secrets store) | `fetch_secrets` lista `OPENAI_API_KEY`. | proof-pending |
 | T2 | Migration: `agents.tools jsonb`, `agents.humanization jsonb`, `connections.default_agent_id uuid FK`, tabela `conversation_markers(id, workspace_id, conversation_id, kind, created_at)` com RLS+GRANT+trigger updated_at. | AC2 | migration via `supabase--migration` | Linter limpo; colunas visiveis em `information_schema.columns`. | ready |
 | T3 | Contrato `LLMProvider` + tipos (Message, ToolSpec, ToolCall, CompleteResult). Registry client-safe. | AC1 | `src/providers/llm/types.ts`, `src/providers/llm/registry.ts` | `tsgo` verde. | ready |
 | T4 | `OpenAIProvider` server-only (fetch chat completions, timeout 12s, max_tokens 800, sem log de content). | AC1, AC10 | `src/providers/llm/openai.server.ts` | `tsgo` verde; import protegido do bundle client. | ready |
