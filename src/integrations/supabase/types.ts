@@ -19,11 +19,13 @@ export type Database = {
           active: boolean
           created_at: string
           description: string | null
+          humanization: Json
           id: string
           model: string
           name: string
           system_prompt: string
           temperature: number
+          tools: Json
           updated_at: string
           voice_id: string | null
           workspace_id: string
@@ -32,11 +34,13 @@ export type Database = {
           active?: boolean
           created_at?: string
           description?: string | null
+          humanization?: Json
           id?: string
           model?: string
           name: string
           system_prompt?: string
           temperature?: number
+          tools?: Json
           updated_at?: string
           voice_id?: string | null
           workspace_id?: string
@@ -45,11 +49,13 @@ export type Database = {
           active?: boolean
           created_at?: string
           description?: string | null
+          humanization?: Json
           id?: string
           model?: string
           name?: string
           system_prompt?: string
           temperature?: number
+          tools?: Json
           updated_at?: string
           voice_id?: string | null
           workspace_id?: string
@@ -204,6 +210,7 @@ export type Database = {
       connections: {
         Row: {
           created_at: string
+          default_agent_id: string | null
           id: string
           instance_name: string | null
           metadata: Json
@@ -217,6 +224,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          default_agent_id?: string | null
           id?: string
           instance_name?: string | null
           metadata?: Json
@@ -230,6 +238,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          default_agent_id?: string | null
           id?: string
           instance_name?: string | null
           metadata?: Json
@@ -242,6 +251,13 @@ export type Database = {
           workspace_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "connections_default_agent_id_fkey"
+            columns: ["default_agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "connections_workspace_id_fkey"
             columns: ["workspace_id"]
@@ -294,6 +310,38 @@ export type Database = {
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversation_markers: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          id: string
+          kind: string
+          workspace_id: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          id?: string
+          kind: string
+          workspace_id?: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_markers_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
             referencedColumns: ["id"]
           },
         ]
