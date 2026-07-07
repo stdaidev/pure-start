@@ -5,7 +5,7 @@
 | F0 | Design system dark terminal/HUD (tokens OKLCH, fontes Space Grotesk/JetBrains Mono/Inter, glass cards, brackets, grid sutil, sem animacao sobre texto) | baixo | done | P1 | ldk/features/f0-design-system/proof.md |
 | F1 | Base: schema Postgres + secrets + layout com sidebar | alto | partial | P3 | ldk/features/f1-base/proof.md |
 | F2 | Contratos modulares + EvolutionProvider + modulo Conexoes (QR/status/webhook) | alto | done | P4 | ldk/features/f2-conexoes/proof.md |
-| F3 | Runtime do agente (webhook -> buffer -> LLM -> saida humanizada) + modulo Agentes | alto | planned | P4 | |
+| F3 | Runtime do agente (webhook -> buffer -> LLM -> saida humanizada) + modulo Agentes | alto | approved | P4 | |
 | F4 | Conversas/inbox + handoff (assumir/devolver IA) | medio | idea | P2 | |
 | F5 | Contatos e Planilhas (upload CSV/XLSX, headers->placeholders, opt-out) | medio | idea | P2 | |
 | F6 | Disparos (wizard, template com preview, anti-ban, worker pg_cron, monitor ao vivo) | alto | idea | P4 | |

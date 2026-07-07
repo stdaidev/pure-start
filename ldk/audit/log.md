@@ -1,4 +1,15 @@
 
+## 2026-07-07 - ldk-plan approve - F3
+- Command: ldk-plan
+- User intent: aprovar plano F3.
+- State before: F3 planned.
+- Actions: ledger F3 planned -> approved.
+- Files changed: ldk/ledger.md
+- Evidence: preview na; manual na; tests na; console na; diff na
+- Decision: approved
+- Known limitations: T1 blocked ate OPENAI_API_KEY.
+- Next: `/ldk-build-task T1` (coletar OPENAI_API_KEY).
+
 ## 2026-07-07 - ldk-plan - F3
 - Command: ldk-plan
 - User intent: planejar F3 runtime do agente + modulo Agentes.
