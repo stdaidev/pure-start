@@ -106,9 +106,11 @@ export const getConnectionStatus = createServerFn({ method: "POST" })
       .single();
     if (error || !row) throw new Error("Conexao nao encontrada");
 
+    const instance = row.instance_name;
+    if (!instance) throw new Error("Instancia sem nome");
+
     try {
-      const status = await evolutionProvider.getStatus(row.instance_name);
-      const currentStatus = row.status ?? "pending";
+      const status = await evolutionProvider.getStatus(instance);
       if (status.status !== row.status) {
         await supabaseAdmin
           .from("connections")
@@ -141,6 +143,7 @@ export const refreshQr = createServerFn({ method: "POST" })
       .single();
     if (error || !row) throw new Error("Conexao nao encontrada");
 
+    if (!row.instance_name) throw new Error("Instancia sem nome");
     const qr = await evolutionProvider.getQrCode(row.instance_name);
     await supabaseAdmin
       .from("connections")
@@ -170,7 +173,8 @@ export const deleteConnection = createServerFn({ method: "POST" })
     if (error || !row) throw new Error("Conexao nao encontrada");
 
     try {
-      await evolutionProvider.deleteInstance(row.instance_name);
+      if (row.instance_name)
+        await evolutionProvider.deleteInstance(row.instance_name);
     } catch {
       // segue mesmo se o Evolution ja tiver perdido a instancia
     }
