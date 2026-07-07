@@ -100,3 +100,14 @@ Registro compacto iniciado quando Audit log: on foi habilitado.
 - Decision: proof-pending
 - Known limitations: os 7 itens da sidebar apontam para rotas que so serao criadas em T5 (`/conexoes`, `/agentes`, etc.); cliques la agora dao 404. Redirect explicito `/` -> `/dashboard` foi substituido por home dentro do shell (`_shell.index.tsx`) para nao brigar com o pathless layout - registrado no plan.
 - Next: /ldk-build-task T5 (rotas placeholder das 7 secoes restantes).
+
+## build+proof - F1 T5+T6
+- Command: ldk-build
+- User intent: finalizar F1 executando T5 e T6 e provar.
+- State before: F1 building; T1/T2/T4 proof-pending; T3 partial; T5/T6 ready.
+- Actions: removido `_shell.index.tsx`; criado `src/components/hud-placeholder.tsx` compartilhado; criadas 8 rotas placeholder `_shell.{dashboard,conexoes,agentes,conversas,contatos,planilhas,disparos,configuracoes}.tsx` com head() PT-BR unico; criado `src/routes/index.tsx` com beforeLoad redirect para `/dashboard`. Dev server reiniciado; routeTree.gen.ts regenerou com 8 fullPaths esperados. Proof P3: supabase--linter -> `No linter issues found`; read_query listou 11 tabelas em public; Playwright rodou as 8 rotas + `/` (title/h1 unicos, redirect `/`->`/dashboard`, zero pageerror). proof.md escrito.
+- Files changed: src/routes/index.tsx, src/routes/_shell.dashboard.tsx, src/routes/_shell.conexoes.tsx, src/routes/_shell.agentes.tsx, src/routes/_shell.conversas.tsx, src/routes/_shell.contatos.tsx, src/routes/_shell.planilhas.tsx, src/routes/_shell.disparos.tsx, src/routes/_shell.configuracoes.tsx, src/components/hud-placeholder.tsx (delete src/routes/_shell.index.tsx), ldk/features/f1-base/proof.md, ldk/features/f1-base/plan.md, ldk/ledger.md, ldk/audit/log.md
+- Evidence: preview yes; manual yes; tests pass (Playwright); console yes; diff na
+- Decision: PARTIAL
+- Known limitations: AC3 partial (3 de 5 secrets pendentes ate F7 - Evolution/OpenAI/ElevenLabs); policies RLS abertas ao anon dentro do workspace default; hydration mismatch antigo do template.
+- Next: continuar com F2 (Evolution + Conexoes) ou voltar depois em F7 para fechar secrets. Rode /ldk-next.
