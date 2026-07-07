@@ -20,6 +20,17 @@
 - Decision: proof-pending
 - Known limitations: T1 segredos EVOLUTION_* adiados para tela F7; T3 (EvolutionProvider real) fica blocked ate T1 destravar.
 - Next: /ldk-build-task T3 fica blocked; recomendado avancar F1 T3 (secrets via F7) ou seguir outra frente. Rode /ldk-next.
+
+## 2026-07-07 - ldk-build-task - f2-conexoes T3
+- Command: ldk-build-task
+- User intent: implementar EvolutionProvider server-only (secrets ja registradas pelo usuario)
+- State before: F2 building, T2 proof-pending, T1 done, T3 ready
+- Actions: criado src/providers/channel/evolution.server.ts com createInstance/getQrCode/getStatus/sendText/sendAudio/deleteInstance/handleWebhook, timeouts 5s via AbortController, mapState/extractQr helpers, sem log de PII/apikey. typecheck limpo.
+- Files changed: src/providers/channel/evolution.server.ts, ldk/features/f2-conexoes/plan.md
+- Evidence: preview na (server-only); manual na; tests: tsgo verde; console na; diff na
+- Decision: proof-pending
+- Known limitations: nao chamou Evolution real ainda (validacao E2E fica em T4/T7). Contrato de webhook baseado em MESSAGES_UPSERT/CONNECTION_UPDATE do Evolution 2.3.7.
+- Next: /ldk-build-task T4 (server functions createConnection/getStatus/refreshQr/deleteConnection).
 # LDK Audit Log - Substituto n8n WhatsApp
 
 Registro compacto iniciado quando Audit log: on foi habilitado.
