@@ -25,11 +25,11 @@ baixo - plano curto, poucas tasks coordenadas, prova visual.
 
 | ID | Descricao | AC | Arquivos esperados | Verificacao | State |
 |----|-----------|----|--------------------|-------------|-------|
-| T1 | Substituir tokens em src/styles.css pelos OKLCH do intake (:root dark + .light), mapear --font-display/--font-mono/--font-sans em @theme inline, adicionar ::selection laranja translucido | AC1, AC2 | `src/styles.css` | inspecao do arquivo + preview carrega sem erro | ready |
-| T2 | Adicionar <link> preconnect Google Fonts + stylesheet (Space Grotesk, JetBrains Mono, Inter) no head() de src/routes/__root.tsx e setar className="dark" no <html> do RootShell | AC3, AC4 | `src/routes/__root.tsx` | preview: DevTools mostra <html class="dark"> e Network baixando as 3 fontes | ready |
-| T3 | Adicionar utilitarios @utility .glass-card, .hud-brackets, .bg-hud-grid em src/styles.css (todos estaticos, sem animacao sobre texto; glow sutil no hover do card apenas via box-shadow) | AC5 | `src/styles.css` | inspecao + smoke visual | ready |
-| T4 | Atualizar src/routes/index.tsx: fundo bg-hud-grid, card central .glass-card + .hud-brackets, titulo "Iniciar" em font-[--font-display] com um pequeno dot/bracket laranja estatico ao lado. Sem animacao. | AC6 | `src/routes/index.tsx` | preview: screenshot da tela inicial no novo visual | ready |
-| T5 | Rodar prova P1: abrir preview, tirar screenshot da home, checar console sem warnings novos, confirmar Space Grotesk aplicada no titulo | AC6, AC7 | - | preview + console | ready |
+| T1 | Substituir tokens em src/styles.css pelos OKLCH do intake (:root dark + .light), mapear --font-display/--font-mono/--font-sans em @theme inline, adicionar ::selection laranja translucido | AC1, AC2 | `src/styles.css` | inspecao do arquivo + preview carrega sem erro | done |
+| T2 | Adicionar <link> preconnect Google Fonts + stylesheet (Space Grotesk, JetBrains Mono, Inter) no head() de src/routes/__root.tsx e setar className="dark" no <html> do RootShell | AC3, AC4 | `src/routes/__root.tsx` | preview: DevTools mostra <html class="dark"> e Network baixando as 3 fontes | done |
+| T3 | Adicionar utilitarios @utility .glass-card, .hud-brackets, .bg-hud-grid em src/styles.css (todos estaticos, sem animacao sobre texto; glow sutil no hover do card apenas via box-shadow) | AC5 | `src/styles.css` | inspecao + smoke visual | done |
+| T4 | Atualizar src/routes/index.tsx: fundo bg-hud-grid, card central .glass-card + .hud-brackets, titulo "Iniciar" em font-[--font-display] com um pequeno dot/bracket laranja estatico ao lado. Sem animacao. | AC6 | `src/routes/index.tsx` | preview: screenshot da tela inicial no novo visual | done |
+| T5 | Rodar prova P1: abrir preview, tirar screenshot da home, checar console sem warnings novos, confirmar Space Grotesk aplicada no titulo | AC6, AC7 | - | preview + console | done |
 
 ## Arquivos criados/alterados (esperados)
 - src/styles.css

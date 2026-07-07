@@ -34,3 +34,14 @@ Registro compacto iniciado quando Audit log: on foi habilitado.
 - Decision: planned
 - Known limitations: plano ainda nao aprovado; nenhum codigo tocado.
 - Next: aprovacao do usuario para mover F0 para approved, depois /ldk-build F0.
+
+## build+proof - F0 design system
+- Command: ldk-build
+- User intent: aprovar F0 e executar build+prova.
+- State before: F0 planned, 5 tasks ready.
+- Actions: aplicados tokens OKLCH dark-first + @theme fonts + utilitarios .glass-card/.hud-brackets/.bg-hud-grid/::selection em src/styles.css; adicionadas fontes Google via <link> preconnect+stylesheet e className="dark"/lang="pt-BR" no <html> de src/routes/__root.tsx; refeita home em src/routes/index.tsx com bg-hud-grid + glass card + brackets + dot laranja + tipografia display/mono. Prova P1 executada via Playwright (screenshot /tmp/browser/f0/home.png + inspecao runtime da fonte, classe e background).
+- Files changed: src/styles.css, src/routes/__root.tsx, src/routes/index.tsx, ldk/features/f0-design-system/proof.md, ldk/features/f0-design-system/plan.md, ldk/ledger.md, ldk/audit/log.md
+- Evidence: preview yes; manual yes; tests na; console yes; diff na
+- Decision: DONE
+- Known limitations: hydration mismatch em data-tsd-source (ruido do dev HMR do template, nao introduzido por F0); .light so tem tokens sem toggle funcional (fora de escopo).
+- Next: /ldk-next (provavelmente F1 - base schema + secrets + layout, que depende de habilitar Lovable Cloud).
