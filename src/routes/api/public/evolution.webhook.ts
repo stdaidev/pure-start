@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { timingSafeEqual, createHash } from "node:crypto";
 
 /**
  * Webhook publico do Evolution.
@@ -13,11 +14,7 @@ import { createFileRoute } from "@tanstack/react-router";
 const DEFAULT_WORKSPACE = "00000000-0000-0000-0000-000000000001";
 
 function bufEq(a: string, b: string): boolean {
-  // Import dinamico do node:crypto para nao poluir bundle client
-  // (arquivo e server-only via caminho api/public, mas cinto+suspensorio)
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { timingSafeEqual, createHash } = require("node:crypto") as typeof import("node:crypto");
-  // Normaliza tamanhos hasheando ambos (evita leak de tamanho e permite compare seguro)
+  // Normaliza tamanhos hasheando ambos (evita leak de tamanho, compare constante)
   const ha = createHash("sha256").update(a).digest();
   const hb = createHash("sha256").update(b).digest();
   return timingSafeEqual(ha, hb);
