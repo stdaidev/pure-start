@@ -1,6 +1,17 @@
 
 ## 2026-07-07 - ldk-plan approve - F3
 
+## 2026-07-07 - ldk-build-task T3 - F3
+- Command: ldk-build-task
+- User intent: contrato LLMProvider + tipos + registry.
+- State before: T3 ready.
+- Actions: criados src/providers/llm/types.ts e src/providers/llm/registry.ts (client-safe, sem side-effects). T3 -> proof-pending.
+- Files changed: src/providers/llm/types.ts, src/providers/llm/registry.ts, ldk/features/f3-runtime-agente/plan.md
+- Evidence: preview na; manual na; tests na; console na; diff na
+- Decision: proof-pending
+- Known limitations: implementacao concreta OpenAI vem em T4.
+- Next: `/ldk-build-task T4` (OpenAIProvider server-only).
+
 ## 2026-07-07 - ldk-build-task T2 - F3
 - Command: ldk-build-task
 - User intent: migration F3 (agents.tools/humanization, connections.default_agent_id, conversation_markers). Modelo default confirmado: gpt-4.1-mini.
