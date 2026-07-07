@@ -1,6 +1,17 @@
 
 ## 2026-07-07 - ldk-plan approve - F3
 
+## 2026-07-07 - ldk-build-task T2 - F3
+- Command: ldk-build-task
+- User intent: migration F3 (agents.tools/humanization, connections.default_agent_id, conversation_markers). Modelo default confirmado: gpt-4.1-mini.
+- State before: T1 proof-pending; T2 ready.
+- Actions: migration aplicada com sucesso; supabase--linter limpo; brief atualizado (modelo gpt-4.1-mini); T2 ready -> proof-pending.
+- Files changed: supabase/migrations/*, ldk/features/f3-runtime-agente/plan.md, ldk/features/f3-runtime-agente/brief.md
+- Evidence: preview na; manual yes (linter clean); tests na; console na; diff na
+- Decision: proof-pending
+- Known limitations: types.ts regenerado pelo sistema; ainda faltam T3-T11.
+- Next: `/ldk-build-task T3` (contrato LLMProvider + tipos).
+
 ## 2026-07-07 - ldk-build-task T1 - F3
 - Command: ldk-build-task
 - User intent: coletar OPENAI_API_KEY.
