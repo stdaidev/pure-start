@@ -56,3 +56,14 @@ Registro compacto iniciado quando Audit log: on foi habilitado.
 - Decision: approved
 - Known limitations: RLS via workspace default (sem login v1) - aceita conscientemente; secrets ainda podem estar ausentes na hora de T3.
 - Next: /ldk-build-task T1 (migracao workspaces + trigger).
+
+## build-task - F1 T1
+- Command: ldk-build-task
+- User intent: executar T1 (workspaces + trigger + policy default).
+- State before: F1 approved; T1 ready.
+- Actions: migracao criou funcao `public.update_updated_at_column()`, helper `public.default_workspace_id()`, tabela `public.workspaces` (name, slug), GRANTs, RLS on, policy `workspaces_default_only_all` (id = default), trigger updated_at, seed da linha default `00000000-...-000001`.
+- Files changed: migracao Supabase, ldk/features/f1-base/plan.md, ldk/ledger.md, ldk/audit/log.md
+- Evidence: preview na; manual yes (psql SELECT retornou 1 linha default); tests na; console na; diff na
+- Decision: proof-pending
+- Known limitations: policy aberta a anon dentro do workspace default - aceita para v1 sem login; linter formal roda no proof da feature (T6).
+- Next: /ldk-build-task T2 (migracao 10 tabelas dominio).

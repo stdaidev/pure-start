@@ -14,13 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      workspaces: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      default_workspace_id: { Args: never; Returns: string }
     }
     Enums: {
       [_ in never]: never
