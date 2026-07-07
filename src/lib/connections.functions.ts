@@ -1,4 +1,5 @@
-import { createServerFn, getRequestHeader } from "@tanstack/react-start";
+import { createServerFn } from "@tanstack/react-start";
+import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 
 /**
@@ -13,9 +14,11 @@ import { z } from "zod";
 const DEFAULT_WORKSPACE = "00000000-0000-0000-0000-000000000001";
 
 function resolveWebhookUrl(): string {
-  const host = getRequestHeader("host") ?? "";
+  const req = getRequest();
+  const url = new URL(req.url);
+  const host = req.headers.get("host") ?? url.host;
   const proto =
-    getRequestHeader("x-forwarded-proto") ??
+    req.headers.get("x-forwarded-proto") ??
     (host.startsWith("localhost") ? "http" : "https");
   return `${proto}://${host}/api/public/evolution/webhook`;
 }
@@ -105,6 +108,7 @@ export const getConnectionStatus = createServerFn({ method: "POST" })
 
     try {
       const status = await evolutionProvider.getStatus(row.instance_name);
+      const currentStatus = row.status ?? "pending";
       if (status.status !== row.status) {
         await supabaseAdmin
           .from("connections")
@@ -114,7 +118,7 @@ export const getConnectionStatus = createServerFn({ method: "POST" })
       return { id: row.id, status: status.status, qr: row.qr_code };
     } catch {
       // Nao propaga erro externo para nao quebrar polling; devolve estado atual
-      return { id: row.id, status: row.status, qr: row.qr_code };
+      return { id: row.id, status: row.status ?? "pending", qr: row.qr_code };
     }
   });
 
