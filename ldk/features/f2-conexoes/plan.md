@@ -18,8 +18,8 @@ Ceremony: alto (plano completo, risco/seguranca explicito, execucao via `ldk-bui
 
 | ID | Descricao | AC | Arquivos esperados | Verificacao | State |
 |----|-----------|----|--------------------|-------------|-------|
-| T1 | Coletar segredos F2: registrar `EVOLUTION_BASE_URL` e `EVOLUTION_API_KEY` via add_secret; confirmar `WEBHOOK_VERIFY_TOKEN` (ja gerado em F1). | AC7 | (nenhum arquivo; secrets store) | `fetch_secrets` lista as 3 chaves. | ready |
-| T2 | Contrato `ChannelProvider` (interface + tipos QR/Status/Message) e stub de registry. | AC1 | `src/providers/channel/types.ts`, `src/providers/channel/registry.ts` | `tsgo` verde, importavel. | ready |
+| T1 | Coletar segredos F2: registrar `EVOLUTION_BASE_URL` e `EVOLUTION_API_KEY` via add_secret; confirmar `WEBHOOK_VERIFY_TOKEN` (ja gerado em F1). | AC7 | (nenhum arquivo; secrets store) | `fetch_secrets` lista as 3 chaves. | blocked |
+| T2 | Contrato `ChannelProvider` (interface + tipos QR/Status/Message) e stub de registry. | AC1 | `src/providers/channel/types.ts`, `src/providers/channel/registry.ts` | `tsgo` verde, importavel. | proof-pending |
 | T3 | `EvolutionProvider` server-only implementando o contrato (fetch REST, timeouts 5s, sem log PII). | AC1, AC7 | `src/providers/channel/evolution.server.ts` | `tsgo` verde; import protegido (nao entra no bundle client). | ready |
 | T4 | Server functions `createConnection`, `getConnectionStatus`, `refreshQr`, `deleteConnection` usando EvolutionProvider. | AC3, AC4, AC6 | `src/lib/connections.functions.ts` | Chamada via `useServerFn` retorna QR base64; erros mapeados. | ready |
 | T5 | Server route publica webhook Evolution: valida token (timingSafeEqual), persiste em `webhook_events` + projeta em `messages`/`contacts`, 200/401. | AC5 | `src/routes/api/public/evolution.webhook.ts` | `curl` com token correto -> 200 + linha em `webhook_events`; token errado -> 401. | ready |

@@ -9,6 +9,17 @@
 - Decision: approved
 - Known limitations: EVOLUTION_BASE_URL/EVOLUTION_API_KEY ainda nao coletados (T1)
 - Next: /ldk-build-task T1 (coletar segredos F2)
+
+## 2026-07-07 - ldk-build-task - f2-conexoes T2
+- Command: ldk-build-task
+- User intent: implementar contrato ChannelProvider (T1 adiada para F7 config)
+- State before: F2 approved, T1 blocked (segredos), T2 ready
+- Actions: criados src/providers/channel/types.ts (ChannelProvider + tipos QR/Status/Message/Webhook) e src/providers/channel/registry.ts (registro client-safe por id); typecheck limpo. Plan: T1 -> blocked, T2 -> proof-pending.
+- Files changed: src/providers/channel/types.ts, src/providers/channel/registry.ts, ldk/features/f2-conexoes/plan.md
+- Evidence: preview na; manual na; tests: tsgo verde; console na; diff na
+- Decision: proof-pending
+- Known limitations: T1 segredos EVOLUTION_* adiados para tela F7; T3 (EvolutionProvider real) fica blocked ate T1 destravar.
+- Next: /ldk-build-task T3 fica blocked; recomendado avancar F1 T3 (secrets via F7) ou seguir outra frente. Rode /ldk-next.
 # LDK Audit Log - Substituto n8n WhatsApp
 
 Registro compacto iniciado quando Audit log: on foi habilitado.
