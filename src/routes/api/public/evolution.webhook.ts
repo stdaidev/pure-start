@@ -181,7 +181,7 @@ export const Route = createFileRoute("/api/public/evolution/webhook")({
               .maybeSingle();
             if (dup) continue;
 
-            const { error: insErr } = await supabaseAdmin.from("messages").insert({
+            const { data: insertedMsg, error: insErr } = await supabaseAdmin.from("messages").insert({
               workspace_id: DEFAULT_WORKSPACE,
               conversation_id: conversationId,
               direction: m.direction,
@@ -197,33 +197,25 @@ export const Route = createFileRoute("/api/public/evolution/webhook")({
             }
 
             // Runtime do agente: so para inbound text. Nunca falha o 200.
-            if (m.direction === "inbound" && m.kind === "text") {
-              const { data: inserted } = await supabaseAdmin
-                .from("messages")
-                .select("id")
-                .eq("workspace_id", DEFAULT_WORKSPACE)
-                .eq("external_id", m.providerMessageId)
-                .maybeSingle();
-              if (inserted?.id) {
-                try {
-                  const { runAgentForMessage } = await import(
-                    "@/lib/agent-runtime.server"
-                  );
-                  await Promise.race([
-                    runAgentForMessage(inserted.id),
-                    new Promise((_, rej) =>
-                      setTimeout(
-                        () => rej(new Error("runtime timeout")),
-                        RUNTIME_HARD_CAP_MS,
-                      ),
+            if (m.direction === "inbound" && m.kind === "text" && insertedMsg?.id) {
+              try {
+                const { runAgentForMessage } = await import(
+                  "@/lib/agent-runtime.server"
+                );
+                await Promise.race([
+                  runAgentForMessage(insertedMsg.id),
+                  new Promise((_, rej) =>
+                    setTimeout(
+                      () => rej(new Error("runtime timeout")),
+                      RUNTIME_HARD_CAP_MS,
                     ),
-                  ]);
-                } catch (e) {
-                  console.error(
-                    "[webhook/evolution] runtime error:",
-                    (e as Error).message,
-                  );
-                }
+                  ),
+                ]);
+              } catch (e) {
+                console.error(
+                  "[webhook/evolution] runtime error:",
+                  (e as Error).message,
+                );
               }
             }
           }
