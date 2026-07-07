@@ -42,6 +42,17 @@
 - Decision: proof-pending
 - Known limitations: server fns sao publicas (sem auth v1); Evolution real ainda nao chamado end-to-end. T5 (webhook publico) precisa revisao de seguranca antes de commit.
 - Next: /ldk-build-task T5 (server route publica /api/public/evolution/webhook).
+
+## 2026-07-07 - ldk-build - f2-conexoes T5
+- Command: ldk-build (checkpoint T5)
+- User intent: implementar webhook publico com seguranca
+- State before: F2 building, T4 proof-pending
+- Actions: migration cria public.webhook_events (service_role only, RLS on, GRANT service_role) + unique parcial em messages(external_id); rota /api/public/evolution/webhook valida x-webhook-token via timingSafeEqual sobre hashes sha256, persiste em webhook_events, delega parse para EvolutionProvider.handleWebhook, projeta em contacts/conversations/messages com idempotencia (select-then-insert por external_id), retorna 200/401 sem PII.
+- Files changed: supabase migration (webhook_events + idx_messages_external_id), src/routes/api/public/evolution.webhook.ts, ldk/features/f2-conexoes/plan.md
+- Evidence: preview na; manual: curl localhost -> 401 com token errado, 200 com token correto; tests not run; console: sem PII; diff na. Persistencia verificada via read_query: webhook_event processed=true, contact/conversation/message criados, duplicata nao cria segunda linha.
+- Decision: proof-pending
+- Known limitations: rotas server-fn de T4 nao foram exercidas E2E (fica em T6/T7). Restaram 3 contatos/conversas/mensagens de teste (MSG_LDK_TEST_*) porque read_query e read-only; podem ser removidos em migration futura ou pelo usuario. Precisa configurar URL do webhook no Evolution Manager apontando para {published}/api/public/evolution/webhook com header x-webhook-token=WEBHOOK_VERIFY_TOKEN.
+- Next: /ldk-build-task T6 (UI /conexoes com listagem, modal nova conexao, QR polling).
 # LDK Audit Log - Substituto n8n WhatsApp
 
 Registro compacto iniciado quando Audit log: on foi habilitado.
