@@ -31,6 +31,17 @@
 - Decision: proof-pending
 - Known limitations: nao chamou Evolution real ainda (validacao E2E fica em T4/T7). Contrato de webhook baseado em MESSAGES_UPSERT/CONNECTION_UPDATE do Evolution 2.3.7.
 - Next: /ldk-build-task T4 (server functions createConnection/getStatus/refreshQr/deleteConnection).
+
+## 2026-07-07 - ldk-build-task - f2-conexoes T4
+- Command: ldk-build-task
+- User intent: implementar server functions do modulo Conexoes
+- State before: F2 building, T3 proof-pending
+- Actions: criado src/lib/connections.functions.ts com createConnection/getConnectionStatus/refreshQr/deleteConnection/listConnections. supabaseAdmin e evolutionProvider carregados via dynamic import dentro do handler (client-safe). Webhook URL derivado via getRequest(). Zod input validators, sem log de PII/QR/apikey. instance_name nullable guardado com throw explicito.
+- Files changed: src/lib/connections.functions.ts, ldk/features/f2-conexoes/plan.md
+- Evidence: preview na; manual na; tests: tsgo verde; console na; diff na
+- Decision: proof-pending
+- Known limitations: server fns sao publicas (sem auth v1); Evolution real ainda nao chamado end-to-end. T5 (webhook publico) precisa revisao de seguranca antes de commit.
+- Next: /ldk-build-task T5 (server route publica /api/public/evolution/webhook).
 # LDK Audit Log - Substituto n8n WhatsApp
 
 Registro compacto iniciado quando Audit log: on foi habilitado.
