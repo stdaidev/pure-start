@@ -45,3 +45,14 @@ Registro compacto iniciado quando Audit log: on foi habilitado.
 - Decision: DONE
 - Known limitations: hydration mismatch em data-tsd-source (ruido do dev HMR do template, nao introduzido por F0); .light so tem tokens sem toggle funcional (fora de escopo).
 - Next: /ldk-next (provavelmente F1 - base schema + secrets + layout, que depende de habilitar Lovable Cloud).
+
+## plan - F1 base
+- Command: ldk-plan
+- User intent: planejar F1 (base schema + secrets + layout com sidebar) e aprovar.
+- State before: F1 idea; Cloud habilitado; F0 done.
+- Actions: criados ldk/features/f1-base/brief.md e plan.md com 6 tasks (T1 workspaces+trigger, T2 10 tabelas dominio, T3 5 secrets, T4 shell+sidebar HUD, T5 8 rotas placeholder, T6 proof P3); ledger F1 idea -> approved apos aprovacao do usuario ("Aprovado"). Modo recomendado: ldk-build-task.
+- Files changed: ldk/features/f1-base/brief.md, ldk/features/f1-base/plan.md, ldk/ledger.md, ldk/audit/log.md
+- Evidence: preview na; manual na; tests na; console na; diff na
+- Decision: approved
+- Known limitations: RLS via workspace default (sem login v1) - aceita conscientemente; secrets ainda podem estar ausentes na hora de T3.
+- Next: /ldk-build-task T1 (migracao workspaces + trigger).

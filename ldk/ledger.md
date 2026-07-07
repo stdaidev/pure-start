@@ -3,7 +3,7 @@
 | ID | Feature | Risk | State | Proof required | Last evidence |
 |----|---------|------|-------|----------------|---------------|
 | F0 | Design system dark terminal/HUD (tokens OKLCH, fontes Space Grotesk/JetBrains Mono/Inter, glass cards, brackets, grid sutil, sem animacao sobre texto) | baixo | done | P1 | ldk/features/f0-design-system/proof.md |
-| F1 | Base: schema Postgres + secrets + layout com sidebar | alto | idea | P3 | |
+| F1 | Base: schema Postgres + secrets + layout com sidebar | alto | approved | P3 | |
 | F2 | Contratos modulares + EvolutionProvider + modulo Conexoes (QR/status/webhook) | alto | idea | P4 | |
 | F3 | Runtime do agente (webhook -> buffer -> LLM -> saida humanizada) + modulo Agentes | alto | idea | P4 | |
 | F4 | Conversas/inbox + handoff (assumir/devolver IA) | medio | idea | P2 | |
