@@ -78,3 +78,14 @@ Registro compacto iniciado quando Audit log: on foi habilitado.
 - Decision: proof-pending
 - Known limitations: policies abertas a anon dentro do workspace default (aceito v1); types.ts sera regenerado apos aprovacao/rodagem; linter formal roda em T6.
 - Next: /ldk-build-task T3 (registrar 5 secrets).
+
+## build-task - F1 T3
+- Command: ldk-build-task
+- User intent: registrar os 5 secrets do F1.
+- State before: F1 building; T3 ready; apenas LOVABLE_API_KEY presente.
+- Actions: gerado `WEBHOOK_VERIFY_TOKEN` (64 chars) via generate_secret. Decidido com o usuario: (1) manter `OPENAI_API_KEY` como opcao ao lado do Lovable AI Gateway com seletor na UI; (2) `ELEVENLABS_API_KEY` adiado (nao usado agora); (3) `EVOLUTION_BASE_URL` + `EVOLUTION_API_KEY` + `OPENAI_API_KEY` serao preenchidos pelo usuario na tela de Configuracoes (F7), nao registrados como secrets nesta task.
+- Files changed: ldk/features/f1-base/plan.md, ldk/audit/log.md
+- Evidence: preview na; manual na; tests na; console na; diff na
+- Decision: partial
+- Known limitations: apenas 2 dos 5 secrets registrados (LOVABLE_API_KEY ja existia; WEBHOOK_VERIFY_TOKEN gerado agora). EVOLUTION_BASE_URL, EVOLUTION_API_KEY, OPENAI_API_KEY e ELEVENLABS_API_KEY ficam pendentes ate a tela de Configuracoes existir (F7) ou o usuario decidir registra-los. AC3 fica parcial ate la; nao bloqueia T4/T5/T6.
+- Next: /ldk-build-task T4 (shell + sidebar HUD).
