@@ -1,6 +1,17 @@
 
 ## 2026-07-07 - ldk-plan approve - F3
 
+## 2026-07-07 - ldk-build-task T7 - F3
+- Command: ldk-build-task
+- User intent: acionar runtime no webhook; ignorar grupos; aceitar base64.
+- State before: T7 ready.
+- Actions: migration adiciona `connections.ignore_groups` (default true); webhook filtra JID `@g.us` por conexao; apos insert de inbound text, chama `runAgentForMessage` com Promise.race timeout 12s e nunca falha o 200. Registro do webhook ja acontecia no `createInstance` do Evolution (webhook.base64=true).
+- Files changed: supabase/migrations/*, src/routes/api/public/evolution.webhook.ts, ldk/features/f3-runtime-agente/plan.md
+- Evidence: preview na; manual na (curl fica no T11); tests na; console na; diff na
+- Decision: proof-pending
+- Known limitations: base64 de media inbound ainda nao propagado para `messages` (fora do escopo v1: audio/imagem serao F3.1). UI para toggle `ignore_groups` na conexao vem no T10.
+- Next: `/ldk-build-task T8` (server functions dos agentes).
+
 ## 2026-07-07 - ldk-build-task T6 - F3
 - Command: ldk-build-task
 - User intent: runtime runAgentForMessage server-only.
