@@ -54,7 +54,7 @@ ate ele "assumir" pela inbox (F4).
 - Retry sofisticado / DLQ.
 
 ## Decisoes fixadas
-- LLM inicial: OpenAI. Modelo default `gpt-4o-mini` [VERIFY] com usuario.
+- LLM inicial: OpenAI. Modelo default `gpt-4.1-mini` (confirmado pelo usuario).
 - Runtime sincrono no proprio POST do webhook (aceito v1; risco: latencia
   do 200 ao Evolution ate ~15s). Se estourar timeout, responder 200 e
   logar erro no `webhook_events.error`.
@@ -83,4 +83,4 @@ revisao de seguranca do runtime.
 ## Dependencias
 - F2 done (ok).
 - [VERIFY] `OPENAI_API_KEY` (nao presente em `fetch_secrets` atual).
-- [VERIFY] Modelo OpenAI default (`gpt-4o-mini` proposto).
+- Modelo OpenAI default: `gpt-4.1-mini` (confirmado).
