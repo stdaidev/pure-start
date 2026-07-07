@@ -176,3 +176,14 @@ Registro compacto iniciado quando Audit log: on foi habilitado.
 - Decision: proof-pending
 - Known limitations: sem Playwright end-to-end nesta task (fica para T7); depende de Evolution real para QR aparecer.
 - Next: /ldk-build-task T7 para prova P4.
+
+## 2026-07-07 - ldk-build-task T7 - F2 Conexoes (proof P4)
+- Command: ldk-build-task
+- User intent: prova P4 e fechamento de F2
+- State before: T2-T6 proof-pending; T7 ready
+- Actions: Playwright em /conexoes (lista renderiza estado vazio "NENHUMA INSTANCIA"); curl webhook (wrong=401, none=401, correct=200) persistindo connection.update em webhook_events processed=true; supabase--linter "No linter issues found"; `bun run build` verde; `grep -r EVOLUTION_API_KEY dist/client/` -> 0 (server-only em dist/server/_ssr). Escrito proof.md. Plan T2-T7 -> done. Ledger F2 -> done.
+- Files changed: ldk/features/f2-conexoes/proof.md, ldk/features/f2-conexoes/plan.md, ldk/ledger.md, ldk/audit/log.md
+- Evidence: preview yes; manual yes (curl+screenshot); tests not run; console yes; diff no
+- Decision: DONE
+- Known limitations: fluxo QR real WhatsApp nao exercido; endpoints publicos sem auth (v1); CSRF middleware nao configurado (warning dev).
+- Next: /ldk-next (candidato F3 runtime do agente).
