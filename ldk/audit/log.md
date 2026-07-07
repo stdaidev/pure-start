@@ -1,4 +1,15 @@
 
+## 2026-07-07 - ldk-plan - F3
+- Command: ldk-plan
+- User intent: planejar F3 runtime do agente + modulo Agentes.
+- State before: F3 idea; F2 done.
+- Actions: brief.md + plan.md criados; ledger F3 idea -> planned.
+- Files changed: ldk/features/f3-runtime-agente/brief.md, ldk/features/f3-runtime-agente/plan.md, ldk/ledger.md
+- Evidence: preview na; manual na; tests na; console na; diff na
+- Decision: planned
+- Known limitations: T1 blocked ate coleta de OPENAI_API_KEY; modelo default a confirmar.
+- Next: aprovar plano -> `/ldk-build-task T1` (coletar OPENAI_API_KEY).
+
 ## 2026-07-07 - ldk-plan - f2-conexoes
 - Command: ldk-plan
 - User intent: planejar F2 (Contratos + EvolutionProvider + modulo Conexoes)
