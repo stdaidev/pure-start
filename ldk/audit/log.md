@@ -1,5 +1,16 @@
 ## 2026-07-07 - ldk-plan approve - F3
 
+## 2026-07-07 - ldk-build T10+T11 - F3
+- Command: ldk-build
+- User intent: finalizar F3 (UI conexoes com agente default + ignore_groups e prova).
+- State before: T10/T11 ready.
+- Actions: `listConnections` retorna `default_agent_id`/`ignore_groups`; UI `/conexoes` ganhou select de agente default e switch `Ignorar grupos` por linha (usa `setConnectionAgent`/`setConnectionIgnoreGroups`). Playwright smoke em `/agentes` e `/conexoes` (screenshots ok). `supabase--linter` limpo. Escrito `ldk/features/f3-runtime-agente/proof.md`.
+- Files changed: src/lib/connections.functions.ts, src/routes/_shell.conexoes.tsx, ldk/features/f3-runtime-agente/proof.md, ldk/features/f3-runtime-agente/plan.md
+- Evidence: preview yes; manual yes (smoke); tests na; console no (so hydration source-tag warning inofensivo); diff na
+- Decision: PARTIAL
+- Known limitations: curl E2E do webhook nao rodado (precisa OPENAI_API_KEY em runtime real); grep de segredo no bundle depende de build do harness (protecao estrutural: leitura dentro do handler em `.server.ts`).
+- Next: rodar E2E com credencial real ou avancar para F4 (inbox humano).
+
 ## 2026-07-07 - ldk-build-task T9 - F3
 - Command: ldk-build-task
 - User intent: UI /agentes com CRUD, toggle active, humanizacao.
