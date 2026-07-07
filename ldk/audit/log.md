@@ -1,6 +1,17 @@
 
 ## 2026-07-07 - ldk-plan approve - F3
 
+## 2026-07-07 - ldk-build-task T8 - F3
+- Command: ldk-build-task
+- User intent: server functions dos agentes (+ vinculo com conexao).
+- State before: T8 ready.
+- Actions: criado src/lib/agents.functions.ts com listAgents/getAgent/saveAgent/deleteAgent/toggleAgent/setConnectionAgent/setConnectionIgnoreGroups. Zod valida entrada; supabaseAdmin lazy-load; sem log de content. T8 -> proof-pending.
+- Files changed: src/lib/agents.functions.ts, ldk/features/f3-runtime-agente/plan.md
+- Evidence: preview na; manual na; tests na; console na; diff na
+- Decision: proof-pending
+- Known limitations: prova UI (CRUD) vem no T9; typecheck completo no T11.
+- Next: `/ldk-build-task T9` (UI /agentes).
+
 ## 2026-07-07 - ldk-build-task T7 - F3
 - Command: ldk-build-task
 - User intent: acionar runtime no webhook; ignorar grupos; aceitar base64.
