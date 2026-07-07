@@ -89,3 +89,14 @@ Registro compacto iniciado quando Audit log: on foi habilitado.
 - Decision: partial
 - Known limitations: apenas 2 dos 5 secrets registrados (LOVABLE_API_KEY ja existia; WEBHOOK_VERIFY_TOKEN gerado agora). EVOLUTION_BASE_URL, EVOLUTION_API_KEY, OPENAI_API_KEY e ELEVENLABS_API_KEY ficam pendentes ate a tela de Configuracoes existir (F7) ou o usuario decidir registra-los. AC3 fica parcial ate la; nao bloqueia T4/T5/T6.
 - Next: /ldk-build-task T4 (shell + sidebar HUD).
+
+## build-task - F1 T4
+- Command: ldk-build-task
+- User intent: shell + sidebar HUD (T4).
+- State before: F1 building; T3 partial; T4 ready.
+- Actions: criado `src/components/app-sidebar.tsx` (shadcn Sidebar collapsible=icon, 8 itens Dashboard/Conexoes/Agentes/Conversas/Contatos/Planilhas/Disparos/Configuracoes, item ativo via useRouterState, header com dot laranja, tipografia display/mono F0). Criado `src/routes/_shell.tsx` (pathless layout + SidebarProvider + SidebarTrigger no header + Outlet dentro de `.bg-hud-grid`). Removida `src/routes/index.tsx` standalone e criada `src/routes/_shell.index.tsx` como dashboard placeholder em `/` (o pathless `_shell` sem filhos conflitava com index no route tree; mover home para dentro do shell resolveu). Dev server reiniciado; routeTree.gen.ts regenerado com `_shell` e `_shell.index`. Playwright: screenshot `/tmp/browser/f1t4/home.png` mostra sidebar HUD, item Dashboard ativo, header trigger, grid HUD e card `EM CONSTRUCAO // F7`.
+- Files changed: src/components/app-sidebar.tsx, src/routes/_shell.tsx, src/routes/_shell.index.tsx (delete src/routes/index.tsx), ldk/features/f1-base/plan.md, ldk/audit/log.md
+- Evidence: preview yes; manual yes (screenshot); tests na; console yes (hydration mismatch antigo em data-tsd-source, ruido HMR do template, nao introduzido por T4); diff na
+- Decision: proof-pending
+- Known limitations: os 7 itens da sidebar apontam para rotas que so serao criadas em T5 (`/conexoes`, `/agentes`, etc.); cliques la agora dao 404. Redirect explicito `/` -> `/dashboard` foi substituido por home dentro do shell (`_shell.index.tsx`) para nao brigar com o pathless layout - registrado no plan.
+- Next: /ldk-build-task T5 (rotas placeholder das 7 secoes restantes).
