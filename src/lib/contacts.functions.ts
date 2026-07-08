@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import type { TablesInsert, TablesUpdate, Json } from "@/integrations/supabase/types";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
 
 /**
  * F5 - Contatos e Planilhas.
@@ -101,6 +103,16 @@ export const importContacts = createServerFn({ method: "POST" })
     z
       .object({
         rows: z.array(importRow).min(1).max(10000),
+        spreadsheet: z
+          .object({
+            name: z.string().min(1).max(200),
+            headers: z.array(z.string().max(120)).min(1).max(200),
+            rawRows: z
+              .array(z.record(z.string(), z.string()))
+              .min(1)
+              .max(10000),
+          })
+          .optional(),
       })
       .parse(raw),
   )
@@ -173,5 +185,47 @@ export const importContacts = createServerFn({ method: "POST" })
       updated,
       opt_outs_preserved: optOutsPreserved,
       total: payload.length,
+      spreadsheet_id: await maybeCreateSpreadsheet(
+        supabaseAdmin,
+        data.spreadsheet,
+      ),
     };
   });
+
+async function maybeCreateSpreadsheet(
+  db: SupabaseClient<Database>,
+  sheet:
+    | {
+        name: string;
+        headers: string[];
+        rawRows: Record<string, string>[];
+      }
+    | undefined,
+): Promise<string | null> {
+  if (!sheet) return null;
+  const { data: created, error } = await db
+    .from("spreadsheets")
+    .insert({
+      workspace_id: DEFAULT_WORKSPACE,
+      name: sheet.name,
+      headers: sheet.headers,
+      row_count: sheet.rawRows.length,
+    })
+    .select("id")
+    .single();
+  if (error || !created) throw new Error("Falha ao salvar planilha");
+  const rowsPayload = sheet.rawRows.map((r, i) => ({
+    workspace_id: DEFAULT_WORKSPACE,
+    spreadsheet_id: created.id,
+    row_index: i,
+    data: r as unknown as Json,
+  }));
+  const batchSize = 500;
+  for (let i = 0; i < rowsPayload.length; i += batchSize) {
+    const { error: rErr } = await db
+      .from("spreadsheet_rows")
+      .insert(rowsPayload.slice(i, i + batchSize));
+    if (rErr) throw new Error("Falha ao salvar linhas da planilha");
+  }
+  return created.id;
+}

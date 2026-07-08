@@ -250,7 +250,16 @@ function PlanilhasPage() {
               disabled={prepared.valid.length === 0 || importMut.isPending}
               onClick={() =>
                 importMut.mutate({
-                  data: { rows: prepared.valid },
+                  data: {
+                    rows: prepared.valid,
+                    spreadsheet: sheet
+                      ? {
+                          name: fileName || "planilha",
+                          headers: sheet.headers,
+                          rawRows: sheet.rows,
+                        }
+                      : undefined,
+                  },
                 })
               }
             >
