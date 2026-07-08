@@ -59,7 +59,7 @@ export async function runDispatchTick(
   const { data: campaigns, error } = await db
     .from("campaigns")
     .select(
-      "id, workspace_id, connection_id, status, min_ms, max_ms, daily_cap, hourly_limit, sent_this_hour, sent_this_hour_at, window_start, window_end, warmup_per_day, sent_today, sent_today_date, started_at, dispatch_mode",
+      "id, workspace_id, connection_id, status, min_ms, max_ms, daily_cap, hourly_limit, sent_this_hour, sent_this_hour_at, window_start, window_end, warmup_per_day, sent_today, sent_today_date, started_at, dispatch_mode, cooldown_enabled, cooldown_value",
     )
     .eq("status", "running");
   if (error) throw new Error("Falha ao listar campanhas running");
@@ -171,6 +171,46 @@ export async function runDispatchTick(
           .eq("id", cand.id);
         result.skipped++;
         continue;
+      }
+
+      // F6.2: re-check de cooldown antes de mandar (defesa em profundidade).
+      const cdHours = (c as { cooldown_value?: number | null }).cooldown_value ?? 0;
+      const cdOn = (c as { cooldown_enabled?: boolean }).cooldown_enabled ?? true;
+      if (cdOn && cdHours > 0) {
+        const since = new Date(Date.now() - cdHours * 3600_000).toISOString();
+        const { data: contactRow } = await db
+          .from("contacts")
+          .select("id")
+          .eq("workspace_id", c.workspace_id)
+          .eq("phone", cand.contact_phone)
+          .maybeSingle();
+        if (contactRow?.id) {
+          const { data: convs } = await db
+            .from("conversations")
+            .select("id")
+            .eq("workspace_id", c.workspace_id)
+            .eq("contact_id", contactRow.id);
+          const convIds = (convs ?? []).map((x) => x.id);
+          if (convIds.length > 0) {
+            const { data: hit } = await db
+              .from("messages")
+              .select("id")
+              .eq("workspace_id", c.workspace_id)
+              .eq("direction", "inbound")
+              .in("conversation_id", convIds)
+              .gte("created_at", since)
+              .limit(1)
+              .maybeSingle();
+            if (hit) {
+              await db
+                .from("campaign_recipients")
+                .update({ status: "stopped_recent_reply" })
+                .eq("id", cand.id);
+              result.skipped++;
+              continue; // nao consome cota
+            }
+          }
+        }
       }
 
       const vars = (cand.variables ?? {}) as Record<string, unknown>;
