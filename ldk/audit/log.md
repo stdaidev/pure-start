@@ -452,3 +452,14 @@ Registro compacto iniciado quando Audit log: on foi habilitado.
 - Decision: approved (aguardando build)
 - Known limitations: kill-switch e por workspace default (multi-workspace real ainda nao existe)
 - Next: rodar ldk-build-task T1 (migration)
+
+## 2026-07-08 - ldk-doctor - F6/F6.1
+- Command: ldk-doctor
+- User intent: catalogar emendas pos-F6 sem burocracia (Opcao A)
+- State before: 4 mudancas pos-proof sem registro (tick manual, normalizeMsisdn, snippet erro, deleteCampaign)
+- Actions: nota "Emendas pos-proof" em f6-disparos/proof.md; bloco "Estado atual do codigo" em f6.1/plan.md marcando botao manual como TEMPORARIO ate cron do release
+- Files changed: ldk/features/f6-disparos/proof.md, ldk/features/f6.1-anti-ban-hardening/plan.md
+- Evidence: na
+- Decision: diagnosis-only + catalog
+- Known limitations: botao "Disparar agora" segue visivel em preview; remover/flagar antes do release
+- Next: ldk-build-task T1 de F6.1

@@ -67,6 +67,12 @@ Wizard --mode=single|multi + connection_ids[]--> createCampaign
 ## Pre-flight otimista
 Base do F6 esta provada; mudancas sao incrementais em worker + wizard. Tabela nova (`campaign_connections`) e isolada. Stop-on-reply usa webhook ja existente.
 
+**Estado atual do codigo (emendas pos-F6, ver `f6-disparos/proof.md`):**
+- `dispatch-worker.server.ts` ja tem `normalizeMsisdn` — preservar em T3.
+- `evolution.server.ts` ja anexa `snippet` de erro upstream — preservar.
+- `_shell.disparos.$id.tsx` tem botao "Disparar agora" TEMPORARIO para chamar `/api/public/dispatch/tick`. Manter durante F6.1 (util para testar cenarios do AC11); esconder atras de flag dev-only ou remover quando o `pg_cron` do release estiver validado (T8 / release).
+- `deleteCampaign` + botao lixeira em `campaign-list.tsx` — preservar, nao entra em regressao de F6.1.
+
 ## Pre-flight pessimista
 - Round-robin com contagem por conexao pode ficar caro em queries; mitigar com index em `campaign_recipients(campaign_id, last_connection_id, sent_at)`.
 - Semear `next_send_at` para planilhas grandes (>10k) pode gerar transacao pesada; mitigar com batch/limit no create (ja tem limite de linhas).
