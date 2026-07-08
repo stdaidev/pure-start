@@ -122,7 +122,7 @@ export async function runDispatchTick(
       const nowIso = new Date().toISOString();
       const { data: cand } = await db
         .from("campaign_recipients")
-        .select("id, contact_phone, variables, attempt_count")
+        .select("id, contact_phone, contact_name, variables, attempt_count")
         .eq("campaign_id", c.id)
         .eq("status", "pending")
         .or(`next_send_at.is.null,next_send_at.lte.${nowIso}`)
@@ -229,7 +229,7 @@ export async function runDispatchTick(
       }
 
       try {
-        await provider.sendText(picked.instance_name, {
+        const sent = await provider.sendText(picked.instance_name, {
           to: normalizeMsisdn(cand.contact_phone),
           text,
         });
@@ -242,6 +242,24 @@ export async function runDispatchTick(
           })
           .eq("id", cand.id);
         result.sent++;
+
+        // C6: espelha na aba Conversas — upsert contact + conversation + message outbound.
+        // Usa o mesmo external_id que o webhook (fromMe echo) usaria, para dedupe.
+        try {
+          await persistOutboundMessage(db, {
+            workspaceId: c.workspace_id,
+            connectionId: picked.connection_id,
+            phone: normalizeMsisdn(cand.contact_phone),
+            contactName: (cand as { contact_name?: string | null }).contact_name ?? null,
+            text,
+            providerMessageId: sent.providerMessageId,
+          });
+        } catch (persistErr) {
+          console.error(
+            "[dispatch] persist outbound failed:",
+            persistErr instanceof Error ? persistErr.message.slice(0, 200) : "unknown",
+          );
+        }
 
         // Atualiza sent_today + sent_this_hour.
         const today = dateKeySaoPaulo(now);
@@ -329,4 +347,81 @@ function normalizeMsisdn(raw: string): string {
   const digits = raw.replace(/\D+/g, "");
   if (digits.length === 10 || digits.length === 11) return `55${digits}`;
   return digits;
+}
+
+async function persistOutboundMessage(
+  db: Db,
+  opts: {
+    workspaceId: string;
+    connectionId: string;
+    phone: string;
+    contactName: string | null;
+    text: string;
+    providerMessageId: string;
+  },
+): Promise<void> {
+  // Upsert contato (mesma forma que o webhook grava).
+  const { data: contact } = await db
+    .from("contacts")
+    .upsert(
+      {
+        workspace_id: opts.workspaceId,
+        phone: opts.phone,
+        ...(opts.contactName ? { name: opts.contactName } : {}),
+      },
+      { onConflict: "workspace_id,phone" },
+    )
+    .select("id")
+    .single();
+  if (!contact) return;
+
+  // Localiza ou cria conversation escopada por (workspace, contact, connection).
+  let conversationId: string | null = null;
+  const { data: existing } = await db
+    .from("conversations")
+    .select("id")
+    .eq("workspace_id", opts.workspaceId)
+    .eq("contact_id", contact.id)
+    .eq("connection_id", opts.connectionId)
+    .maybeSingle();
+  if (existing) {
+    conversationId = existing.id;
+  } else {
+    const { data: created } = await db
+      .from("conversations")
+      .insert({
+        workspace_id: opts.workspaceId,
+        contact_id: contact.id,
+        connection_id: opts.connectionId,
+        status: "open",
+        last_message_at: new Date().toISOString(),
+      })
+      .select("id")
+      .single();
+    conversationId = created?.id ?? null;
+  }
+  if (!conversationId) return;
+
+  // Dedupe: se webhook (fromMe echo) ja gravou com o mesmo external_id, pula.
+  const { data: dup } = await db
+    .from("messages")
+    .select("id")
+    .eq("workspace_id", opts.workspaceId)
+    .eq("conversation_id", conversationId)
+    .eq("external_id", opts.providerMessageId)
+    .maybeSingle();
+  if (dup) return;
+
+  await db.from("messages").insert({
+    workspace_id: opts.workspaceId,
+    conversation_id: conversationId,
+    direction: "outbound",
+    content: opts.text,
+    status: "sent",
+    external_id: opts.providerMessageId,
+  });
+  await db
+    .from("conversations")
+    .update({ last_message_at: new Date().toISOString() })
+    .eq("id", conversationId);
 }
