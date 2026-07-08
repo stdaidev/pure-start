@@ -21,9 +21,8 @@ function stripWebhookToken(rawUrl: string): string {
 }
 
 export function getPublicEvolutionWebhookUrl(): string {
-  const explicit = process.env.PUBLIC_WEBHOOK_URL ?? process.env.PUBLIC_BASE_URL;
-  const candidate = explicit && !isUnsafePreviewBase(explicit) ? explicit : PUBLISHED_BASE;
-  const normalized = stripWebhookToken(candidate).replace(/\/+$/, "");
+  // Sempre usa a URL publicada. Evolution nao consegue entregar em preview/localhost.
+  const normalized = stripWebhookToken(PUBLISHED_BASE).replace(/\/+$/, "");
   return normalized.endsWith(WEBHOOK_PATH) ? normalized : `${normalized}${WEBHOOK_PATH}`;
 }
 
