@@ -56,6 +56,7 @@ export const listConversations = createServerFn({ method: "GET" }).handler(
         last_message_at: c.last_message_at,
         contact_name: c.contacts?.name ?? null,
         contact_phone: c.contacts?.phone ?? "",
+        connection_id: c.connection_id,
         connection_name: c.connections?.name ?? null,
         agent_name: c.agents?.name ?? null,
         preview: previews.get(c.id) ?? null,
