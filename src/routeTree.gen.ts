@@ -12,13 +12,13 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as ShellRouteImport } from './routes/_shell'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ShellPlanilhasRouteImport } from './routes/_shell.planilhas'
-import { Route as ShellDisparosRouteImport } from './routes/_shell.disparos'
 import { Route as ShellDashboardRouteImport } from './routes/_shell.dashboard'
 import { Route as ShellConversasRouteImport } from './routes/_shell.conversas'
 import { Route as ShellContatosRouteImport } from './routes/_shell.contatos'
 import { Route as ShellConfiguracoesRouteImport } from './routes/_shell.configuracoes'
 import { Route as ShellConexoesRouteImport } from './routes/_shell.conexoes'
 import { Route as ShellAgentesRouteImport } from './routes/_shell.agentes'
+import { Route as ShellDisparosIndexRouteImport } from './routes/_shell.disparos.index'
 import { Route as ShellDisparosIdRouteImport } from './routes/_shell.disparos.$id'
 import { Route as ApiPublicEvolutionWebhookRouteImport } from './routes/api/public/evolution.webhook'
 import { Route as ApiPublicDispatchTickRouteImport } from './routes/api/public/dispatch.tick'
@@ -35,11 +35,6 @@ const IndexRoute = IndexRouteImport.update({
 const ShellPlanilhasRoute = ShellPlanilhasRouteImport.update({
   id: '/planilhas',
   path: '/planilhas',
-  getParentRoute: () => ShellRoute,
-} as any)
-const ShellDisparosRoute = ShellDisparosRouteImport.update({
-  id: '/disparos',
-  path: '/disparos',
   getParentRoute: () => ShellRoute,
 } as any)
 const ShellDashboardRoute = ShellDashboardRouteImport.update({
@@ -72,10 +67,15 @@ const ShellAgentesRoute = ShellAgentesRouteImport.update({
   path: '/agentes',
   getParentRoute: () => ShellRoute,
 } as any)
+const ShellDisparosIndexRoute = ShellDisparosIndexRouteImport.update({
+  id: '/disparos/',
+  path: '/disparos/',
+  getParentRoute: () => ShellRoute,
+} as any)
 const ShellDisparosIdRoute = ShellDisparosIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => ShellDisparosRoute,
+  id: '/disparos/$id',
+  path: '/disparos/$id',
+  getParentRoute: () => ShellRoute,
 } as any)
 const ApiPublicEvolutionWebhookRoute =
   ApiPublicEvolutionWebhookRouteImport.update({
@@ -97,9 +97,9 @@ export interface FileRoutesByFullPath {
   '/contatos': typeof ShellContatosRoute
   '/conversas': typeof ShellConversasRoute
   '/dashboard': typeof ShellDashboardRoute
-  '/disparos': typeof ShellDisparosRouteWithChildren
   '/planilhas': typeof ShellPlanilhasRoute
   '/disparos/$id': typeof ShellDisparosIdRoute
+  '/disparos/': typeof ShellDisparosIndexRoute
   '/api/public/dispatch/tick': typeof ApiPublicDispatchTickRoute
   '/api/public/evolution/webhook': typeof ApiPublicEvolutionWebhookRoute
 }
@@ -111,9 +111,9 @@ export interface FileRoutesByTo {
   '/contatos': typeof ShellContatosRoute
   '/conversas': typeof ShellConversasRoute
   '/dashboard': typeof ShellDashboardRoute
-  '/disparos': typeof ShellDisparosRouteWithChildren
   '/planilhas': typeof ShellPlanilhasRoute
   '/disparos/$id': typeof ShellDisparosIdRoute
+  '/disparos': typeof ShellDisparosIndexRoute
   '/api/public/dispatch/tick': typeof ApiPublicDispatchTickRoute
   '/api/public/evolution/webhook': typeof ApiPublicEvolutionWebhookRoute
 }
@@ -127,9 +127,9 @@ export interface FileRoutesById {
   '/_shell/contatos': typeof ShellContatosRoute
   '/_shell/conversas': typeof ShellConversasRoute
   '/_shell/dashboard': typeof ShellDashboardRoute
-  '/_shell/disparos': typeof ShellDisparosRouteWithChildren
   '/_shell/planilhas': typeof ShellPlanilhasRoute
   '/_shell/disparos/$id': typeof ShellDisparosIdRoute
+  '/_shell/disparos/': typeof ShellDisparosIndexRoute
   '/api/public/dispatch/tick': typeof ApiPublicDispatchTickRoute
   '/api/public/evolution/webhook': typeof ApiPublicEvolutionWebhookRoute
 }
@@ -143,9 +143,9 @@ export interface FileRouteTypes {
     | '/contatos'
     | '/conversas'
     | '/dashboard'
-    | '/disparos'
     | '/planilhas'
     | '/disparos/$id'
+    | '/disparos/'
     | '/api/public/dispatch/tick'
     | '/api/public/evolution/webhook'
   fileRoutesByTo: FileRoutesByTo
@@ -157,9 +157,9 @@ export interface FileRouteTypes {
     | '/contatos'
     | '/conversas'
     | '/dashboard'
-    | '/disparos'
     | '/planilhas'
     | '/disparos/$id'
+    | '/disparos'
     | '/api/public/dispatch/tick'
     | '/api/public/evolution/webhook'
   id:
@@ -172,9 +172,9 @@ export interface FileRouteTypes {
     | '/_shell/contatos'
     | '/_shell/conversas'
     | '/_shell/dashboard'
-    | '/_shell/disparos'
     | '/_shell/planilhas'
     | '/_shell/disparos/$id'
+    | '/_shell/disparos/'
     | '/api/public/dispatch/tick'
     | '/api/public/evolution/webhook'
   fileRoutesById: FileRoutesById
@@ -207,13 +207,6 @@ declare module '@tanstack/react-router' {
       path: '/planilhas'
       fullPath: '/planilhas'
       preLoaderRoute: typeof ShellPlanilhasRouteImport
-      parentRoute: typeof ShellRoute
-    }
-    '/_shell/disparos': {
-      id: '/_shell/disparos'
-      path: '/disparos'
-      fullPath: '/disparos'
-      preLoaderRoute: typeof ShellDisparosRouteImport
       parentRoute: typeof ShellRoute
     }
     '/_shell/dashboard': {
@@ -258,12 +251,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShellAgentesRouteImport
       parentRoute: typeof ShellRoute
     }
+    '/_shell/disparos/': {
+      id: '/_shell/disparos/'
+      path: '/disparos'
+      fullPath: '/disparos/'
+      preLoaderRoute: typeof ShellDisparosIndexRouteImport
+      parentRoute: typeof ShellRoute
+    }
     '/_shell/disparos/$id': {
       id: '/_shell/disparos/$id'
-      path: '/$id'
+      path: '/disparos/$id'
       fullPath: '/disparos/$id'
       preLoaderRoute: typeof ShellDisparosIdRouteImport
-      parentRoute: typeof ShellDisparosRoute
+      parentRoute: typeof ShellRoute
     }
     '/api/public/evolution/webhook': {
       id: '/api/public/evolution/webhook'
@@ -282,18 +282,6 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface ShellDisparosRouteChildren {
-  ShellDisparosIdRoute: typeof ShellDisparosIdRoute
-}
-
-const ShellDisparosRouteChildren: ShellDisparosRouteChildren = {
-  ShellDisparosIdRoute: ShellDisparosIdRoute,
-}
-
-const ShellDisparosRouteWithChildren = ShellDisparosRoute._addFileChildren(
-  ShellDisparosRouteChildren,
-)
-
 interface ShellRouteChildren {
   ShellAgentesRoute: typeof ShellAgentesRoute
   ShellConexoesRoute: typeof ShellConexoesRoute
@@ -301,8 +289,9 @@ interface ShellRouteChildren {
   ShellContatosRoute: typeof ShellContatosRoute
   ShellConversasRoute: typeof ShellConversasRoute
   ShellDashboardRoute: typeof ShellDashboardRoute
-  ShellDisparosRoute: typeof ShellDisparosRouteWithChildren
   ShellPlanilhasRoute: typeof ShellPlanilhasRoute
+  ShellDisparosIdRoute: typeof ShellDisparosIdRoute
+  ShellDisparosIndexRoute: typeof ShellDisparosIndexRoute
 }
 
 const ShellRouteChildren: ShellRouteChildren = {
@@ -312,8 +301,9 @@ const ShellRouteChildren: ShellRouteChildren = {
   ShellContatosRoute: ShellContatosRoute,
   ShellConversasRoute: ShellConversasRoute,
   ShellDashboardRoute: ShellDashboardRoute,
-  ShellDisparosRoute: ShellDisparosRouteWithChildren,
   ShellPlanilhasRoute: ShellPlanilhasRoute,
+  ShellDisparosIdRoute: ShellDisparosIdRoute,
+  ShellDisparosIndexRoute: ShellDisparosIndexRoute,
 }
 
 const ShellRouteWithChildren = ShellRoute._addFileChildren(ShellRouteChildren)
@@ -327,13 +317,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

@@ -8,7 +8,7 @@ import { CampaignList, type CampaignRow } from "@/components/disparos/campaign-l
 import { NewCampaignDialog } from "@/components/disparos/new-campaign-dialog";
 import { listCampaigns } from "@/lib/campaigns.functions";
 
-export const Route = createFileRoute("/_shell/disparos")({
+export const Route = createFileRoute("/_shell/disparos/")({
   head: () => ({
     meta: [
       { title: "Disparos // HUD" },
