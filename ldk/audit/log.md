@@ -331,3 +331,14 @@ Registro compacto iniciado quando Audit log: on foi habilitado.
 - Decision: PARTIAL
 - Known limitations: falta teste E2E automatizado e CI verificado para fechar P4 de F3
 - Next: /ldk-plan F4 (Conversas/inbox + handoff)
+
+## 2026-07-08 - ldk-plan - F4
+- Command: ldk-plan
+- User intent: planejar F4 Conversas/inbox + handoff
+- State before: F4 idea, sem brief/plan
+- Actions: brief.md e plan.md criados; ledger F4 -> approved; 6 tasks ready.
+- Files changed: ldk/features/f4-conversas-handoff/brief.md, ldk/features/f4-conversas-handoff/plan.md, ldk/ledger.md
+- Evidence: preview na; manual na; tests not run; console na; diff na
+- Decision: planned
+- Known limitations: media (audio/imagem) e multi-usuario fora de escopo v1
+- Next: /ldk-build F4
