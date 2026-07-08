@@ -114,7 +114,7 @@ export const getCampaign = createServerFn({ method: "POST" })
       .select("status")
       .eq("campaign_id", data.id);
     if (cErr) throw new Error("Falha ao consultar destinatarios");
-    const progress = { total: 0, sent: 0, failed: 0, pending: 0, skipped_optout: 0, stopped_reply: 0 };
+    const progress = { total: 0, sent: 0, failed: 0, pending: 0, skipped_optout: 0, stopped_reply: 0, stopped_recent_reply: 0 };
     for (const r of counts ?? []) {
       progress.total++;
       if (r.status === "sent") progress.sent++;
@@ -122,6 +122,7 @@ export const getCampaign = createServerFn({ method: "POST" })
       else if (r.status === "pending" || r.status === "sending") progress.pending++;
       else if (r.status === "skipped_optout") progress.skipped_optout++;
       else if (r.status === "stopped_reply") progress.stopped_reply++;
+      else if (r.status === "stopped_recent_reply") progress.stopped_recent_reply++;
     }
     return { campaign: row, progress };
   });
@@ -428,6 +429,7 @@ export const listRecipients = createServerFn({ method: "POST" })
             "failed",
             "skipped_optout",
             "stopped_reply",
+            "stopped_recent_reply",
           ])
           .optional(),
         limit: z.number().int().min(1).max(500).default(100),
