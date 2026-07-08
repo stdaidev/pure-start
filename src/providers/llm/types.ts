@@ -13,6 +13,8 @@ export interface LlmMessage {
   toolCallId?: string;
   /** Opcional: nome da tool para mensagens role="tool". */
   name?: string;
+  /** Opcional: tool_calls emitidos pelo assistant nesta mensagem. */
+  toolCalls?: LlmToolCall[];
 }
 
 export interface LlmToolSpec {

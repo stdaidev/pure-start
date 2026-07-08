@@ -226,7 +226,11 @@ export async function runAgentForMessage(
     }
 
     // Executa tools sequencialmente e alimenta o loop.
-    llmMessages.push({ role: "assistant", content: res.text ?? "" });
+    llmMessages.push({
+      role: "assistant",
+      content: res.text ?? "",
+      toolCalls: res.toolCalls,
+    });
     let stopAfter = false;
     for (const call of res.toolCalls) {
       const tool = getTool(call.name);
