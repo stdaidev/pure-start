@@ -137,7 +137,7 @@ export async function runDispatchTick(
 
       try {
         await provider.sendText(conn.instance_name, {
-          to: cand.contact_phone,
+          to: normalizeMsisdn(cand.contact_phone),
           text,
         });
         await db
