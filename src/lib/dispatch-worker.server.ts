@@ -137,7 +137,7 @@ export async function runDispatchTick(
 
       try {
         await provider.sendText(conn.instance_name, {
-          to: cand.contact_phone,
+          to: normalizeMsisdn(cand.contact_phone),
           text,
         });
         await db
@@ -193,4 +193,15 @@ export async function runDispatchTick(
 
 function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
+}
+
+/**
+ * Normaliza numero para formato aceito pela Evolution.
+ * - remove tudo que nao for digito
+ * - se tem 10 ou 11 digitos (BR sem DDI), prepend 55
+ */
+function normalizeMsisdn(raw: string): string {
+  const digits = raw.replace(/\D+/g, "");
+  if (digits.length === 10 || digits.length === 11) return `55${digits}`;
+  return digits;
 }
