@@ -747,6 +747,38 @@ export type Database = {
         }
         Relationships: []
       }
+      workspace_secrets: {
+        Row: {
+          id: string
+          name: string
+          updated_at: string
+          value: string
+          workspace_id: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          updated_at?: string
+          value: string
+          workspace_id?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          updated_at?: string
+          value?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_secrets_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workspaces: {
         Row: {
           cooldown_default_hours: number

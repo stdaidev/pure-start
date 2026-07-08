@@ -25,9 +25,15 @@ import type {
 
 const DEFAULT_TIMEOUT_MS = 5000;
 
-function getConfig(): { baseUrl: string; apiKey: string } {
-  const baseUrl = process.env.EVOLUTION_BASE_URL;
-  const apiKey = process.env.EVOLUTION_API_KEY;
+/**
+ * F7 T3: prefere secret do DB (workspace_secrets), fallback process.env.
+ * Cache de 30s aplicado em `getSecret`. Trocar chave via /configuracoes
+ * aplica no proximo tick (<= 30s), sem restart.
+ */
+async function getConfig(): Promise<{ baseUrl: string; apiKey: string }> {
+  const { getSecret } = await import("@/lib/secrets.server");
+  const baseUrl = await getSecret("EVOLUTION_BASE_URL");
+  const apiKey = await getSecret("EVOLUTION_API_KEY");
   if (!baseUrl || !apiKey) {
     throw new Error("Evolution provider not configured");
   }
@@ -38,7 +44,7 @@ async function evoFetch(
   path: string,
   init: RequestInit & { timeoutMs?: number } = {},
 ): Promise<unknown> {
-  const { baseUrl, apiKey } = getConfig();
+  const { baseUrl, apiKey } = await getConfig();
   const { timeoutMs = DEFAULT_TIMEOUT_MS, headers, ...rest } = init;
 
   const ctrl = new AbortController();

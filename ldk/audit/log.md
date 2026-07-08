@@ -485,3 +485,14 @@ Registro compacto iniciado quando Audit log: on foi habilitado.
 - Decision: PARTIAL (mesma politica do F6: sem envio real)
 - Known limitations: 3 cenarios do AC11 (rotacao/stop-on-reply/hourly real) exigem instancia real
 - Next: verificacao manual pos-release ou F7 (Dashboard + Configuracoes polimento)
+
+## 2026-07-08 - ldk-build - F7 dashboard-config
+- Command: ldk-build
+- User intent: executar F7 aprovada (dashboard + configuracoes secrets + hide "Disparar agora")
+- State before: F7 approved (P2); F1 partial
+- Actions: migration workspace_secrets; secrets.server.ts + secrets.functions.ts; refactor providers para getSecret; dashboard.functions.ts; kpi-card + dashboard route real; provider-secrets section; hide "Disparar agora" com import.meta.env.DEV; proof.md; ledger F7 done + F1 done por efeito colateral
+- Files changed: supabase/migrations/*workspace_secrets.sql; src/lib/secrets.server.ts; src/lib/secrets.functions.ts; src/lib/dashboard.functions.ts; src/providers/channel/evolution.server.ts; src/providers/llm/openai.server.ts; src/components/dashboard/kpi-card.tsx; src/components/configuracoes/provider-secrets.tsx; src/routes/_shell.dashboard.tsx; src/routes/_shell.configuracoes.tsx; src/routes/_shell.disparos.$id.tsx; ldk/features/f7-dashboard-config/{proof.md,dashboard.png,config.png}; ldk/ledger.md
+- Evidence: preview yes; manual yes; tests na; console yes (hydration warnings pre-existentes); diff na
+- Decision: DONE (P2) com [VERIFY] em AC5 e AC6
+- Known limitations: secret em texto plano no DB (RLS + sem grant anon); cache 30s no getSecret; envio real apos troca de chave nao testado nesta sessao; botao "Disparar agora" some em prod nao validado em build final
+- Next: /ldk-release ou /ldk-next

@@ -132,14 +132,16 @@ function CampaignMonitor() {
           </div>
         </div>
         <div className="flex gap-2">
-          <Button
-            variant="secondary"
-            disabled={tickMut.isPending}
-            onClick={() => tickMut.mutate()}
-            title="Executa o worker de disparo agora (dev). Substituir por pg_cron em produção."
-          >
-            {tickMut.isPending ? "Disparando…" : "Disparar agora"}
-          </Button>
+          {import.meta.env.DEV ? (
+            <Button
+              variant="secondary"
+              disabled={tickMut.isPending}
+              onClick={() => tickMut.mutate()}
+              title="Executa o worker de disparo agora (dev). Substituir por pg_cron em produção."
+            >
+              {tickMut.isPending ? "Disparando…" : "Disparar agora"}
+            </Button>
+          ) : null}
           <Button
             disabled={!canActivate || statusMut.isPending}
             onClick={() => statusMut.mutate({ data: { id, status: "running" } })}
