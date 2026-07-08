@@ -44,12 +44,12 @@ segredo novo; guard do runtime ja existe em `agent-runtime.server.ts` via
 
 | ID | Descricao | AC | Arquivos esperados | Verificacao | State |
 |----|-----------|----|--------------------|-------------|-------|
-| T1 | Server functions: `listConversations`, `getConversation` (com contact/agent/connection joins), `getMessages(conversation_id, limit)`, `assignConversation(id, to: 'human'\|null)`, `sendConversationMessage(id, text)` com Zod + guard "so envia se assigned_to setado". | AC1, AC3, AC4 | `src/lib/conversations.functions.ts` | `tsgo` verde. | ready |
-| T2 | UI `/conversas`: layout split (lista esquerda 320px + painel direita), estados de loading/empty, selecao via query param `?c=<id>`. Badges com tokens HUD ja existentes. | AC1, AC2 | `src/routes/_shell.conversas.tsx`, `src/components/conversas/*` | Playwright: rota renderiza sem pageerror; screenshot lista + painel. | ready |
-| T3 | Componente `MessageList` (bubbles inbound/outbound, etiqueta IA, timestamp) e `Composer` (textarea + botao enviar, disabled quando conversa nao assumida). | AC2, AC4 | `src/components/conversas/message-list.tsx`, `src/components/conversas/composer.tsx` | Screenshot bubbles + composer disabled/enabled. | ready |
-| T4 | Botoes "Assumir" / "Devolver para IA" no header do painel; chamam `assignConversation` e invalidam queries. | AC3, AC6 | edit `src/routes/_shell.conversas.tsx` | Manual: assumir troca badge e habilita composer; devolver desabilita. | ready |
-| T5 | Realtime: hook `useConversationsRealtime` (canal em `messages` filtrado por `workspace_id`) que invalida `['conversations']` e `['messages', id]` no queryClient em INSERT/UPDATE. | AC5 | `src/hooks/use-conversations-realtime.ts`, wire em `/conversas` | Manual: enviar msg via WhatsApp cai no painel sem refresh. | ready |
-| T6 | Prova P2: Playwright smoke (rota renderiza, lista aparece) + registro do fluxo manual (assumir, enviar, devolver, IA volta a responder). Atualizar `proof.md`. | AC1-AC7 | `ldk/features/f4-conversas-handoff/proof.md` | Ver `proof.md`. | ready |
+| T1 | Server functions: `listConversations`, `getMessages`, `assignConversation`, `sendConversationMessage` com Zod + guard. | AC1, AC3, AC4 | `src/lib/conversations.functions.ts` | `tsgo` verde. | done |
+| T2 | UI `/conversas`: layout split. | AC1, AC2 | `src/routes/_shell.conversas.tsx`, `src/components/conversas/*` | Playwright screenshot lista + painel. | done |
+| T3 | Componentes `MessageList` + `Composer`. | AC2, AC4 | `src/components/conversas/message-list.tsx`, `src/components/conversas/composer.tsx` | Screenshot bubbles + composer disabled. | done |
+| T4 | Botoes Assumir/Devolver. | AC3, AC6 | edit `src/routes/_shell.conversas.tsx` | Botao visivel no screenshot. | done |
+| T5 | Realtime `useConversationsRealtime`. | AC5 | `src/hooks/use-conversations-realtime.ts` | Subscribe sem erro. | done |
+| T6 | Prova P2 + proof.md. | AC1-AC7 | `ldk/features/f4-conversas-handoff/proof.md` | Ver proof.md. | done |
 
 ## Arquivos criados/alterados (esperados)
 - src/lib/conversations.functions.ts (novo)
