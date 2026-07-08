@@ -16,3 +16,4 @@
 - F1 partial: rever se algo de schema/layout ainda impede F4/F5.
 - F6 partial: verificar envio real via Evolution com numero de teste antes do release.
 - F6.1 depende de F6 (ok, partial ja usavel) e F4 (done); libera hardening antes de escalar volume.
+- F6.2 (idea): cooldown por lead (nao enviar para quem teve inbound nos ultimos X); janela configuravel em horas OU dias (seletor de unidade). Combina bloqueio duro global no create/tick com flag opcional por campanha para operador escolher se aplica.
