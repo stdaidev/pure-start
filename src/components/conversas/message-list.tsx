@@ -83,23 +83,28 @@ export function MessageList(props: {
 function MessageBody(props: { message: MessageItem; fallback: string }) {
   const { message, fallback } = props;
   const type = message.media_type?.toLowerCase() ?? null;
+  const mediaUrl = message.media_url;
+  const isEncryptedWhatsAppUrl =
+    typeof mediaUrl === "string" &&
+    mediaUrl.includes("mmg.whatsapp.net") &&
+    mediaUrl.includes(".enc");
 
-  if (message.media_url && type === "audio") {
+  if (mediaUrl && !isEncryptedWhatsAppUrl && type === "audio") {
     return (
       <div className="flex min-w-[260px] flex-col gap-2">
         {message.content ? (
           <p className="whitespace-pre-wrap break-words">{message.content}</p>
         ) : null}
-        <audio controls preload="metadata" src={message.media_url} className="w-full" />
+        <audio controls preload="metadata" src={mediaUrl} className="w-full" />
       </div>
     );
   }
 
-  if (message.media_url && type === "image") {
+  if (mediaUrl && !isEncryptedWhatsAppUrl && type === "image") {
     return (
       <div className="flex max-w-[320px] flex-col gap-2">
         <img
-          src={message.media_url}
+          src={mediaUrl}
           alt={message.content ?? "Imagem recebida"}
           className="max-h-[360px] rounded-md object-contain"
           loading="lazy"
@@ -111,10 +116,10 @@ function MessageBody(props: { message: MessageItem; fallback: string }) {
     );
   }
 
-  if (message.media_url && type === "video") {
+  if (mediaUrl && !isEncryptedWhatsAppUrl && type === "video") {
     return (
       <div className="flex max-w-[360px] flex-col gap-2">
-        <video controls preload="metadata" src={message.media_url} className="max-h-[360px] rounded-md" />
+        <video controls preload="metadata" src={mediaUrl} className="max-h-[360px] rounded-md" />
         {message.content ? (
           <p className="whitespace-pre-wrap break-words">{message.content}</p>
         ) : null}
@@ -122,10 +127,10 @@ function MessageBody(props: { message: MessageItem; fallback: string }) {
     );
   }
 
-  if (message.media_url) {
+  if (mediaUrl && !isEncryptedWhatsAppUrl) {
     return (
       <a
-        href={message.media_url}
+        href={mediaUrl}
         target="_blank"
         rel="noreferrer"
         className="text-primary underline-offset-4 hover:underline"
@@ -133,6 +138,10 @@ function MessageBody(props: { message: MessageItem; fallback: string }) {
         abrir {message.media_type ?? "arquivo"}
       </a>
     );
+  }
+
+  if (isEncryptedWhatsAppUrl) {
+    return <p className="whitespace-pre-wrap break-words">[{type ?? "midia"}]</p>;
   }
 
   return <p className="whitespace-pre-wrap break-words">{fallback}</p>;
