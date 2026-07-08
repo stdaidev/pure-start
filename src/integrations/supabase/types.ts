@@ -201,6 +201,9 @@ export type Database = {
       campaigns: {
         Row: {
           connection_id: string | null
+          cooldown_enabled: boolean
+          cooldown_unit: string | null
+          cooldown_value: number | null
           created_at: string
           daily_cap: number
           dispatch_mode: string
@@ -229,6 +232,9 @@ export type Database = {
         }
         Insert: {
           connection_id?: string | null
+          cooldown_enabled?: boolean
+          cooldown_unit?: string | null
+          cooldown_value?: number | null
           created_at?: string
           daily_cap?: number
           dispatch_mode?: string
@@ -257,6 +263,9 @@ export type Database = {
         }
         Update: {
           connection_id?: string | null
+          cooldown_enabled?: boolean
+          cooldown_unit?: string | null
+          cooldown_value?: number | null
           created_at?: string
           daily_cap?: number
           dispatch_mode?: string
@@ -740,6 +749,7 @@ export type Database = {
       }
       workspaces: {
         Row: {
+          cooldown_default_hours: number
           created_at: string
           dispatch_paused: boolean
           id: string
@@ -748,6 +758,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          cooldown_default_hours?: number
           created_at?: string
           dispatch_paused?: boolean
           id?: string
@@ -756,6 +767,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          cooldown_default_hours?: number
           created_at?: string
           dispatch_paused?: boolean
           id?: string
