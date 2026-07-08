@@ -1,14 +1,6 @@
 const WEBHOOK_PATH = "/api/public/evolution/webhook";
 const PUBLISHED_BASE = "https://light-springboard.lovable.app";
 
-function isUnsafePreviewBase(value: string): boolean {
-  return (
-    value.includes("localhost") ||
-    value.includes("127.0.0.1") ||
-    value.includes("id-preview--")
-  );
-}
-
 function stripWebhookToken(rawUrl: string): string {
   try {
     const url = new URL(rawUrl);
@@ -21,9 +13,8 @@ function stripWebhookToken(rawUrl: string): string {
 }
 
 export function getPublicEvolutionWebhookUrl(): string {
-  const explicit = process.env.PUBLIC_WEBHOOK_URL ?? process.env.PUBLIC_BASE_URL;
-  const candidate = explicit && !isUnsafePreviewBase(explicit) ? explicit : PUBLISHED_BASE;
-  const normalized = stripWebhookToken(candidate).replace(/\/+$/, "");
+  // Sempre usa a URL publicada. Evolution nao consegue entregar em preview/localhost.
+  const normalized = stripWebhookToken(PUBLISHED_BASE).replace(/\/+$/, "");
   return normalized.endsWith(WEBHOOK_PATH) ? normalized : `${normalized}${WEBHOOK_PATH}`;
 }
 
