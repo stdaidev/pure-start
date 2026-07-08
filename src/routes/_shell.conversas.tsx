@@ -1,5 +1,20 @@
+import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Placeholder } from "@/components/hud-placeholder";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
+
+import { Button } from "@/components/ui/button";
+import { ConversationList } from "@/components/conversas/conversation-list";
+import { MessageList } from "@/components/conversas/message-list";
+import { Composer } from "@/components/conversas/composer";
+import { useConversationsRealtime } from "@/hooks/use-conversations-realtime";
+import {
+  assignConversation,
+  getMessages,
+  listConversations,
+  sendConversationMessage,
+} from "@/lib/conversations.functions";
 
 export const Route = createFileRoute("/_shell/conversas")({
   head: () => ({
@@ -8,5 +23,169 @@ export const Route = createFileRoute("/_shell/conversas")({
       { name: "description", content: "Inbox e handoff das conversas." },
     ],
   }),
-  component: () => <Placeholder title="Conversas" feature="F4" />,
+  component: ConversasPage,
 });
+
+function ConversasPage() {
+  const qc = useQueryClient();
+  const [activeId, setActiveId] = useState<string | null>(null);
+
+  const listFn = useServerFn(listConversations);
+  const msgsFn = useServerFn(getMessages);
+  const assignFn = useServerFn(assignConversation);
+  const sendFn = useServerFn(sendConversationMessage);
+
+  const listQuery = useQuery({
+    queryKey: ["conversations"],
+    queryFn: () => listFn(),
+    refetchInterval: 15_000,
+  });
+
+  const messagesQuery = useQuery({
+    queryKey: ["messages", activeId],
+    queryFn: () =>
+      activeId
+        ? msgsFn({ data: { conversationId: activeId, limit: 200 } })
+        : Promise.resolve({ messages: [] }),
+    enabled: !!activeId,
+  });
+
+  useConversationsRealtime(activeId);
+
+  const assignMut = useMutation({
+    mutationFn: (v: { id: string; to: "human" | null }) =>
+      assignFn({ data: v }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["conversations"] });
+    },
+    onError: (e: Error) => toast.error(e.message || "Falha no handoff"),
+  });
+
+  const sendMut = useMutation({
+    mutationFn: (v: { conversationId: string; text: string }) =>
+      sendFn({ data: v }),
+    onSuccess: () => {
+      if (activeId) {
+        qc.invalidateQueries({ queryKey: ["messages", activeId] });
+      }
+      qc.invalidateQueries({ queryKey: ["conversations"] });
+    },
+    onError: (e: Error) => toast.error(e.message || "Falha ao enviar"),
+  });
+
+  const conversations = listQuery.data?.conversations ?? [];
+  const active = useMemo(
+    () => conversations.find((c) => c.id === activeId) ?? null,
+    [conversations, activeId],
+  );
+  const messages = messagesQuery.data?.messages ?? [];
+  const assigned = !!active?.assigned_to;
+  const hasAgent = !!active?.agent_id;
+
+  return (
+    <div className="flex h-[calc(100vh-3rem)] w-full">
+      <aside className="flex w-[320px] shrink-0 flex-col border-r border-border/60">
+        <div className="border-b border-border/60 px-4 py-3">
+          <p
+            className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground"
+            style={{ fontFamily: "var(--font-mono)" }}
+          >
+            modulo // F4
+          </p>
+          <h1
+            className="mt-1 text-lg font-semibold"
+            style={{ fontFamily: "var(--font-display)" }}
+          >
+            Conversas
+          </h1>
+        </div>
+        <div className="flex-1 overflow-y-auto">
+          <ConversationList
+            items={conversations}
+            activeId={activeId}
+            onSelect={setActiveId}
+            loading={listQuery.isLoading}
+          />
+        </div>
+      </aside>
+
+      <section className="flex min-w-0 flex-1 flex-col">
+        {!active ? (
+          <div
+            className="flex flex-1 items-center justify-center text-sm text-muted-foreground"
+            style={{ fontFamily: "var(--font-mono)" }}
+          >
+            selecione uma conversa
+          </div>
+        ) : (
+          <>
+            <header className="flex items-center justify-between gap-3 border-b border-border/60 px-4 py-3">
+              <div className="min-w-0">
+                <p
+                  className="truncate text-sm font-medium"
+                  style={{ fontFamily: "var(--font-display)" }}
+                >
+                  {active.contact_name || active.contact_phone}
+                </p>
+                <p
+                  className="text-[10px] uppercase tracking-widest text-muted-foreground"
+                  style={{ fontFamily: "var(--font-mono)" }}
+                >
+                  {active.contact_phone}
+                  {active.agent_name ? ` // ${active.agent_name}` : ""}
+                  {active.connection_name ? ` // ${active.connection_name}` : ""}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                {assigned ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      assignMut.mutate({ id: active.id, to: null })
+                    }
+                    disabled={assignMut.isPending}
+                  >
+                    Devolver para IA
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    onClick={() =>
+                      assignMut.mutate({ id: active.id, to: "human" })
+                    }
+                    disabled={assignMut.isPending}
+                  >
+                    Assumir
+                  </Button>
+                )}
+              </div>
+            </header>
+            <div className="flex-1 overflow-y-auto">
+              <MessageList
+                messages={messages}
+                hasAgent={hasAgent}
+                assigned={assigned}
+              />
+            </div>
+            <Composer
+              disabled={!assigned}
+              pending={sendMut.isPending}
+              onSend={async (text) => {
+                await sendMut.mutateAsync({
+                  conversationId: active.id,
+                  text,
+                });
+              }}
+              hint={
+                !assigned
+                  ? 'clique em "Assumir" para responder manualmente'
+                  : undefined
+              }
+            />
+          </>
+        )}
+      </section>
+    </div>
+  );
+}

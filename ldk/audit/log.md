@@ -342,3 +342,14 @@ Registro compacto iniciado quando Audit log: on foi habilitado.
 - Decision: planned
 - Known limitations: media (audio/imagem) e multi-usuario fora de escopo v1
 - Next: /ldk-build F4
+
+## 2026-07-08 - ldk-build - F4
+- Command: ldk-build
+- User intent: executar F4 Conversas/inbox + handoff
+- State before: F4 approved, plan com 6 tasks ready
+- Actions: criou conversations.functions.ts, componentes conversa (list/messages/composer), hook realtime, substituiu placeholder de /conversas.
+- Files changed: src/lib/conversations.functions.ts, src/hooks/use-conversations-realtime.ts, src/components/conversas/{conversation-list,message-list,composer}.tsx, src/routes/_shell.conversas.tsx, ldk/features/f4-conversas-handoff/{plan,proof}.md, ldk/ledger.md
+- Evidence: preview yes (screenshots /tmp/browser/f4/1.png e 2_selected.png); manual na (nao disparou envio real); tests not run; console yes (sem pageerror); diff na
+- Decision: DONE
+- Known limitations: envio manual e realtime nao validados end-to-end via WhatsApp real
+- Next: /ldk-next (F5 ou hardening F3)
