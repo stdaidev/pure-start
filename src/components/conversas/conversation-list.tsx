@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { ArrowDownLeft, ArrowUpRight } from "lucide-react";
 
 export interface ConversationListItem {
   id: string;
@@ -111,7 +112,13 @@ export function ConversationList(props: {
                   </span>
                 ) : null}
                 <span className="truncate text-xs text-muted-foreground">
-                  {c.preview?.direction === "outbound" ? "→ " : ""}
+                  {c.preview ? (
+                    c.preview.direction === "outbound" ? (
+                      <ArrowUpRight className="mr-1 inline h-3 w-3 text-emerald-500" />
+                    ) : (
+                      <ArrowDownLeft className="mr-1 inline h-3 w-3 text-red-500" />
+                    )
+                  ) : null}
                   {c.preview?.content ?? (c.preview?.media_type ? `[${c.preview.media_type}]` : "—")}
                 </span>
               </div>
