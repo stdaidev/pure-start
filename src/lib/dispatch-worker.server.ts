@@ -178,11 +178,15 @@ export async function runDispatchTick(
       const cdOn = (c as { cooldown_enabled?: boolean }).cooldown_enabled ?? true;
       if (cdOn && cdHours > 0) {
         const since = new Date(Date.now() - cdHours * 3600_000).toISOString();
+        const digits = cand.contact_phone.replace(/\D/g, "");
+        const variants = [cand.contact_phone, digits];
+        if (digits.length === 10 || digits.length === 11) variants.push(`55${digits}`);
+        if (digits.startsWith("55") && digits.length >= 12) variants.push(digits.slice(2));
         const { data: contactRow } = await db
           .from("contacts")
           .select("id")
           .eq("workspace_id", c.workspace_id)
-          .eq("phone", cand.contact_phone)
+            .in("phone", Array.from(new Set(variants)))
           .maybeSingle();
         if (contactRow?.id) {
           const { data: convs } = await db
