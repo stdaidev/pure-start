@@ -177,11 +177,34 @@ export const setConnectionIgnoreGroups = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import(
       "@/integrations/supabase/client.server"
     );
+    const { data: row, error: readErr } = await supabaseAdmin
+      .from("connections")
+      .select("instance_name")
+      .eq("id", data.connectionId)
+      .eq("workspace_id", DEFAULT_WORKSPACE)
+      .maybeSingle();
+    if (readErr || !row) throw new Error("Conexao nao encontrada");
+
     const { error } = await supabaseAdmin
       .from("connections")
       .update({ ignore_groups: data.ignoreGroups })
       .eq("id", data.connectionId)
       .eq("workspace_id", DEFAULT_WORKSPACE);
     if (error) throw new Error("Falha ao atualizar conexao");
+
+    // Sync com Evolution (best-effort; nao bloqueia update local)
+    if (row.instance_name) {
+      try {
+        const { evolutionProvider } = await import(
+          "@/providers/channel/evolution.server"
+        );
+        await evolutionProvider.setSettings?.(row.instance_name, {
+          groupsIgnore: data.ignoreGroups,
+        });
+      } catch (err) {
+        console.error("[connections] setSettings groups_ignore falhou", err);
+      }
+    }
+
     return { connectionId: data.connectionId, ignoreGroups: data.ignoreGroups };
   });
