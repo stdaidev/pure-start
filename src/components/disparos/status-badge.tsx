@@ -8,6 +8,7 @@ const MAP: Record<string, { label: string; className: string }> = {
   canceled: { label: "CANCELADA", className: "bg-zinc-500/15 text-zinc-400 border-zinc-500/40" },
   finished: { label: "FINALIZADA", className: "bg-primary/15 text-primary border-primary/40" },
   stopped_reply: { label: "RESPONDEU", className: "bg-zinc-500/15 text-zinc-300 border-zinc-500/40" },
+  stopped_recent_reply: { label: "COOLDOWN", className: "bg-zinc-500/15 text-zinc-300 border-zinc-500/40" },
   sending: { label: "ENVIANDO", className: "bg-sky-500/15 text-sky-300 border-sky-500/40" },
   pending: { label: "PENDENTE", className: "bg-muted/40 text-muted-foreground border-border/60" },
   sent: { label: "ENVIADO", className: "bg-emerald-500/15 text-emerald-400 border-emerald-500/40" },
