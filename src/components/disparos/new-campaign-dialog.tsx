@@ -31,6 +31,7 @@ import {
   getSpreadsheetPreview,
 } from "@/lib/campaigns.functions";
 import { getWorkspaceFlags } from "@/lib/workspace.functions";
+import { renderTemplate } from "@/lib/template-render";
 
 type Step = 1 | 2 | 3 | 4;
 
@@ -127,13 +128,29 @@ export function NewCampaignDialog(props: {
     | Record<string, unknown>
     | null;
 
+  const templateMissing = useMemo(
+    () => (sample ? renderTemplate(template, sample).missing : []),
+    [template, sample],
+  );
+
+  const availableConns = connQ.data?.connections ?? [];
+
   const canNext = useMemo(() => {
     if (step === 1) {
       if (!name.trim() || !spreadsheetId) return false;
-      if (mode === "single") return !!connectionId;
-      return connectionIds.length >= 2;
+      if (mode === "single") {
+        const c = availableConns.find((x) => x.id === connectionId);
+        return !!c && c.status === "connected";
+      }
+      const picked = availableConns.filter((c) =>
+        connectionIds.includes(c.id),
+      );
+      return (
+        picked.length >= 2 && picked.every((c) => c.status === "connected")
+      );
     }
-    if (step === 2) return template.trim().length > 0;
+    if (step === 2)
+      return template.trim().length > 0 && templateMissing.length === 0;
     if (step === 3)
       return (
         minMs >= 0 &&
@@ -145,9 +162,7 @@ export function NewCampaignDialog(props: {
         !cooldownBelowMin
       );
     return true;
-  }, [step, name, mode, connectionId, connectionIds, spreadsheetId, template, minMs, maxMs, dailyCap, hourlyLimit, windowStart, windowEnd, cooldownBelowMin]);
-
-  const availableConns = connQ.data?.connections ?? [];
+  }, [step, name, mode, connectionId, connectionIds, spreadsheetId, template, templateMissing, minMs, maxMs, dailyCap, hourlyLimit, windowStart, windowEnd, cooldownBelowMin, availableConns]);
 
   function toggleConn(id: string) {
     setConnectionIds((prev) =>
@@ -218,12 +233,24 @@ export function NewCampaignDialog(props: {
                   </SelectTrigger>
                   <SelectContent>
                     {availableConns.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
+                      <SelectItem
+                        key={c.id}
+                        value={c.id}
+                        disabled={c.status !== "connected"}
+                      >
                         {c.name} — {c.status}
+                        {c.status !== "connected" ? " (indisponivel)" : ""}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+                {connectionId &&
+                availableConns.find((c) => c.id === connectionId)?.status !==
+                  "connected" ? (
+                  <p className="text-[10px] text-red-400">
+                    conexao nao esta conectada — selecione outra
+                  </p>
+                ) : null}
               </div>
             ) : (
               <div className="flex flex-col gap-2">
@@ -234,13 +261,20 @@ export function NewCampaignDialog(props: {
                       Nenhuma conexao disponivel.
                     </p>
                   ) : null}
-                  {availableConns.map((c) => (
+                  {availableConns.map((c) => {
+                    const disabled = c.status !== "connected";
+                    return (
                     <label
                       key={c.id}
-                      className="flex items-center gap-2 rounded px-2 py-1 hover:bg-muted/30 cursor-pointer"
+                      className={`flex items-center gap-2 rounded px-2 py-1 ${
+                        disabled
+                          ? "opacity-50 cursor-not-allowed"
+                          : "hover:bg-muted/30 cursor-pointer"
+                      }`}
                     >
                       <input
                         type="checkbox"
+                        disabled={disabled}
                         checked={connectionIds.includes(c.id)}
                         onChange={() => toggleConn(c.id)}
                       />
@@ -251,7 +285,8 @@ export function NewCampaignDialog(props: {
                         </span>
                       </span>
                     </label>
-                  ))}
+                    );
+                  })}
                 </div>
                 <p className="text-[10px] text-muted-foreground">
                   Selecionadas: {connectionIds.length}
@@ -277,11 +312,24 @@ export function NewCampaignDialog(props: {
         ) : null}
 
         {step === 2 ? (
-          <TemplateEditor
-            value={template}
-            onChange={setTemplate}
-            sample={sample}
-          />
+          <div className="flex flex-col gap-2">
+            <TemplateEditor
+              value={template}
+              onChange={setTemplate}
+              sample={sample}
+            />
+            {sample && templateMissing.length > 0 ? (
+              <p className="text-[11px] text-red-400">
+                nao e possivel avancar: a planilha nao tem valor para{" "}
+                {templateMissing.map((k) => `{{${k}}}`).join(", ")}
+              </p>
+            ) : null}
+            {!sample ? (
+              <p className="text-[11px] text-amber-400">
+                planilha sem preview — nao da para validar placeholders
+              </p>
+            ) : null}
+          </div>
         ) : null}
 
         {step === 3 ? (
