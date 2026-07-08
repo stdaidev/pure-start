@@ -5,12 +5,25 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Trash2 } from "lucide-react";
 import { ConversationList } from "@/components/conversas/conversation-list";
 import { MessageList } from "@/components/conversas/message-list";
 import { Composer } from "@/components/conversas/composer";
 import { useConversationsRealtime } from "@/hooks/use-conversations-realtime";
 import {
   assignConversation,
+  deleteConversation,
   getMessages,
   listConversations,
   sendConversationMessage,
@@ -40,6 +53,7 @@ function ConversasPage() {
   const assignFn = useServerFn(assignConversation);
   const sendFn = useServerFn(sendConversationMessage);
   const connectionsFn = useServerFn(listConnections);
+  const deleteFn = useServerFn(deleteConversation);
 
   const listQuery = useQuery({
     queryKey: ["conversations"],
@@ -82,6 +96,16 @@ function ConversasPage() {
       qc.invalidateQueries({ queryKey: ["conversations"] });
     },
     onError: (e: Error) => toast.error(e.message || "Falha ao enviar"),
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: (v: { id: string }) => deleteFn({ data: v }),
+    onSuccess: () => {
+      setActiveId(null);
+      qc.invalidateQueries({ queryKey: ["conversations"] });
+      toast.success("Conversa apagada");
+    },
+    onError: (e: Error) => toast.error(e.message || "Falha ao apagar"),
   });
 
   const allConversations = listQuery.data?.conversations ?? [];
@@ -206,6 +230,36 @@ function ConversasPage() {
                     Assumir
                   </Button>
                 )}
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      aria-label="Apagar conversa"
+                      disabled={deleteMut.isPending}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Apagar conversa?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Todas as mensagens desta conversa serao removidas do
+                        banco. Esta acao nao pode ser desfeita. Nao afeta o
+                        WhatsApp do contato.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => deleteMut.mutate({ id: active.id })}
+                      >
+                        Apagar
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             </header>
             <div className="flex-1 overflow-y-auto">

@@ -171,3 +171,29 @@ export const sendConversationMessage = createServerFn({ method: "POST" })
 
     return { id: inserted.id };
   });
+
+export const deleteConversation = createServerFn({ method: "POST" })
+  .inputValidator((raw: unknown) =>
+    z.object({ id: z.string().uuid() }).parse(raw),
+  )
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import(
+      "@/integrations/supabase/client.server"
+    );
+    // Apaga mensagens primeiro (FK), depois a conversa. Escopo do workspace.
+    const { error: msgErr } = await supabaseAdmin
+      .from("messages")
+      .delete()
+      .eq("workspace_id", DEFAULT_WORKSPACE)
+      .eq("conversation_id", data.id);
+    if (msgErr) throw new Error("Falha ao apagar mensagens");
+
+    const { error: convErr } = await supabaseAdmin
+      .from("conversations")
+      .delete()
+      .eq("workspace_id", DEFAULT_WORKSPACE)
+      .eq("id", data.id);
+    if (convErr) throw new Error("Falha ao apagar conversa");
+
+    return { ok: true };
+  });
