@@ -125,6 +125,13 @@ function ConexoesPage() {
     refetchInterval: 3000,
   });
 
+  useEffect(() => {
+    if (qrConnId && qrStatusQuery.data?.status === "connected") {
+      toast.success("WhatsApp reconectado");
+      setQrConnId(null);
+    }
+  }, [qrConnId, qrStatusQuery.data?.status]);
+
   const deleteMut = useMutation({
     mutationFn: (id: string) => deleteFn({ data: { id } }),
     onSuccess: () => {
