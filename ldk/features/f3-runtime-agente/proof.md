@@ -22,11 +22,21 @@ completo; UI `/conexoes` vincula agente default e alterna `ignore_groups`.
 - Supabase linter: `No linter issues found`.
 - Playwright smoke: `/agentes` e `/conexoes` renderizam sem pageerror; screenshots em `/tmp/browser/f3/`.
 - Codigo revisado: `runAgentForMessage` guards + humanizacao + tool loop; webhook filtra `@g.us` por `connections.ignore_groups`.
+- E2E manual real (P2) executado pelo usuario com duas conexoes Evolution (cliente + vendedor/SDR):
+  - Inbound do cliente entrega no webhook publicado, runtime responde via OpenAI e envia pelo vendedor.
+  - Correcao aplicada em `src/routes/api/public/evolution.webhook.ts`: idempotencia escopada por `conversation_id`
+    (antes deduplicava globalmente por `workspace_id`+`external_id`, o que descartava a segunda mensagem quando
+    cliente e vendedor compartilhavam o mesmo `providerMessageId`).
+  - Presenca "digitando" adicionada em `evolutionProvider.sendTyping` + chamada por chunk em
+    `runAgentForMessage`.
+  - URL de webhook fixada em `https://light-springboard.lovable.app` (Evolution nao entrega em preview).
 
 ## Limitacoes conhecidas
-- E2E completo (curl no webhook simulando inbound do Evolution e observar linha outbound gerada) nao foi executado neste passo por depender de ambiente com `OPENAI_API_KEY` valida e chamada externa real; runtime esta implementado e defensivamente encapsulado (nunca falha o 200 do webhook).
-- Grep de segredo em `dist/client/` nao executado (build gerido pelo harness). Contencao estrutural: chave lida apenas dentro do handler de `*.server.ts`.
+- Teste E2E automatizado (curl script + assert em `messages`) nao foi escrito; validacao atual e manual do usuario.
+- CI verde + grep de segredo em `dist/client/` nao executados no harness. Contencao estrutural: chave lida apenas
+  dentro do handler de `*.server.ts`.
 - TTS/audio, transcricao Whisper e inbox humano ficam fora do escopo v1.
 
 ## Status
-F3 => proof-pending (parcial): UI, migrations, runtime e webhook prontos; prova E2E remota depende de rodada com credenciais reais.
+F3 => PARTIAL: runtime funcional e validado manualmente pelo usuario (P2). Prova P4 (teste automatizado + CI + diff
+GitHub verificado) fica pendente; nao bloqueia F4 porque o fluxo end-to-end ja responde no WhatsApp real.
