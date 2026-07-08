@@ -20,7 +20,7 @@ Modo de execucao recomendado: `ldk-build-task` (checkpoint manual por task)
 
 | ID | Descricao | AC | Arquivos esperados | Verificacao | State |
 |----|-----------|----|--------------------|-------------|-------|
-| T1 | Migration: colunas anti-ban em `campaigns` (`min_ms`, `max_ms`, `daily_cap`, `window_start`, `window_end`, `warmup_per_day`, `sent_today`, `sent_today_date`); indice em `campaign_recipients(campaign_id,status)` se ausente; nao alterar RLS/GRANT existentes | AC2, AC4 | `supabase/migrations/*.sql` | supabase linter + tsgo | ready |
+| T1 | Migration: colunas anti-ban em `campaigns` (`min_ms`, `max_ms`, `daily_cap`, `window_start`, `window_end`, `warmup_per_day`, `sent_today`, `sent_today_date`); indice em `campaign_recipients(campaign_id,status)` se ausente; nao alterar RLS/GRANT existentes | AC2, AC4 | `supabase/migrations/*.sql` | supabase linter + tsgo | proof-pending |
 | T2 | Server functions `campaigns.functions.ts`: `listCampaigns`, `getCampaign`, `createCampaign` (le `spreadsheet_rows` + `contacts`, filtra opt-out, renderiza template, insere `campaign_recipients` em batch), `updateCampaignStatus`, `listRecipients` paginado | AC1, AC2, AC3, AC7 | `src/lib/campaigns.functions.ts` | tsgo + chamada manual | ready |
 | T3 | Util pura `renderTemplate(text, vars)` substitui `{{coluna}}` (case-insensitive, trim); reporta placeholders faltantes | AC2 | `src/lib/template-render.ts` (+ vitest) | vitest | ready |
 | T4 | Util pura anti-ban: `isWithinWindow`, `nextDelayMs`, `dailyCapRemaining`, reset diario por `sent_today_date` | AC4 | `src/lib/anti-ban.ts` (+ vitest) | vitest | ready |
