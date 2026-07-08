@@ -173,9 +173,11 @@ export const Route = createFileRoute("/api/public/evolution/webhook")({
             const phone = jidToPhone(remote);
             if (!phone) continue;
 
-            // Skip: mensagem cujo remoto e outra conexao nossa (loop de teste
-            // entre instancias). A outra ponta ja projetou a conversa correta.
-            if (otherOwnPhones.has(phone)) continue;
+            // Skip apenas o ECO outbound: quando esta instancia mandou (fromMe)
+            // para outra conexao nossa, a instancia destinataria vai projetar
+            // como inbound. Nunca pulamos inbound - se o proprio lead responder
+            // (inclusive apos handoff humano) a mensagem precisa ser gravada.
+            if (m.direction === "outbound" && otherOwnPhones.has(phone)) continue;
 
             // Upsert contato por (workspace, phone)
             const { data: contact } = await supabaseAdmin
