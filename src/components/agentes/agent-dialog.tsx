@@ -48,6 +48,8 @@ type FormState = {
   tools: string[];
   humanization: { chunk: boolean; min_ms: number; max_ms: number };
   active: boolean;
+  max_tokens: number | null;
+  max_tool_rounds: number | null;
 };
 
 const empty: FormState = {
@@ -59,6 +61,8 @@ const empty: FormState = {
   tools: [],
   humanization: { chunk: true, min_ms: 800, max_ms: 3500 },
   active: true,
+  max_tokens: 800,
+  max_tool_rounds: 2,
 };
 
 export function AgentDialog({ open, onOpenChange, agentId }: Props) {
@@ -93,6 +97,8 @@ export function AgentDialog({ open, onOpenChange, agentId }: Props) {
           max_ms: a.humanization?.max_ms ?? 3500,
         },
         active: a.active ?? true,
+        max_tokens: a.max_tokens ?? null,
+        max_tool_rounds: a.max_tool_rounds ?? null,
       });
     }
   }, [open, agentId, loadQuery.data]);
@@ -110,6 +116,8 @@ export function AgentDialog({ open, onOpenChange, agentId }: Props) {
           tools: form.tools,
           humanization: form.humanization,
           active: form.active,
+          max_tokens: form.max_tokens,
+          max_tool_rounds: form.max_tool_rounds,
         },
       }),
     onSuccess: () => {
