@@ -463,3 +463,14 @@ Registro compacto iniciado quando Audit log: on foi habilitado.
 - Decision: diagnosis-only + catalog
 - Known limitations: botao "Disparar agora" segue visivel em preview; remover/flagar antes do release
 - Next: ldk-build-task T1 de F6.1
+
+## 2026-07-08 - ldk-build - F6.1
+- Command: ldk-build
+- User intent: executar F6.1 completo (T2-T8) apos T1
+- State before: T1 proof-pending; T2-T8 ready
+- Actions: workspace.functions.ts (kill-switch); createCampaign com dispatch_mode/connection_ids/hourly_limit/next_send_at escalonado; getCampaignConnections; dispatch-connection.server.ts (pickConnection round-robin); worker refatorado (skip paused, claim por next_send_at, hourly cap, retry, last_connection_id); stop-on-reply no evolution webhook; wizard com radio single/multi + multi-select + hourly_limit; monitor com badges/stopped_reply/coluna Conexao; /configuracoes com Switch kill-switch. Smoke playwright + 6 screenshots.
+- Files changed: src/lib/workspace.functions.ts (novo), src/lib/dispatch-connection.server.ts (novo), src/lib/campaigns.functions.ts, src/lib/dispatch-worker.server.ts, src/routes/api/public/evolution.webhook.ts, src/components/disparos/new-campaign-dialog.tsx, src/components/disparos/status-badge.tsx, src/routes/_shell.disparos.$id.tsx, src/routes/_shell.configuracoes.tsx, ldk/features/f6.1-anti-ban-hardening/{plan.md,proof.md}, ldk/ledger.md
+- Evidence: preview yes; manual yes (kill-switch + wizard multi); tests pass (tsgo); console yes (so hydration warning pre-existente); diff na
+- Decision: PARTIAL (mesma politica do F6: sem envio real)
+- Known limitations: 3 cenarios do AC11 (rotacao/stop-on-reply/hourly real) exigem instancia real
+- Next: verificacao manual pos-release ou F7 (Dashboard + Configuracoes polimento)
