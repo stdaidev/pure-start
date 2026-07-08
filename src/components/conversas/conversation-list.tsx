@@ -79,21 +79,41 @@ export function ConversationList(props: {
                   : "hover:bg-muted/40",
               )}
             >
-              <div className="flex items-center justify-between gap-2">
-                <span className="truncate text-sm font-medium">
-                  {c.contact_name || c.contact_phone}
-                </span>
-                <span
-                  className="shrink-0 text-[10px] uppercase tracking-widest text-muted-foreground"
-                  style={{ fontFamily: "var(--font-mono)" }}
-                >
-                  {formatRelative(c.last_message_at)}
-                </span>
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex min-w-0 flex-1 items-baseline gap-2">
+                  <span className="truncate text-sm font-medium">
+                    {c.contact_name || c.contact_phone}
+                  </span>
+                  {showConnection && c.connection_name ? (
+                    <span
+                      className="shrink-0 truncate text-[10px] uppercase tracking-widest text-muted-foreground/80"
+                      style={{ fontFamily: "var(--font-mono)" }}
+                      title={`recebida via ${c.connection_name}`}
+                    >
+                      // {c.connection_name}
+                    </span>
+                  ) : null}
+                </div>
+                <div className="flex shrink-0 flex-col items-end gap-1">
+                  <span
+                    className="text-[10px] uppercase tracking-widest text-muted-foreground"
+                    style={{ fontFamily: "var(--font-mono)" }}
+                  >
+                    {formatRelative(c.last_message_at)}
+                  </span>
+                  {c.preview ? (
+                    c.preview.direction === "outbound" ? (
+                      <ArrowUpRight className="h-3 w-3 text-emerald-500" />
+                    ) : (
+                      <ArrowDownLeft className="h-3 w-3 text-red-500" />
+                    )
+                  ) : null}
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 <span
                   className={cn(
-                    "rounded px-1.5 py-0.5 text-[9px] uppercase tracking-widest",
+                    "shrink-0 rounded px-1.5 py-0.5 text-[9px] uppercase tracking-widest",
                     b.tone === "ok" && "bg-primary/20 text-primary",
                     b.tone === "warn" && "bg-yellow-500/20 text-yellow-300",
                     b.tone === "muted" && "bg-muted text-muted-foreground",
@@ -102,23 +122,7 @@ export function ConversationList(props: {
                 >
                   {b.label}
                 </span>
-                {showConnection && c.connection_name ? (
-                  <span
-                    className="rounded border border-border/60 px-1.5 py-0.5 text-[9px] uppercase tracking-widest text-muted-foreground"
-                    style={{ fontFamily: "var(--font-mono)" }}
-                    title={`recebida via ${c.connection_name}`}
-                  >
-                    via {c.connection_name}
-                  </span>
-                ) : null}
                 <span className="truncate text-xs text-muted-foreground">
-                  {c.preview ? (
-                    c.preview.direction === "outbound" ? (
-                      <ArrowUpRight className="mr-1 inline h-3 w-3 text-emerald-500" />
-                    ) : (
-                      <ArrowDownLeft className="mr-1 inline h-3 w-3 text-red-500" />
-                    )
-                  ) : null}
                   {c.preview?.content ?? (c.preview?.media_type ? `[${c.preview.media_type}]` : "—")}
                 </span>
               </div>
