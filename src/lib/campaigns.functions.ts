@@ -25,6 +25,21 @@ function normalizePhone(raw: string): string {
   return raw.replace(/\D/g, "");
 }
 
+/**
+ * Canonicaliza para MSISDN (mesma forma que o webhook do Evolution grava
+ * em `contacts.phone`). Sem esse alinhamento, cooldown e stop-on-reply nunca
+ * casam com o contato criado pelo inbound.
+ */
+function toMsisdn(digits: string): string {
+  if (digits.length === 10 || digits.length === 11) return `55${digits}`;
+  return digits;
+}
+
+function phoneVariants(digits: string): string[] {
+  const canon = toMsisdn(digits);
+  return canon === digits ? [digits] : [digits, canon];
+}
+
 function findPhoneKey(data: Record<string, unknown>): string | null {
   const candidates = ["phone", "telefone", "celular", "whatsapp", "numero"];
   const keys = Object.keys(data);
@@ -209,19 +224,26 @@ export const createCampaign = createServerFn({ method: "POST" })
       const rowData = (r.data ?? {}) as Record<string, unknown>;
       const pk = findPhoneKey(rowData);
       if (!pk) continue;
-      const phone = normalizePhone(String(rowData[pk] ?? ""));
+      const phone = toMsisdn(normalizePhone(String(rowData[pk] ?? "")));
       if (phone.length >= 8) phones.add(phone);
     }
     const optOut = new Set<string>();
     if (phones.size) {
+      // Busca por ambas as formas para tolerar contatos legados salvos sem DDI.
+      const lookup = Array.from(
+        new Set(Array.from(phones).flatMap(phoneVariants)),
+      );
       const { data: contacts, error: cErr } = await supabaseAdmin
         .from("contacts")
         .select("phone, opt_out")
         .eq("workspace_id", DEFAULT_WORKSPACE)
-        .in("phone", Array.from(phones));
+        .in("phone", lookup);
       if (cErr) throw new Error("Falha ao consultar contatos");
       for (const c of contacts ?? []) {
-        if (c.opt_out) optOut.add(c.phone);
+        if (c.opt_out) {
+          optOut.add(c.phone);
+          optOut.add(toMsisdn(c.phone));
+        }
       }
     }
 
@@ -231,15 +253,18 @@ export const createCampaign = createServerFn({ method: "POST" })
       const since = new Date(
         Date.now() - effectiveHours * 3600_000,
       ).toISOString();
+      const lookup = Array.from(
+        new Set(Array.from(phones).flatMap(phoneVariants)),
+      );
       // conversations -> contacts -> phone; cruza com os telefones da planilha.
       const { data: contactsForPhones } = await supabaseAdmin
         .from("contacts")
         .select("id, phone")
         .eq("workspace_id", DEFAULT_WORKSPACE)
-        .in("phone", Array.from(phones));
+        .in("phone", lookup);
       const phoneByContact = new Map<string, string>();
       for (const c of contactsForPhones ?? [])
-        phoneByContact.set(c.id, c.phone);
+        phoneByContact.set(c.id, toMsisdn(c.phone));
       const contactIds = Array.from(phoneByContact.keys());
       let convIds: string[] = [];
       const phoneByConv = new Map<string, string>();
@@ -335,12 +360,15 @@ export const createCampaign = createServerFn({ method: "POST" })
     const t0 = Date.now();
     let idx = 0;
     const recipients: TablesInsert<"campaign_recipients">[] = [];
+    const seen = new Set<string>();
     for (const r of rows) {
       const rowData = (r.data ?? {}) as Record<string, unknown>;
       const pk = findPhoneKey(rowData);
       if (!pk) continue;
-      const phone = normalizePhone(String(rowData[pk] ?? ""));
+      const phone = toMsisdn(normalizePhone(String(rowData[pk] ?? "")));
       if (phone.length < 8) continue;
+      if (seen.has(phone)) continue; // deduplica dentro da mesma planilha
+      seen.add(phone);
       const nameKey = Object.keys(rowData).find((k) =>
         ["name", "nome"].includes(k.trim().toLowerCase()),
       );
