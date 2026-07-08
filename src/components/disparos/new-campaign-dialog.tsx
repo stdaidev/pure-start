@@ -133,6 +133,8 @@ export function NewCampaignDialog(props: {
     [template, sample],
   );
 
+  const availableConns = connQ.data?.connections ?? [];
+
   const canNext = useMemo(() => {
     if (step === 1) {
       if (!name.trim() || !spreadsheetId) return false;
