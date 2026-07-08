@@ -99,12 +99,57 @@ export const Route = createFileRoute("/api/public/evolution/webhook")({
           const instance =
             (body as { instance?: string })?.instance ??
             ((body as { sender?: string })?.sender ?? null);
+
+          // Extrai o JID/telefone dono da instancia (varia por versao do Evolution).
+          // Ex.: body.sender = "5528999914358@s.whatsapp.net", body.data.owner, etc.
+          const ownerCandidate =
+            (body as { sender?: string })?.sender ??
+            ((body as { data?: { owner?: string } })?.data?.owner) ??
+            ((body as { data?: { instance?: string } })?.data?.instance) ??
+            null;
+          const ownerPhone =
+            ownerCandidate && ownerCandidate.includes("@")
+              ? jidToPhone(ownerCandidate)
+              : null;
+
           if (parsed.statusChange && instance) {
             await supabaseAdmin
               .from("connections")
               .update({ status: parsed.statusChange.status })
               .eq("workspace_id", DEFAULT_WORKSPACE)
               .eq("instance_name", instance);
+          }
+
+          // Persiste own_phone na connection para deduplicar loops entre instancias
+          // (cliente + vendedor conectados no mesmo workspace).
+          if (instance && ownerPhone) {
+            const { data: currentConn } = await supabaseAdmin
+              .from("connections")
+              .select("id, metadata")
+              .eq("workspace_id", DEFAULT_WORKSPACE)
+              .eq("instance_name", instance)
+              .maybeSingle();
+            const meta = (currentConn?.metadata ?? {}) as Record<string, unknown>;
+            if (currentConn && meta.own_phone !== ownerPhone) {
+              await supabaseAdmin
+                .from("connections")
+                .update({ metadata: { ...meta, own_phone: ownerPhone } as never })
+                .eq("id", currentConn.id);
+            }
+          }
+
+          // Carrega telefones de outras conexoes do workspace para pular
+          // mensagens espelhadas (ex.: cliente-instance recebe o mesmo evento
+          // que a vendedor-instance ja processou).
+          const { data: allConns } = await supabaseAdmin
+            .from("connections")
+            .select("instance_name, metadata")
+            .eq("workspace_id", DEFAULT_WORKSPACE);
+          const otherOwnPhones = new Set<string>();
+          for (const c of allConns ?? []) {
+            if (c.instance_name === instance) continue;
+            const p = (c.metadata as { own_phone?: unknown } | null)?.own_phone;
+            if (typeof p === "string" && p) otherOwnPhones.add(p);
           }
 
           // Projeta mensagens em contacts + conversations + messages
@@ -127,6 +172,10 @@ export const Route = createFileRoute("/api/public/evolution/webhook")({
             }
             const phone = jidToPhone(remote);
             if (!phone) continue;
+
+            // Skip: mensagem cujo remoto e outra conexao nossa (loop de teste
+            // entre instancias). A outra ponta ja projetou a conversa correta.
+            if (otherOwnPhones.has(phone)) continue;
 
             // Upsert contato por (workspace, phone)
             const { data: contact } = await supabaseAdmin
