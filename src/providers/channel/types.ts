@@ -92,6 +92,11 @@ export interface ChannelProvider {
     to: string,
     durationMs: number,
   ): Promise<void>;
+  /** Atualiza settings da instancia (ex.: groups_ignore). Best-effort. */
+  setSettings?(
+    providerInstanceId: string,
+    settings: { groupsIgnore?: boolean },
+  ): Promise<void>;
   deleteInstance(providerInstanceId: string): Promise<void>;
   /**
    * Recebe payload bruto validado do webhook e normaliza para InboundMessage[].
