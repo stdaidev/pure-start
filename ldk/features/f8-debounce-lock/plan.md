@@ -33,10 +33,10 @@ medio - plano completo, prova manual reproduzivel.
 
 | ID | Descricao | AC | Arquivos esperados | Verificacao | State |
 |----|-----------|----|--------------------|-------------|-------|
-| T1 | Migration: adicionar `agent_run_at`, `agent_running_since`, `agent_latest_message_id` em `conversations` e RPCs `schedule_agent_run`, `claim_due_agent_runs`, `release_agent_run`. EXECUTE so service_role. | AC2, AC3, AC4 | supabase migration | migration aplicada + linter sem issues novas | proof-pending |
-| T2 | Remover lock advisory do runtime e manter guards em `runAgentForMessage`; a trava passa a ser o claim persistente antes da chamada. | AC2 | `src/lib/agent-runtime.server.ts` | tsgo verde | proof-pending |
-| T3 | Debounce no webhook: substituir Map/setTimeout por `schedule_agent_run`; ultimo message-id vence no banco. | AC1, AC4, AC5 | `src/routes/api/public/evolution.webhook.ts` | tsgo verde | proof-pending |
-| T4 | Criar tick `/api/public/agent/tick` autenticado por `apikey`, reivindica jobs vencidos e libera `agent_running_since` no `finally`. | AC2, AC5 | `src/routes/api/public/agent.tick.ts` | tsgo verde | proof-pending |
+| T1 | Migration: adicionar `agent_run_at`, `agent_running_since`, `agent_latest_message_id` em `conversations` e RPCs `schedule_agent_run`, `claim_due_agent_runs`, `release_agent_run`. EXECUTE so service_role. | AC2, AC3, AC4 | supabase migration | migration aplicada + linter sem issues novas | done |
+| T2 | Remover lock advisory do runtime e manter guards em `runAgentForMessage`; a trava passa a ser o claim persistente antes da chamada. | AC2 | `src/lib/agent-runtime.server.ts` | tsgo verde | done |
+| T3 | Debounce no webhook: substituir Map/setTimeout por `schedule_agent_run`; ultimo message-id vence no banco. | AC1, AC4, AC5 | `src/routes/api/public/evolution.webhook.ts` | tsgo verde | done |
+| T4 | Criar tick `/api/public/agent/tick` autenticado por `apikey`, reivindica jobs vencidos e libera `agent_running_since` no `finally`. | AC2, AC5 | `src/routes/api/public/agent.tick.ts` | tsgo verde | done |
 | T5 | Prova manual P2: user envia 4 mensagens rapidas; tick processa e resposta unica. | AC6 | `ldk/features/f8-debounce-lock/proof.md` | manual do usuario | proof-pending |
 
 ## Arquivos criados/alterados (esperados)
