@@ -28,11 +28,11 @@ export const listConversations = createServerFn({ method: "GET" }).handler(
 
     // last message preview
     const ids = (data ?? []).map((c) => c.id);
-    let previews = new Map<string, { content: string | null; created_at: string; direction: string }>();
+    let previews = new Map<string, { content: string | null; created_at: string; direction: string; media_type: string | null }>();
     if (ids.length > 0) {
       const { data: msgs } = await supabaseAdmin
         .from("messages")
-        .select("conversation_id, content, created_at, direction")
+        .select("conversation_id, content, created_at, direction, media_type")
         .in("conversation_id", ids)
         .order("created_at", { ascending: false })
         .limit(500);
@@ -42,6 +42,7 @@ export const listConversations = createServerFn({ method: "GET" }).handler(
             content: m.content,
             created_at: m.created_at,
             direction: m.direction,
+            media_type: m.media_type,
           });
         }
       }
@@ -80,7 +81,7 @@ export const getMessages = createServerFn({ method: "POST" })
     );
     const { data: rows, error } = await supabaseAdmin
       .from("messages")
-      .select("id, direction, content, media_type, status, created_at, external_id")
+      .select("id, direction, content, media_url, media_type, status, created_at, external_id")
       .eq("workspace_id", DEFAULT_WORKSPACE)
       .eq("conversation_id", data.conversationId)
       .order("created_at", { ascending: true })

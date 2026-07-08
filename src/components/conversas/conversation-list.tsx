@@ -7,7 +7,7 @@ export interface ConversationListItem {
   assigned_to: string | null;
   agent_id: string | null;
   last_message_at: string | null;
-  preview: { content: string | null; direction: string } | null;
+  preview: { content: string | null; direction: string; media_type: string | null } | null;
   connection_id: string | null;
   connection_name: string | null;
 }
@@ -102,7 +102,7 @@ export function ConversationList(props: {
                 </span>
                 <span className="truncate text-xs text-muted-foreground">
                   {c.preview?.direction === "outbound" ? "→ " : ""}
-                  {c.preview?.content ?? "—"}
+                  {c.preview?.content ?? (c.preview?.media_type ? `[${c.preview.media_type}]` : "—")}
                 </span>
               </div>
             </button>
