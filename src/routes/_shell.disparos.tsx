@@ -1,10 +1,11 @@
+import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { CampaignList, type CampaignRow } from "@/components/disparos/campaign-list";
+import { NewCampaignDialog } from "@/components/disparos/new-campaign-dialog";
 import { listCampaigns } from "@/lib/campaigns.functions";
 
 export const Route = createFileRoute("/_shell/disparos")({
@@ -19,6 +20,8 @@ export const Route = createFileRoute("/_shell/disparos")({
 
 function DisparosPage() {
   const listFn = useServerFn(listCampaigns);
+  const qc = useQueryClient();
+  const [open, setOpen] = useState(false);
   const q = useQuery({
     queryKey: ["campaigns", "list"],
     queryFn: () => listFn({ data: { limit: 50, offset: 0 } }),
@@ -53,9 +56,7 @@ function DisparosPage() {
             Campanhas com template, anti-ban e monitor em tempo real.
           </p>
         </div>
-        <Button onClick={() => toast.info("Wizard em breve (T6)")}>
-          Nova campanha
-        </Button>
+        <Button onClick={() => setOpen(true)}>Nova campanha</Button>
       </header>
 
       {q.isLoading ? (
@@ -65,6 +66,12 @@ function DisparosPage() {
       ) : (
         <CampaignList campaigns={campaigns} />
       )}
+
+      <NewCampaignDialog
+        open={open}
+        onOpenChange={setOpen}
+        onCreated={() => qc.invalidateQueries({ queryKey: ["campaigns", "list"] })}
+      />
     </div>
   );
 }
