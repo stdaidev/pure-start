@@ -113,6 +113,27 @@ function extractQr(raw: unknown): QrPayload | undefined {
   return { base64 };
 }
 
+function getString(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim() ? value : undefined;
+}
+
+function mediaDataUrl(base64: unknown, mimeType: unknown): string | undefined {
+  const raw = getString(base64);
+  if (!raw) return undefined;
+  if (raw.startsWith("data:")) return raw;
+  const mime = (getString(mimeType) ?? "application/octet-stream").split(";")[0].trim();
+  return `data:${mime};base64,${raw}`;
+}
+
+function mediaUrlFrom(message: Record<string, unknown>, media: unknown): string | undefined {
+  const mediaObj = (media ?? {}) as Record<string, unknown>;
+  return (
+    mediaDataUrl(message.base64, mediaObj.mimetype) ??
+    mediaDataUrl(mediaObj.base64, mediaObj.mimetype) ??
+    getString(mediaObj.url)
+  );
+}
+
 export const evolutionProvider: ChannelProvider = {
   id: "evolution",
 
@@ -277,16 +298,16 @@ export const evolutionProvider: ChannelProvider = {
           text = (message.extendedTextMessage as { text: string }).text;
         } else if (message.audioMessage) {
           kind = "audio";
-          mediaUrl = (message.audioMessage as { url?: string }).url;
+          mediaUrl = mediaUrlFrom(message, message.audioMessage);
         } else if (message.imageMessage) {
           kind = "image";
-          mediaUrl = (message.imageMessage as { url?: string }).url;
+          mediaUrl = mediaUrlFrom(message, message.imageMessage);
         } else if (message.videoMessage) {
           kind = "video";
-          mediaUrl = (message.videoMessage as { url?: string }).url;
+          mediaUrl = mediaUrlFrom(message, message.videoMessage);
         } else if (message.documentMessage) {
           kind = "document";
-          mediaUrl = (message.documentMessage as { url?: string }).url;
+          mediaUrl = mediaUrlFrom(message, message.documentMessage);
         }
 
         messages.push({
