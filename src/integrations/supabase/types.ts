@@ -471,6 +471,9 @@ export type Database = {
       conversations: {
         Row: {
           agent_id: string | null
+          agent_latest_message_id: string | null
+          agent_run_at: string | null
+          agent_running_since: string | null
           assigned_to: string | null
           connection_id: string | null
           contact_id: string | null
@@ -483,6 +486,9 @@ export type Database = {
         }
         Insert: {
           agent_id?: string | null
+          agent_latest_message_id?: string | null
+          agent_run_at?: string | null
+          agent_running_since?: string | null
           assigned_to?: string | null
           connection_id?: string | null
           contact_id?: string | null
@@ -495,6 +501,9 @@ export type Database = {
         }
         Update: {
           agent_id?: string | null
+          agent_latest_message_id?: string | null
+          agent_run_at?: string | null
+          agent_running_since?: string | null
           assigned_to?: string | null
           connection_id?: string | null
           contact_id?: string | null
@@ -511,6 +520,13 @@ export type Database = {
             columns: ["agent_id"]
             isOneToOne: false
             referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_agent_latest_message_id_fkey"
+            columns: ["agent_latest_message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
             referencedColumns: ["id"]
           },
           {
@@ -817,10 +833,29 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_due_agent_runs: {
+        Args: { _limit?: number }
+        Returns: {
+          conversation_id: string
+          message_id: string
+        }[]
+      }
       default_workspace_id: { Args: never; Returns: string }
       release_agent_lock: {
         Args: { _conversation_id: string }
         Returns: boolean
+      }
+      release_agent_run: {
+        Args: { _conversation_id: string }
+        Returns: undefined
+      }
+      schedule_agent_run: {
+        Args: {
+          _conversation_id: string
+          _delay_ms: number
+          _message_id: string
+        }
+        Returns: undefined
       }
       try_agent_lock: { Args: { _conversation_id: string }; Returns: boolean }
     }
