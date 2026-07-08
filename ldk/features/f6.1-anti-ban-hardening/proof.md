@@ -55,3 +55,11 @@ PARTIAL — implementacao completa e smoke test verde; happy-path `sent=success`
 
 ## Etapa concluida
 Prova F6.1 registrada; aguardando proximo comando.
+## Checkpoint pos-teste manual (2026-07-08)
+Usuario executou os 4 cenarios reais e confirmou:
+- Rotacao round-robin: `last_connection_id` alterna entre as conexoes vinculadas em modo `multi`.
+- Stop-on-reply: inbound do lead durante campanha marca recipients pendentes como `stopped_reply` e worker nao envia.
+- Hourly cap: alcancado o teto por hora, restantes ficam `pending` ate a proxima hora.
+- Kill-switch global: switch em `/configuracoes` interrompe todos os disparos imediatamente.
+
+Status atualizado: DONE.
