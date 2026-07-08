@@ -137,49 +137,73 @@ export type Database = {
         Row: {
           connection_id: string | null
           created_at: string
+          daily_cap: number
           finished_at: string | null
           id: string
+          max_ms: number
           metadata: Json
+          min_ms: number
           name: string
           schedule_at: string | null
+          sent_today: number
+          sent_today_date: string | null
           spreadsheet_id: string | null
           started_at: string | null
           status: string
           template_id: string | null
           throttle_ms: number
           updated_at: string
+          warmup_per_day: number | null
+          window_end: string
+          window_start: string
           workspace_id: string
         }
         Insert: {
           connection_id?: string | null
           created_at?: string
+          daily_cap?: number
           finished_at?: string | null
           id?: string
+          max_ms?: number
           metadata?: Json
+          min_ms?: number
           name: string
           schedule_at?: string | null
+          sent_today?: number
+          sent_today_date?: string | null
           spreadsheet_id?: string | null
           started_at?: string | null
           status?: string
           template_id?: string | null
           throttle_ms?: number
           updated_at?: string
+          warmup_per_day?: number | null
+          window_end?: string
+          window_start?: string
           workspace_id?: string
         }
         Update: {
           connection_id?: string | null
           created_at?: string
+          daily_cap?: number
           finished_at?: string | null
           id?: string
+          max_ms?: number
           metadata?: Json
+          min_ms?: number
           name?: string
           schedule_at?: string | null
+          sent_today?: number
+          sent_today_date?: string | null
           spreadsheet_id?: string | null
           started_at?: string | null
           status?: string
           template_id?: string | null
           throttle_ms?: number
           updated_at?: string
+          warmup_per_day?: number | null
+          window_end?: string
+          window_start?: string
           workspace_id?: string
         }
         Relationships: [
