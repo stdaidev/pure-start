@@ -320,3 +320,14 @@ Registro compacto iniciado quando Audit log: on foi habilitado.
 - Decision: DONE
 - Known limitations: fluxo QR real WhatsApp nao exercido; endpoints publicos sem auth (v1); CSRF middleware nao configurado (warning dev).
 - Next: /ldk-next (candidato F3 runtime do agente).
+
+## 2026-07-08 - ldk-doctor - F3 reconciliacao
+- Command: ldk-doctor
+- User intent: registrar tudo e seguir
+- State before: F3 ledger=approved, plan tasks=proof-pending, proof=parcial sem evidencia real
+- Actions: ledger F3 -> partial + Last evidence; plan T1..T10 -> done, T11 -> proof-pending; proof.md atualizado com E2E manual do usuario (P2) e correcoes (idempotencia por conversation, sendTyping, URL publicada); roadmap consolidado.
+- Files changed: ldk/ledger.md, ldk/features/f3-runtime-agente/plan.md, ldk/features/f3-runtime-agente/proof.md, ldk/roadmap.md
+- Evidence: preview na; manual yes (usuario); tests not run; console na; diff na
+- Decision: PARTIAL
+- Known limitations: falta teste E2E automatizado e CI verificado para fechar P4 de F3
+- Next: /ldk-plan F4 (Conversas/inbox + handoff)
