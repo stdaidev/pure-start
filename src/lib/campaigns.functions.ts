@@ -429,3 +429,21 @@ export const deleteCampaign = createServerFn({ method: "POST" })
     if (cErr) throw new Error("Falha ao remover campanha");
     return { ok: true };
   });
+
+export const getCampaignConnections = createServerFn({ method: "POST" })
+  .inputValidator((raw: unknown) =>
+    z.object({ campaign_id: z.string().uuid() }).parse(raw),
+  )
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import(
+      "@/integrations/supabase/client.server"
+    );
+    const { data: rows, error } = await supabaseAdmin
+      .from("campaign_connections")
+      .select("connection_id, position, connections(id, name, status, instance_name)")
+      .eq("workspace_id", DEFAULT_WORKSPACE)
+      .eq("campaign_id", data.campaign_id)
+      .order("position", { ascending: true });
+    if (error) throw new Error("Falha ao listar conexoes da campanha");
+    return { connections: rows ?? [] };
+  });
