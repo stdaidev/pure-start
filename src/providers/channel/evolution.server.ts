@@ -177,6 +177,28 @@ export const evolutionProvider: ChannelProvider = {
     return { providerMessageId: (key.id as string) ?? String(Date.now()) };
   },
 
+  async sendTyping(
+    providerInstanceId: string,
+    to: string,
+    durationMs: number,
+  ): Promise<void> {
+    try {
+      await evoFetch(
+        `/chat/sendPresence/${encodeURIComponent(providerInstanceId)}`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            number: to,
+            presence: "composing",
+            delay: Math.max(500, Math.min(durationMs, 15000)),
+          }),
+        },
+      );
+    } catch {
+      // presence e best-effort; nunca falha o envio
+    }
+  },
+
   async sendAudio(
     providerInstanceId: string,
     msg: OutboundAudio,

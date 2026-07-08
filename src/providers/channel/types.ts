@@ -86,6 +86,12 @@ export interface ChannelProvider {
   getStatus(providerInstanceId: string): Promise<StatusPayload>;
   sendText(providerInstanceId: string, msg: OutboundText): Promise<SendResult>;
   sendAudio(providerInstanceId: string, msg: OutboundAudio): Promise<SendResult>;
+  /** Presence "digitando" best-effort; nunca deve falhar o envio. */
+  sendTyping?(
+    providerInstanceId: string,
+    to: string,
+    durationMs: number,
+  ): Promise<void>;
   deleteInstance(providerInstanceId: string): Promise<void>;
   /**
    * Recebe payload bruto validado do webhook e normaliza para InboundMessage[].

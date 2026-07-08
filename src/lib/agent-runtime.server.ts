@@ -256,12 +256,20 @@ export async function runAgentForMessage(
   const outboundIds: string[] = [];
 
   for (let i = 0; i < chunks.length; i++) {
-    if (i > 0) {
-      const budget = HUMANIZE_HARD_CAP_MS - (Date.now() - started);
-      if (budget <= 0) break;
-      const d = Math.min(chunkDelay(chunks[i], cfg.min_ms, cfg.max_ms), budget);
-      await sleep(d);
+    const budget = HUMANIZE_HARD_CAP_MS - (Date.now() - started);
+    if (budget <= 0 && i > 0) break;
+    const d = Math.min(
+      chunkDelay(chunks[i], cfg.min_ms, cfg.max_ms),
+      Math.max(600, budget),
+    );
+    if (evolutionProvider.sendTyping) {
+      await evolutionProvider.sendTyping(
+        connection.instance_name,
+        contact.phone,
+        d,
+      );
     }
+    await sleep(d);
     let providerMessageId: string;
     try {
       const sent = await evolutionProvider.sendText(connection.instance_name, {
