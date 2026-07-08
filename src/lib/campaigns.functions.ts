@@ -339,7 +339,16 @@ export const listRecipients = createServerFn({ method: "POST" })
     z
       .object({
         campaign_id: z.string().uuid(),
-        status: z.enum(["pending", "sent", "failed", "skipped_optout"]).optional(),
+        status: z
+          .enum([
+            "pending",
+            "sending",
+            "sent",
+            "failed",
+            "skipped_optout",
+            "stopped_reply",
+          ])
+          .optional(),
         limit: z.number().int().min(1).max(500).default(100),
         offset: z.number().int().min(0).default(0),
       })
@@ -352,7 +361,7 @@ export const listRecipients = createServerFn({ method: "POST" })
     let q = supabaseAdmin
       .from("campaign_recipients")
       .select(
-        "id, contact_phone, contact_name, status, sent_at, error, updated_at",
+        "id, contact_phone, contact_name, status, sent_at, error, updated_at, last_connection_id, attempt_count",
         { count: "exact" },
       )
       .eq("workspace_id", DEFAULT_WORKSPACE)
