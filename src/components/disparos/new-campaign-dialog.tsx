@@ -312,11 +312,24 @@ export function NewCampaignDialog(props: {
         ) : null}
 
         {step === 2 ? (
-          <TemplateEditor
-            value={template}
-            onChange={setTemplate}
-            sample={sample}
-          />
+          <div className="flex flex-col gap-2">
+            <TemplateEditor
+              value={template}
+              onChange={setTemplate}
+              sample={sample}
+            />
+            {sample && templateMissing.length > 0 ? (
+              <p className="text-[11px] text-red-400">
+                nao e possivel avancar: a planilha nao tem valor para{" "}
+                {templateMissing.map((k) => `{{${k}}}`).join(", ")}
+              </p>
+            ) : null}
+            {!sample ? (
+              <p className="text-[11px] text-amber-400">
+                planilha sem preview — nao da para validar placeholders
+              </p>
+            ) : null}
+          </div>
         ) : null}
 
         {step === 3 ? (
