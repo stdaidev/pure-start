@@ -127,10 +127,12 @@ export const evolutionProvider: ChannelProvider = {
         integration: "WHATSAPP-BAILEYS",
         qrcode: true,
         webhook: {
+          enabled: true,
           url: input.webhookUrl,
           byEvents: false,
           base64: true,
           events: ["MESSAGES_UPSERT", "CONNECTION_UPDATE"],
+          headers: input.webhookHeaders ?? undefined,
         },
       }),
     })) as Record<string, unknown>;
@@ -285,3 +287,23 @@ export const evolutionProvider: ChannelProvider = {
     return { messages: [] };
   },
 };
+
+export async function configureEvolutionWebhook(
+  providerInstanceId: string,
+  input: { webhookUrl: string; webhookHeaders?: Record<string, string> },
+): Promise<void> {
+  await evoFetch(`/webhook/set/${encodeURIComponent(providerInstanceId)}`, {
+    method: "POST",
+    timeoutMs: 10000,
+    body: JSON.stringify({
+      webhook: {
+        enabled: true,
+        url: input.webhookUrl,
+        byEvents: false,
+        base64: true,
+        events: ["MESSAGES_UPSERT", "CONNECTION_UPDATE"],
+        headers: input.webhookHeaders ?? undefined,
+      },
+    }),
+  });
+}

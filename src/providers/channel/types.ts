@@ -68,6 +68,8 @@ export interface CreateInstanceInput {
   connectionId: string;
   /** URL publica do webhook desta instalacao. */
   webhookUrl: string;
+  /** Headers de autenticacao enviados pelo provedor ao chamar o webhook. */
+  webhookHeaders?: Record<string, string>;
 }
 
 export interface CreateInstanceResult {

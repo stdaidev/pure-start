@@ -29,6 +29,17 @@ function isGroupJid(jid: string): boolean {
   return jid.endsWith("@g.us");
 }
 
+function getProvidedToken(request: Request): string {
+  const url = new URL(request.url);
+  const auth = request.headers.get("authorization") ?? "";
+  return (
+    request.headers.get("x-webhook-token") ??
+    url.searchParams.get("token") ??
+    url.searchParams.get("x-webhook-token") ??
+    (auth.toLowerCase().startsWith("bearer ") ? auth.slice(7) : "")
+  );
+}
+
 const RUNTIME_HARD_CAP_MS = 12_000;
 
 export const Route = createFileRoute("/api/public/evolution/webhook")({
@@ -41,7 +52,7 @@ export const Route = createFileRoute("/api/public/evolution/webhook")({
           return new Response("server misconfigured", { status: 500 });
         }
 
-        const provided = request.headers.get("x-webhook-token") ?? "";
+        const provided = getProvidedToken(request);
         if (!provided || !bufEq(provided, expected)) {
           // 401 opaco, sem echo do token nem PII
           return new Response("unauthorized", { status: 401 });
@@ -61,6 +72,9 @@ export const Route = createFileRoute("/api/public/evolution/webhook")({
         const { evolutionProvider } = await import(
           "@/providers/channel/evolution.server"
         );
+        const { sanitizeEvolutionWebhookPayload } = await import(
+          "@/lib/evolution-webhook.server"
+        );
 
         const eventType =
           (body as { event?: string })?.event ?? "unknown";
@@ -72,7 +86,7 @@ export const Route = createFileRoute("/api/public/evolution/webhook")({
             workspace_id: DEFAULT_WORKSPACE,
             provider: "evolution",
             event_type: eventType,
-            payload: body as never,
+             payload: sanitizeEvolutionWebhookPayload(body) as never,
             processed: false,
           })
           .select("id")
@@ -129,14 +143,16 @@ export const Route = createFileRoute("/api/public/evolution/webhook")({
 
             // Localiza connection pela instancia (opcional)
             let connectionId: string | null = null;
+            let defaultAgentId: string | null = null;
             if (instance) {
               const { data: conn } = await supabaseAdmin
                 .from("connections")
-                .select("id")
+                .select("id, default_agent_id")
                 .eq("workspace_id", DEFAULT_WORKSPACE)
                 .eq("instance_name", instance)
                 .maybeSingle();
               connectionId = conn?.id ?? null;
+              defaultAgentId = conn?.default_agent_id ?? null;
             }
 
             // Upsert conversation (contact + connection)
@@ -144,15 +160,28 @@ export const Route = createFileRoute("/api/public/evolution/webhook")({
             if (contact) {
               const { data: existing } = await supabaseAdmin
                 .from("conversations")
-                .select("id")
+                .select("id, agent_id, connection_id")
                 .eq("workspace_id", DEFAULT_WORKSPACE)
                 .eq("contact_id", contact.id)
                 .maybeSingle();
               if (existing) {
                 conversationId = existing.id;
+                const patch: {
+                  last_message_at: string;
+                  connection_id?: string;
+                  agent_id?: string;
+                } = {
+                  last_message_at: new Date(m.timestamp).toISOString(),
+                };
+                if (!existing.connection_id && connectionId) {
+                  patch.connection_id = connectionId;
+                }
+                if (!existing.agent_id && defaultAgentId) {
+                  patch.agent_id = defaultAgentId;
+                }
                 await supabaseAdmin
                   .from("conversations")
-                  .update({ last_message_at: new Date(m.timestamp).toISOString() })
+                  .update(patch)
                   .eq("id", existing.id);
               } else {
                 const { data: created } = await supabaseAdmin
@@ -161,6 +190,7 @@ export const Route = createFileRoute("/api/public/evolution/webhook")({
                     workspace_id: DEFAULT_WORKSPACE,
                     contact_id: contact.id,
                     connection_id: connectionId,
+                    agent_id: defaultAgentId,
                     status: "open",
                     last_message_at: new Date(m.timestamp).toISOString(),
                   })
