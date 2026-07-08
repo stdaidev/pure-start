@@ -52,6 +52,19 @@ function toOpenAiMessages(input: LlmCompleteInput) {
         content: m.content,
         tool_call_id: m.toolCallId ?? "",
       });
+    } else if (m.role === "assistant" && m.toolCalls && m.toolCalls.length > 0) {
+      out.push({
+        role: "assistant",
+        content: m.content ?? "",
+        tool_calls: m.toolCalls.map((tc) => ({
+          id: tc.id,
+          type: "function",
+          function: {
+            name: tc.name,
+            arguments: JSON.stringify(tc.arguments ?? {}),
+          },
+        })),
+      });
     } else {
       out.push({ role: m.role, content: m.content });
     }
