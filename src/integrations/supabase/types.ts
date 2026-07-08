@@ -21,6 +21,8 @@ export type Database = {
           description: string | null
           humanization: Json
           id: string
+          max_tokens: number | null
+          max_tool_rounds: number | null
           model: string
           name: string
           system_prompt: string
@@ -36,6 +38,8 @@ export type Database = {
           description?: string | null
           humanization?: Json
           id?: string
+          max_tokens?: number | null
+          max_tool_rounds?: number | null
           model?: string
           name: string
           system_prompt?: string
@@ -51,6 +55,8 @@ export type Database = {
           description?: string | null
           humanization?: Json
           id?: string
+          max_tokens?: number | null
+          max_tool_rounds?: number | null
           model?: string
           name?: string
           system_prompt?: string
