@@ -134,7 +134,7 @@ function ConversasPage() {
   const hasAgent = !!active?.agent_id;
 
   return (
-    <div className="flex h-[calc(100vh-3rem)] w-full">
+    <div className="flex h-[calc(100vh-3rem)] w-full bg-background">
       <aside className="flex w-[320px] shrink-0 flex-col border-r border-border/60">
         <div className="border-b border-border/60 px-4 py-3">
           <p
