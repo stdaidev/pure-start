@@ -158,12 +158,18 @@ export const Route = createFileRoute("/api/public/evolution/webhook")({
             // Upsert conversation (contact + connection)
             let conversationId: string | null = null;
             if (contact) {
-              const { data: existing } = await supabaseAdmin
+              // Escopo por (workspace, contact, connection) para nao misturar
+              // conversas de instancias diferentes do WhatsApp (ex: cliente x vendedor)
+              // que compartilham os mesmos numeros de telefone.
+              let existingQuery = supabaseAdmin
                 .from("conversations")
                 .select("id, agent_id, connection_id")
                 .eq("workspace_id", DEFAULT_WORKSPACE)
-                .eq("contact_id", contact.id)
-                .maybeSingle();
+                .eq("contact_id", contact.id);
+              existingQuery = connectionId
+                ? existingQuery.eq("connection_id", connectionId)
+                : existingQuery.is("connection_id", null);
+              const { data: existing } = await existingQuery.maybeSingle();
               if (existing) {
                 conversationId = existing.id;
                 const patch: {
