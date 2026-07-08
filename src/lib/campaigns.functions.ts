@@ -230,16 +230,30 @@ export const createCampaign = createServerFn({ method: "POST" })
       const since = new Date(
         Date.now() - effectiveHours * 3600_000,
       ).toISOString();
-      // conversations sao ligadas a contact_phone; buscamos mensagens inbound
-      // do workspace e cruzamos com os telefones da planilha.
-      const { data: convs } = await supabaseAdmin
-        .from("conversations")
-        .select("id, contact_phone")
+      // conversations -> contacts -> phone; cruza com os telefones da planilha.
+      const { data: contactsForPhones } = await supabaseAdmin
+        .from("contacts")
+        .select("id, phone")
         .eq("workspace_id", DEFAULT_WORKSPACE)
-        .in("contact_phone", Array.from(phones));
+        .in("phone", Array.from(phones));
+      const phoneByContact = new Map<string, string>();
+      for (const c of contactsForPhones ?? [])
+        phoneByContact.set(c.id, c.phone);
+      const contactIds = Array.from(phoneByContact.keys());
+      let convIds: string[] = [];
       const phoneByConv = new Map<string, string>();
-      for (const c of convs ?? []) phoneByConv.set(c.id, c.contact_phone);
-      const convIds = Array.from(phoneByConv.keys());
+      if (contactIds.length > 0) {
+        const { data: convs } = await supabaseAdmin
+          .from("conversations")
+          .select("id, contact_id")
+          .eq("workspace_id", DEFAULT_WORKSPACE)
+          .in("contact_id", contactIds);
+        for (const c of convs ?? []) {
+          const phone = phoneByContact.get(c.contact_id);
+          if (phone) phoneByConv.set(c.id, phone);
+        }
+        convIds = Array.from(phoneByConv.keys());
+      }
       if (convIds.length > 0) {
         const { data: msgs } = await supabaseAdmin
           .from("messages")
