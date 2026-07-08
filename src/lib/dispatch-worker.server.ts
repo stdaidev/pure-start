@@ -5,8 +5,6 @@ import {
   isWithinWindow,
   nextDelayMs,
   dailyCapRemaining,
-  effectiveCap,
-  minutesInSaoPaulo,
   dateKeySaoPaulo,
 } from "@/lib/anti-ban";
 
@@ -57,11 +55,10 @@ export async function runDispatchTick(
     .eq("status", "running");
   if (error) throw new Error("Falha ao listar campanhas running");
 
-  const nowMin = minutesInSaoPaulo(now);
-
   for (const c of campaigns ?? []) {
     result.campaigns++;
-    if (!isWithinWindow(nowMin, c.window_start, c.window_end)) continue;
+    if (!isWithinWindow(now, { start: c.window_start, end: c.window_end }))
+      continue;
     if (!c.connection_id) continue;
 
     const { data: conn } = await db
@@ -71,15 +68,15 @@ export async function runDispatchTick(
       .maybeSingle();
     if (!conn?.instance_name) continue;
 
-    let dayStart: Date | undefined;
-    if (c.started_at) dayStart = new Date(c.started_at);
-    const cap = effectiveCap(c.daily_cap, c.warmup_per_day, dayStart, now);
-    let remaining = dailyCapRemaining(
-      cap,
-      c.sent_today,
-      c.sent_today_date,
+    const startedAt = c.started_at ? new Date(c.started_at) : null;
+    let remaining = dailyCapRemaining({
+      dailyCap: c.daily_cap,
+      warmupPerDay: c.warmup_per_day,
+      startedAt,
+      sentToday: c.sent_today,
+      sentTodayDate: c.sent_today_date,
       now,
-    );
+    });
 
     for (let i = 0; i < maxSends && remaining > 0; i++) {
       // Re-check status (kill-switch).
