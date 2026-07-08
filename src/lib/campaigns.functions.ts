@@ -351,6 +351,6 @@ export const getSpreadsheetPreview = createServerFn({ method: "POST" })
       .order("row_index", { ascending: true })
       .limit(1);
     if (rErr) throw new Error("Falha ao carregar amostra");
-    const first = rows?.[0]?.data ?? null;
-    return { sheet, first_row: first as Record<string, unknown> | null };
+    const first = (rows?.[0]?.data ?? null) as Json | null;
+    return { sheet, first_row: first };
   });
