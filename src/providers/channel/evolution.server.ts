@@ -183,6 +183,21 @@ export const evolutionProvider: ChannelProvider = {
     return { status: mapState(raw), lastSeenAt: Date.now() };
   },
 
+  async setSettings(
+    providerInstanceId: string,
+    settings: { groupsIgnore?: boolean },
+  ): Promise<void> {
+    const body: Record<string, unknown> = {};
+    if (settings.groupsIgnore !== undefined) {
+      body.groups_ignore = settings.groupsIgnore;
+      body.groupsIgnore = settings.groupsIgnore;
+    }
+    await evoFetch(
+      `/settings/set/${encodeURIComponent(providerInstanceId)}`,
+      { method: "POST", body: JSON.stringify(body) },
+    );
+  },
+
   async sendText(
     providerInstanceId: string,
     msg: OutboundText,
