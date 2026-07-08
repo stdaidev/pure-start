@@ -84,12 +84,51 @@ export interface RunAgentResult {
     | "skipped-reset"
     | "skipped-no-content"
     | "skipped-no-connection"
+    | "skipped-locked"
     | "error";
   reason?: string;
   outboundIds?: string[];
 }
 
 export async function runAgentForMessage(
+  messageId: string,
+): Promise<RunAgentResult> {
+  const { supabaseAdmin } = await import(
+    "@/integrations/supabase/client.server"
+  );
+
+  // Guards baratos antes do lock (evita bloquear conversa por mensagem invalida)
+  const { data: preMsg } = await supabaseAdmin
+    .from("messages")
+    .select("id, conversation_id, direction, content")
+    .eq("id", messageId)
+    .maybeSingle();
+  if (!preMsg) return { status: "error", reason: "message not found" };
+  if (preMsg.direction !== "inbound") return { status: "skipped-outbound" };
+  if (!(preMsg.content ?? "").trim()) return { status: "skipped-no-content" };
+
+  // F8 - advisory lock por conversation_id (evita execucoes concorrentes).
+  const conversationId = preMsg.conversation_id;
+  const { data: gotLock } = await supabaseAdmin.rpc("try_agent_lock", {
+    _conversation_id: conversationId,
+  });
+  if (!gotLock) {
+    console.log(
+      `[agent-runtime] skipped-locked conversation=${conversationId}`,
+    );
+    return { status: "skipped-locked" };
+  }
+
+  try {
+    return await runAgentLocked(messageId);
+  } finally {
+    await supabaseAdmin.rpc("release_agent_lock", {
+      _conversation_id: conversationId,
+    });
+  }
+}
+
+async function runAgentLocked(
   messageId: string,
 ): Promise<RunAgentResult> {
   const { supabaseAdmin } = await import(
@@ -113,9 +152,7 @@ export async function runAgentForMessage(
     .eq("id", messageId)
     .maybeSingle();
   if (!msg) return { status: "error", reason: "message not found" };
-  if (msg.direction !== "inbound") return { status: "skipped-outbound" };
   const content = (msg.content ?? "").trim();
-  if (!content) return { status: "skipped-no-content" };
 
   // Comando textual /resetar: cria marker e sai.
   if (content.toLowerCase() === RESET_COMMAND) {

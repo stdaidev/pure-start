@@ -42,6 +42,58 @@ function getProvidedToken(request: Request): string {
 
 const RUNTIME_HARD_CAP_MS = 12_000;
 
+// F8 - Debounce por conversation_id.
+// Agrupa rajadas de mensagens do mesmo lead numa unica execucao do agente.
+// Map top-level: persistente enquanto o isolate viver.
+const DEBOUNCE_DEFAULT_MS = 4_000;
+const DEBOUNCE_CAP_MS = 10_000;
+
+interface DebounceEntry {
+  timer: ReturnType<typeof setTimeout>;
+  latestMessageId: string;
+}
+const agentDebounceMap = new Map<string, DebounceEntry>();
+
+function getDebounceMs(): number {
+  const raw = Number(process.env.AGENT_DEBOUNCE_MS);
+  if (!Number.isFinite(raw) || raw <= 0) return DEBOUNCE_DEFAULT_MS;
+  return Math.min(raw, DEBOUNCE_CAP_MS);
+}
+
+function scheduleAgentRun(conversationId: string, messageId: string) {
+  const existing = agentDebounceMap.get(conversationId);
+  if (existing) clearTimeout(existing.timer);
+  const delay = getDebounceMs();
+  const timer = setTimeout(async () => {
+    const entry = agentDebounceMap.get(conversationId);
+    agentDebounceMap.delete(conversationId);
+    const targetId = entry?.latestMessageId ?? messageId;
+    try {
+      const { runAgentForMessage } = await import(
+        "@/lib/agent-runtime.server"
+      );
+      await Promise.race([
+        runAgentForMessage(targetId),
+        new Promise((_, rej) =>
+          setTimeout(
+            () => rej(new Error("runtime timeout")),
+            RUNTIME_HARD_CAP_MS,
+          ),
+        ),
+      ]);
+    } catch (e) {
+      console.error(
+        "[webhook/evolution] runtime error:",
+        (e as Error).message,
+      );
+    }
+  }, delay);
+  agentDebounceMap.set(conversationId, { timer, latestMessageId: messageId });
+  console.log(
+    `[webhook/evolution] debounced conversation=${conversationId} delay=${delay}`,
+  );
+}
+
 export const Route = createFileRoute("/api/public/evolution/webhook")({
   server: {
     handlers: {
@@ -308,25 +360,7 @@ export const Route = createFileRoute("/api/public/evolution/webhook")({
 
             // Runtime do agente: so para inbound text. Nunca falha o 200.
             if (m.direction === "inbound" && m.kind === "text" && insertedMsg?.id) {
-              try {
-                const { runAgentForMessage } = await import(
-                  "@/lib/agent-runtime.server"
-                );
-                await Promise.race([
-                  runAgentForMessage(insertedMsg.id),
-                  new Promise((_, rej) =>
-                    setTimeout(
-                      () => rej(new Error("runtime timeout")),
-                      RUNTIME_HARD_CAP_MS,
-                    ),
-                  ),
-                ]);
-              } catch (e) {
-                console.error(
-                  "[webhook/evolution] runtime error:",
-                  (e as Error).message,
-                );
-              }
+              scheduleAgentRun(conversationId, insertedMsg.id);
             }
           }
 

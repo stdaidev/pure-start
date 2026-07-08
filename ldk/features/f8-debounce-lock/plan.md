@@ -34,10 +34,10 @@ medio - plano completo, prova manual reproduzivel.
 
 | ID | Descricao | AC | Arquivos esperados | Verificacao | State |
 |----|-----------|----|--------------------|-------------|-------|
-| T1 | Migration: RPC `try_agent_lock(_conversation_id uuid) returns boolean` com `pg_try_advisory_xact_lock(hashtext(...))`. GRANT execute para authenticated e service_role. | AC3 | supabase migration | linter limpo | ready |
-| T2 | Integrar lock em `runAgentForMessage`: chamar RPC no inicio (apos guards baratos), retornar `skipped-locked` se false. Log estruturado. | AC2, AC5 | `src/lib/agent-runtime.server.ts` | tsgo verde | ready |
-| T3 | Debounce no webhook: Map<conversationId, {timer, latestMessageId}> em modulo top-level. Substituir chamada direta a `runAgentForMessage` por scheduler que reseta timer a cada nova msg da mesma conversa. | AC1, AC4 | `src/routes/api/public/evolution.webhook.ts` | tsgo verde | ready |
-| T4 | Prova manual P2: user envia 4 mensagens rapidas; verifica log e resposta unica. Registrar em proof.md. | AC6 | `ldk/features/f8-debounce-lock/proof.md` | manual do usuario | ready |
+| T1 | Migration: RPC `try_agent_lock`/`release_agent_lock` com `pg_try_advisory_lock(hashtext(...))`. EXECUTE so service_role. | AC3 | supabase migration | linter ok | done |
+| T2 | Integrar lock em `runAgentForMessage`: chamar RPC no inicio (apos guards baratos), retornar `skipped-locked` se false. Release no finally. | AC2, AC5 | `src/lib/agent-runtime.server.ts` | tsgo verde | done |
+| T3 | Debounce no webhook: Map<conversationId, {timer, latestMessageId}> top-level; scheduler reseta timer a cada nova msg. | AC1, AC4 | `src/routes/api/public/evolution.webhook.ts` | tsgo verde | done |
+| T4 | Prova manual P2: user envia 4 mensagens rapidas; verifica log e resposta unica. | AC6 | `ldk/features/f8-debounce-lock/proof.md` | manual do usuario | proof-pending |
 
 ## Arquivos criados/alterados (esperados)
 - supabase migration (RPC try_agent_lock)
