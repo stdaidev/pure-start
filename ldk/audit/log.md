@@ -441,3 +441,14 @@ Registro compacto iniciado quando Audit log: on foi habilitado.
 - Decision: planned
 - Known limitations: pg_net a confirmar em T9; timezone fixo America/Sao_Paulo v1; envio real via mock em T10
 - Next: /ldk-build-task para T1 (migration anti-ban)
+
+## 2026-07-08 - ldk-plan - F6.1
+- Command: ldk-plan
+- User intent: planejar hardening anti-ban do F6 com suporte a campanha single/multi-instancia
+- State before: F6 partial no ledger; sem F6.1
+- Actions: criado brief.md e plan.md de F6.1; ledger com nova linha F6.1 approved; roadmap atualizado
+- Files changed: ldk/features/f6.1-anti-ban-hardening/brief.md, ldk/features/f6.1-anti-ban-hardening/plan.md, ldk/ledger.md, ldk/roadmap.md
+- Evidence: preview na; manual na; tests na; console na; diff na
+- Decision: approved (aguardando build)
+- Known limitations: kill-switch e por workspace default (multi-workspace real ainda nao existe)
+- Next: rodar ldk-build-task T1 (migration)
