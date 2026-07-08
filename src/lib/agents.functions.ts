@@ -32,6 +32,8 @@ const agentInputSchema = z.object({
   }),
   voice_id: z.string().max(120).optional().nullable(),
   active: z.boolean().default(true),
+  max_tokens: z.number().int().min(1).max(16_000).nullable().optional(),
+  max_tool_rounds: z.number().int().min(1).max(20).nullable().optional(),
 });
 
 export const listAgents = createServerFn({ method: "GET" }).handler(async () => {
@@ -85,6 +87,8 @@ export const saveAgent = createServerFn({ method: "POST" })
       humanization: data.humanization,
       voice_id: data.voice_id ?? null,
       active: data.active,
+      max_tokens: data.max_tokens ?? null,
+      max_tool_rounds: data.max_tool_rounds ?? null,
     };
 
     if (data.id) {
