@@ -52,6 +52,29 @@ function CampaignMonitor() {
     onError: (e: Error) => toast.error(e.message || "Falha ao atualizar"),
   });
 
+  const tickMut = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/public/dispatch/tick", {
+        method: "POST",
+        headers: { apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
+      });
+      if (!res.ok) throw new Error(`tick ${res.status}`);
+      return (await res.json()) as {
+        ok: boolean;
+        sent: number;
+        failed: number;
+        skipped: number;
+        campaigns: number;
+      };
+    },
+    onSuccess: (r) => {
+      toast.success(`Tick: ${r.sent} enviados, ${r.failed} falhas, ${r.skipped} opt-out`);
+      qc.invalidateQueries({ queryKey: ["campaign", id] });
+      qc.invalidateQueries({ queryKey: ["recipients", id] });
+    },
+    onError: (e: Error) => toast.error(e.message || "Falha no tick"),
+  });
+
   const campaign = campaignQ.data?.campaign;
   const progress = campaignQ.data?.progress;
   const status = campaign?.status ?? "draft";
@@ -92,6 +115,14 @@ function CampaignMonitor() {
           </div>
         </div>
         <div className="flex gap-2">
+          <Button
+            variant="secondary"
+            disabled={tickMut.isPending}
+            onClick={() => tickMut.mutate()}
+            title="Executa o worker de disparo agora (dev). Substituir por pg_cron em produção."
+          >
+            {tickMut.isPending ? "Disparando…" : "Disparar agora"}
+          </Button>
           <Button
             disabled={!canActivate || statusMut.isPending}
             onClick={() => statusMut.mutate({ data: { id, status: "running" } })}
