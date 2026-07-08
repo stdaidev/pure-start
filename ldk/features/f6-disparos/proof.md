@@ -56,3 +56,11 @@ PARTIAL — implementacao completa e provada em UI/API; happy-path `sent=success
 
 ## Etapa concluida
 Prova F6 registrada; aguardando proximo comando.
+
+## Emendas pos-proof (nao mudam veredito)
+Mudancas operacionais aplicadas apos o proof original, dentro do escopo do F6, catalogadas aqui via `ldk-doctor` (Opcao A):
+
+- **Botao "Disparar agora"** em `/disparos/$id` (`_shell.disparos.$id.tsx`): chama `/api/public/dispatch/tick` com `apikey`. TEMPORARIO — apenas para teste manual do happy-path enquanto o `pg_cron` real nao esta rodando o tick em preview. Deve ser REMOVIDO ou escondido atras de flag/dev-only quando o cron do release estiver validado (nota para F6.1 T3 / release).
+- **`normalizeMsisdn(raw)`** em `dispatch-worker.server.ts`: prepend `55` para numeros BR de 10/11 digitos antes do `sendText`. Corrige 400 do Evolution para numeros sem DDI. Preservar em F6.1 T3.
+- **`snippet` de erro** em `evolution.server.ts`: primeiros 300 chars do body de resposta upstream anexados ao erro para debug no campo `campaign_recipients.error`. Sem PII adicional (Evolution nao devolve rendered_text). Preservar.
+- **`deleteCampaign`** server fn + botao lixeira em `campaign-list.tsx`: remove `campaign_recipients` e `campaigns` do workspace. Fora dos ACs originais mas trivial e ja em uso. Preservar em F6.1.
