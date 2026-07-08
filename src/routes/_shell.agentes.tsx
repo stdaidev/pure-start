@@ -23,6 +23,7 @@ import {
   toggleAgent,
 } from "@/lib/agents.functions";
 import { AgentDialog } from "@/components/agentes/agent-dialog";
+import { IgnoredNumbersCard } from "@/components/agentes/ignored-numbers-card";
 
 export const Route = createFileRoute("/_shell/agentes")({
   head: () => ({
@@ -181,6 +182,10 @@ function AgentesPage() {
         onOpenChange={setDialogOpen}
         agentId={editId}
       />
+
+      <div className="mt-10">
+        <IgnoredNumbersCard />
+      </div>
 
       <AlertDialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
         <AlertDialogContent>

@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      agent_ignored_numbers: {
+        Row: {
+          created_at: string
+          id: string
+          label: string | null
+          phone_e164: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label?: string | null
+          phone_e164: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string | null
+          phone_e164?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: []
+      }
       agents: {
         Row: {
           active: boolean

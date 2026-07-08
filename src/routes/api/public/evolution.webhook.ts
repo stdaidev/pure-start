@@ -346,6 +346,21 @@ export const Route = createFileRoute("/api/public/evolution/webhook")({
 
             // Runtime do agente: so para inbound text. Nunca falha o 200.
             if (m.direction === "inbound" && m.kind === "text" && insertedMsg?.id) {
+              // F9 - Blocklist: se o numero esta na lista de ignorados,
+              // grava mensagem normalmente mas nao agenda run do agente.
+              const { data: blocked } = await supabaseAdmin
+                .from("agent_ignored_numbers")
+                .select("id")
+                .eq("workspace_id", DEFAULT_WORKSPACE)
+                .eq("phone_e164", phone)
+                .maybeSingle();
+              if (blocked) {
+                console.log(
+                  `[webhook/evolution] ignored-number conversation=${conversationId}`,
+                );
+                continue;
+              }
+
               // Resolve o debounce do agente da conversa (fallback: default do sistema).
               let agentDebounceSeconds: number | null = null;
               const { data: convRow } = await supabaseAdmin
