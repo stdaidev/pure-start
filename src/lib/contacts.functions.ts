@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import type { TablesInsert, TablesUpdate, Json } from "@/integrations/supabase/types";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
 
 /**
  * F5 - Contatos e Planilhas.
@@ -191,11 +193,7 @@ export const importContacts = createServerFn({ method: "POST" })
   });
 
 async function maybeCreateSpreadsheet(
-  db: Awaited<
-    ReturnType<typeof import("@/integrations/supabase/client.server")>
-  > extends never
-    ? never
-    : import("@supabase/supabase-js").SupabaseClient,
+  db: SupabaseClient<Database>,
   sheet:
     | {
         name: string;
