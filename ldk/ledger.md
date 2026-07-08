@@ -9,5 +9,5 @@
 | F4 | Conversas/inbox + handoff (assumir/devolver IA) | medio | done | P2 | ldk/features/f4-conversas-handoff/proof.md |
 | F5 | Contatos e Planilhas (upload CSV/XLSX, headers->placeholders, opt-out) | medio | done | P2 | ldk/features/f5-contatos-planilhas/proof.md |
 | F6 | Disparos (wizard, template com preview, anti-ban, worker pg_cron, monitor ao vivo) | alto | partial | P4 | ldk/features/f6-disparos/proof.md |
-| F6.1 | Anti-ban hardening + multi-instancia (next_send_at escalonado, hourly cap, kill-switch global, stop-on-reply, round-robin de conexoes) | alto | approved | P4 | |
+| F6.1 | Anti-ban hardening + multi-instancia (next_send_at escalonado, hourly cap, kill-switch global, stop-on-reply, round-robin de conexoes) | alto | partial | P4 | ldk/features/f6.1-anti-ban-hardening/proof.md |
 | F7 | Dashboard + Configuracoes + polimento | baixo | idea | P1 | |
