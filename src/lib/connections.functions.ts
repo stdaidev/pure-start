@@ -14,12 +14,26 @@ import { z } from "zod";
 const DEFAULT_WORKSPACE = "00000000-0000-0000-0000-000000000001";
 
 function resolveWebhookUrl(): string {
+  // Override explicito (recomendado em dev/preview): setar em secrets.
+  const explicit =
+    process.env.PUBLIC_WEBHOOK_URL ?? process.env.PUBLIC_BASE_URL;
+  if (explicit) {
+    const base = explicit.replace(/\/+$/, "");
+    return base.endsWith("/api/public/evolution/webhook")
+      ? base
+      : `${base}/api/public/evolution/webhook`;
+  }
   const req = getRequest();
   const url = new URL(req.url);
   const host = req.headers.get("host") ?? url.host;
   const proto =
     req.headers.get("x-forwarded-proto") ??
     (host.startsWith("localhost") ? "http" : "https");
+  if (host.startsWith("localhost") || host.startsWith("127.")) {
+    throw new Error(
+      "Webhook publico ausente: defina PUBLIC_WEBHOOK_URL (ou PUBLIC_BASE_URL) apontando para a URL publica do preview/producao.",
+    );
+  }
   return `${proto}://${host}/api/public/evolution/webhook`;
 }
 
