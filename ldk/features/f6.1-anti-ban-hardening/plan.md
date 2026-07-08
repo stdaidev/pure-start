@@ -30,7 +30,7 @@ Modo de execucao recomendado: `ldk-build-task` (checkpoint manual por task)
 | T5 | Wizard: novo controle `dispatch_mode` (radio single/multi); em `multi`, multi-select de conexoes (min 2); resumo mostra conexoes escolhidas; campo `hourly_limit` | AC1 | `src/components/disparos/new-campaign-dialog.tsx` | preview manual | proof-pending |
 | T6 | Monitor: badge novo `stopped_reply` (cinza), coluna "Conexao" quando `dispatch_mode='multi'`, contador de stopped_reply | AC10 | `src/routes/_shell.disparos.$id.tsx`, `src/components/disparos/status-badge.tsx` | preview manual | proof-pending |
 | T7 | Kill-switch UI em `/configuracoes`: Switch grande "Pausar todos os disparos" com toast | AC6 | `src/routes/_shell.configuracoes.tsx`, `src/lib/workspace.functions.ts` | preview manual | proof-pending |
-| T8 | Prova P4: playwright cobre 5 cenarios do AC11; screenshots em `/tmp/browser/f6.1/`; checklist anti-ban preenchido | AC1-AC11 | `ldk/features/f6.1-anti-ban-hardening/proof.md` | playwright + tsgo | ready |
+| T8 | Prova P4: playwright cobre 5 cenarios do AC11; screenshots em `/tmp/browser/f6.1/`; checklist anti-ban preenchido | AC1-AC11 | `ldk/features/f6.1-anti-ban-hardening/proof.md` | playwright + tsgo | done |
 
 ## Checklist de seguranca / anti-ban
 - [ ] `next_send_at` semeado no create (nao ha rajada no primeiro tick).
