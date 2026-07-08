@@ -282,33 +282,6 @@ export const updateCampaignStatus = createServerFn({ method: "POST" })
   });
 
 export const listRecipients = createServerFn({ method: "POST" })
-  ;
-
-export const deleteCampaign = createServerFn({ method: "POST" })
-  .inputValidator((raw: unknown) =>
-    z.object({ id: z.string().uuid() }).parse(raw),
-  )
-  .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import(
-      "@/integrations/supabase/client.server"
-    );
-    // recipients primeiro (sem ON DELETE CASCADE garantido)
-    const { error: rErr } = await supabaseAdmin
-      .from("campaign_recipients")
-      .delete()
-      .eq("workspace_id", DEFAULT_WORKSPACE)
-      .eq("campaign_id", data.id);
-    if (rErr) throw new Error("Falha ao remover destinatarios");
-    const { error: cErr } = await supabaseAdmin
-      .from("campaigns")
-      .delete()
-      .eq("workspace_id", DEFAULT_WORKSPACE)
-      .eq("id", data.id);
-    if (cErr) throw new Error("Falha ao remover campanha");
-    return { ok: true };
-  });
-
-const _listRecipients = createServerFn({ method: "POST" })
   .inputValidator((raw: unknown) =>
     z
       .object({
