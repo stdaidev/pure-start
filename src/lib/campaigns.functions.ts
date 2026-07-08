@@ -311,3 +311,46 @@ export const listRecipients = createServerFn({ method: "POST" })
     if (error) throw new Error("Falha ao listar destinatarios");
     return { recipients: rows ?? [], total: count ?? 0 };
   });
+
+export const listSpreadsheets = createServerFn({ method: "GET" }).handler(
+  async () => {
+    const { supabaseAdmin } = await import(
+      "@/integrations/supabase/client.server"
+    );
+    const { data, error } = await supabaseAdmin
+      .from("spreadsheets")
+      .select("id, name, headers, row_count, updated_at")
+      .eq("workspace_id", DEFAULT_WORKSPACE)
+      .order("updated_at", { ascending: false });
+    if (error) throw new Error("Falha ao listar planilhas");
+    return { spreadsheets: data ?? [] };
+  },
+);
+
+export const getSpreadsheetPreview = createServerFn({ method: "POST" })
+  .inputValidator((raw: unknown) =>
+    z.object({ spreadsheet_id: z.string().uuid() }).parse(raw),
+  )
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import(
+      "@/integrations/supabase/client.server"
+    );
+    const { data: sheet, error: sErr } = await supabaseAdmin
+      .from("spreadsheets")
+      .select("id, name, headers, row_count")
+      .eq("workspace_id", DEFAULT_WORKSPACE)
+      .eq("id", data.spreadsheet_id)
+      .maybeSingle();
+    if (sErr) throw new Error("Falha ao carregar planilha");
+    if (!sheet) throw new Error("Planilha nao encontrada");
+    const { data: rows, error: rErr } = await supabaseAdmin
+      .from("spreadsheet_rows")
+      .select("row_index, data")
+      .eq("workspace_id", DEFAULT_WORKSPACE)
+      .eq("spreadsheet_id", data.spreadsheet_id)
+      .order("row_index", { ascending: true })
+      .limit(1);
+    if (rErr) throw new Error("Falha ao carregar amostra");
+    const first = rows?.[0]?.data ?? null;
+    return { sheet, first_row: first as Record<string, unknown> | null };
+  });
