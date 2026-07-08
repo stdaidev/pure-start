@@ -160,13 +160,17 @@ export const Route = createFileRoute("/api/public/evolution/webhook")({
             if (contact) {
               const { data: existing } = await supabaseAdmin
                 .from("conversations")
-                  .select("id, agent_id, connection_id")
+                .select("id, agent_id, connection_id")
                 .eq("workspace_id", DEFAULT_WORKSPACE)
                 .eq("contact_id", contact.id)
                 .maybeSingle();
               if (existing) {
                 conversationId = existing.id;
-                const patch: Record<string, string> = {
+                const patch: {
+                  last_message_at: string;
+                  connection_id?: string;
+                  agent_id?: string;
+                } = {
                   last_message_at: new Date(m.timestamp).toISOString(),
                 };
                 if (!existing.connection_id && connectionId) {

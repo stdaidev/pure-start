@@ -34,7 +34,9 @@ export function getEvolutionWebhookDeliveryConfig(): {
 } {
   const publicUrl = getPublicEvolutionWebhookUrl();
   const token = process.env.WEBHOOK_VERIFY_TOKEN?.trim();
-  const headers = token ? { "x-webhook-token": token } : {};
+  const headers: Record<string, string> = token
+    ? { "x-webhook-token": token }
+    : {};
   const url = new URL(publicUrl);
   if (token) url.searchParams.set("token", token);
   return { publicUrl, deliveryUrl: url.toString(), headers };
