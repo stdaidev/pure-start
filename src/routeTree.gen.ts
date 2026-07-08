@@ -19,6 +19,7 @@ import { Route as ShellContatosRouteImport } from './routes/_shell.contatos'
 import { Route as ShellConfiguracoesRouteImport } from './routes/_shell.configuracoes'
 import { Route as ShellConexoesRouteImport } from './routes/_shell.conexoes'
 import { Route as ShellAgentesRouteImport } from './routes/_shell.agentes'
+import { Route as ShellDisparosIndexRouteImport } from './routes/_shell.disparos.index'
 import { Route as ShellDisparosIdRouteImport } from './routes/_shell.disparos.$id'
 import { Route as ApiPublicEvolutionWebhookRouteImport } from './routes/api/public/evolution.webhook'
 import { Route as ApiPublicDispatchTickRouteImport } from './routes/api/public/dispatch.tick'
@@ -72,6 +73,11 @@ const ShellAgentesRoute = ShellAgentesRouteImport.update({
   path: '/agentes',
   getParentRoute: () => ShellRoute,
 } as any)
+const ShellDisparosIndexRoute = ShellDisparosIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ShellDisparosRoute,
+} as any)
 const ShellDisparosIdRoute = ShellDisparosIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -100,6 +106,7 @@ export interface FileRoutesByFullPath {
   '/disparos': typeof ShellDisparosRouteWithChildren
   '/planilhas': typeof ShellPlanilhasRoute
   '/disparos/$id': typeof ShellDisparosIdRoute
+  '/disparos/': typeof ShellDisparosIndexRoute
   '/api/public/dispatch/tick': typeof ApiPublicDispatchTickRoute
   '/api/public/evolution/webhook': typeof ApiPublicEvolutionWebhookRoute
 }
@@ -111,9 +118,9 @@ export interface FileRoutesByTo {
   '/contatos': typeof ShellContatosRoute
   '/conversas': typeof ShellConversasRoute
   '/dashboard': typeof ShellDashboardRoute
-  '/disparos': typeof ShellDisparosRouteWithChildren
   '/planilhas': typeof ShellPlanilhasRoute
   '/disparos/$id': typeof ShellDisparosIdRoute
+  '/disparos': typeof ShellDisparosIndexRoute
   '/api/public/dispatch/tick': typeof ApiPublicDispatchTickRoute
   '/api/public/evolution/webhook': typeof ApiPublicEvolutionWebhookRoute
 }
@@ -130,6 +137,7 @@ export interface FileRoutesById {
   '/_shell/disparos': typeof ShellDisparosRouteWithChildren
   '/_shell/planilhas': typeof ShellPlanilhasRoute
   '/_shell/disparos/$id': typeof ShellDisparosIdRoute
+  '/_shell/disparos/': typeof ShellDisparosIndexRoute
   '/api/public/dispatch/tick': typeof ApiPublicDispatchTickRoute
   '/api/public/evolution/webhook': typeof ApiPublicEvolutionWebhookRoute
 }
@@ -146,6 +154,7 @@ export interface FileRouteTypes {
     | '/disparos'
     | '/planilhas'
     | '/disparos/$id'
+    | '/disparos/'
     | '/api/public/dispatch/tick'
     | '/api/public/evolution/webhook'
   fileRoutesByTo: FileRoutesByTo
@@ -157,9 +166,9 @@ export interface FileRouteTypes {
     | '/contatos'
     | '/conversas'
     | '/dashboard'
-    | '/disparos'
     | '/planilhas'
     | '/disparos/$id'
+    | '/disparos'
     | '/api/public/dispatch/tick'
     | '/api/public/evolution/webhook'
   id:
@@ -175,6 +184,7 @@ export interface FileRouteTypes {
     | '/_shell/disparos'
     | '/_shell/planilhas'
     | '/_shell/disparos/$id'
+    | '/_shell/disparos/'
     | '/api/public/dispatch/tick'
     | '/api/public/evolution/webhook'
   fileRoutesById: FileRoutesById
@@ -258,6 +268,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShellAgentesRouteImport
       parentRoute: typeof ShellRoute
     }
+    '/_shell/disparos/': {
+      id: '/_shell/disparos/'
+      path: '/'
+      fullPath: '/disparos/'
+      preLoaderRoute: typeof ShellDisparosIndexRouteImport
+      parentRoute: typeof ShellDisparosRoute
+    }
     '/_shell/disparos/$id': {
       id: '/_shell/disparos/$id'
       path: '/$id'
@@ -284,10 +301,12 @@ declare module '@tanstack/react-router' {
 
 interface ShellDisparosRouteChildren {
   ShellDisparosIdRoute: typeof ShellDisparosIdRoute
+  ShellDisparosIndexRoute: typeof ShellDisparosIndexRoute
 }
 
 const ShellDisparosRouteChildren: ShellDisparosRouteChildren = {
   ShellDisparosIdRoute: ShellDisparosIdRoute,
+  ShellDisparosIndexRoute: ShellDisparosIndexRoute,
 }
 
 const ShellDisparosRouteWithChildren = ShellDisparosRoute._addFileChildren(
