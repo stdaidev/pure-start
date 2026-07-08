@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { TemplateEditor } from "./template-editor";
 import { listConnections } from "@/lib/connections.functions";
 import {
@@ -40,12 +41,15 @@ export function NewCampaignDialog(props: {
   const navigate = useNavigate();
   const [step, setStep] = useState<Step>(1);
   const [name, setName] = useState("");
+  const [mode, setMode] = useState<"single" | "multi">("single");
   const [connectionId, setConnectionId] = useState<string>("");
+  const [connectionIds, setConnectionIds] = useState<string[]>([]);
   const [spreadsheetId, setSpreadsheetId] = useState<string>("");
   const [template, setTemplate] = useState("Ola {{nome}}, tudo bem?");
   const [minMs, setMinMs] = useState(8000);
   const [maxMs, setMaxMs] = useState(20000);
   const [dailyCap, setDailyCap] = useState(200);
+  const [hourlyLimit, setHourlyLimit] = useState(60);
   const [windowStart, setWindowStart] = useState("09:00");
   const [windowEnd, setWindowEnd] = useState("20:00");
 
@@ -86,12 +90,15 @@ export function NewCampaignDialog(props: {
   function reset() {
     setStep(1);
     setName("");
+    setMode("single");
     setConnectionId("");
+    setConnectionIds([]);
     setSpreadsheetId("");
     setTemplate("Ola {{nome}}, tudo bem?");
     setMinMs(8000);
     setMaxMs(20000);
     setDailyCap(200);
+    setHourlyLimit(60);
     setWindowStart("09:00");
     setWindowEnd("20:00");
   }
@@ -101,18 +108,31 @@ export function NewCampaignDialog(props: {
     | null;
 
   const canNext = useMemo(() => {
-    if (step === 1) return !!name.trim() && !!connectionId && !!spreadsheetId;
+    if (step === 1) {
+      if (!name.trim() || !spreadsheetId) return false;
+      if (mode === "single") return !!connectionId;
+      return connectionIds.length >= 2;
+    }
     if (step === 2) return template.trim().length > 0;
     if (step === 3)
       return (
         minMs >= 0 &&
         maxMs >= minMs &&
         dailyCap >= 1 &&
+        hourlyLimit >= 1 &&
         /^\d{2}:\d{2}$/.test(windowStart) &&
         /^\d{2}:\d{2}$/.test(windowEnd)
       );
     return true;
-  }, [step, name, connectionId, spreadsheetId, template, minMs, maxMs, dailyCap, windowStart, windowEnd]);
+  }, [step, name, mode, connectionId, connectionIds, spreadsheetId, template, minMs, maxMs, dailyCap, hourlyLimit, windowStart, windowEnd]);
+
+  const availableConns = connQ.data?.connections ?? [];
+
+  function toggleConn(id: string) {
+    setConnectionIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+  }
 
   return (
     <Dialog
@@ -147,20 +167,76 @@ export function NewCampaignDialog(props: {
               />
             </div>
             <div className="flex flex-col gap-2">
-              <Label>Conexao</Label>
-              <Select value={connectionId} onValueChange={setConnectionId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione uma conexao" />
-                </SelectTrigger>
-                <SelectContent>
-                  {(connQ.data?.connections ?? []).map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name} — {c.status}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>Modo de disparo</Label>
+              <RadioGroup
+                value={mode}
+                onValueChange={(v) => setMode(v as "single" | "multi")}
+                className="flex gap-4"
+              >
+                <label className="flex items-center gap-2 text-sm">
+                  <RadioGroupItem value="single" id="mode-single" />
+                  <span>Uma conexao</span>
+                </label>
+                <label className="flex items-center gap-2 text-sm">
+                  <RadioGroupItem value="multi" id="mode-multi" />
+                  <span>Multi-instancia (rodizio)</span>
+                </label>
+              </RadioGroup>
+              <p className="text-[10px] text-muted-foreground">
+                {mode === "single"
+                  ? "Envia por uma unica conexao. Ideal para volume baixo."
+                  : "Rodizio round-robin entre as conexoes escolhidas (min 2). Reduz risco de ban."}
+              </p>
             </div>
+            {mode === "single" ? (
+              <div className="flex flex-col gap-2">
+                <Label>Conexao</Label>
+                <Select value={connectionId} onValueChange={setConnectionId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione uma conexao" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableConns.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name} — {c.status}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <Label>Conexoes (min 2)</Label>
+                <div className="flex flex-col gap-1 rounded border border-border/60 p-2 max-h-48 overflow-auto">
+                  {availableConns.length === 0 ? (
+                    <p className="text-xs text-muted-foreground p-2">
+                      Nenhuma conexao disponivel.
+                    </p>
+                  ) : null}
+                  {availableConns.map((c) => (
+                    <label
+                      key={c.id}
+                      className="flex items-center gap-2 rounded px-2 py-1 hover:bg-muted/30 cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={connectionIds.includes(c.id)}
+                        onChange={() => toggleConn(c.id)}
+                      />
+                      <span className="text-sm">
+                        {c.name}{" "}
+                        <span className="text-xs text-muted-foreground">
+                          — {c.status}
+                        </span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+                <p className="text-[10px] text-muted-foreground">
+                  Selecionadas: {connectionIds.length}
+                </p>
+              </div>
+            )}
             <div className="flex flex-col gap-2">
               <Label>Planilha</Label>
               <Select value={spreadsheetId} onValueChange={setSpreadsheetId}>
@@ -224,6 +300,17 @@ export function NewCampaignDialog(props: {
               />
             </div>
             <div className="flex flex-col gap-2">
+              <Label>Teto por hora</Label>
+              <Input
+                type="number"
+                value={hourlyLimit}
+                onChange={(e) => setHourlyLimit(Number(e.target.value))}
+              />
+              <p className="text-[10px] text-muted-foreground">
+                Limite por hora alem do teto diario (anti-ban).
+              </p>
+            </div>
+            <div className="flex flex-col gap-2">
               <Label>Janela (SP)</Label>
               <div className="flex items-center gap-2">
                 <Input
@@ -248,11 +335,19 @@ export function NewCampaignDialog(props: {
             style={{ fontFamily: "var(--font-mono)" }}
           >
             <Row k="nome" v={name} />
+            <Row k="modo" v={mode === "single" ? "single" : "multi (round-robin)"} />
             <Row
-              k="conexao"
+              k={mode === "single" ? "conexao" : "conexoes"}
               v={
-                connQ.data?.connections?.find((c) => c.id === connectionId)
-                  ?.name ?? connectionId
+                mode === "single"
+                  ? availableConns.find((c) => c.id === connectionId)?.name ??
+                    connectionId
+                  : connectionIds
+                      .map(
+                        (id) =>
+                          availableConns.find((c) => c.id === id)?.name ?? id,
+                      )
+                      .join(", ")
               }
             />
             <Row
@@ -264,6 +359,7 @@ export function NewCampaignDialog(props: {
             />
             <Row k="intervalo" v={`${minMs}-${maxMs} ms`} />
             <Row k="teto diario" v={String(dailyCap)} />
+            <Row k="teto hora" v={String(hourlyLimit)} />
             <Row k="janela" v={`${windowStart} - ${windowEnd} (SP)`} />
           </div>
         ) : null}
@@ -290,12 +386,16 @@ export function NewCampaignDialog(props: {
                 createMut.mutate({
                   data: {
                     name: name.trim(),
-                    connection_id: connectionId,
+                    dispatch_mode: mode,
+                    ...(mode === "single"
+                      ? { connection_id: connectionId }
+                      : { connection_ids: connectionIds }),
                     spreadsheet_id: spreadsheetId,
                     template_text: template,
                     min_ms: minMs,
                     max_ms: maxMs,
                     daily_cap: dailyCap,
+                    hourly_limit: hourlyLimit,
                     window_start: windowStart,
                     window_end: windowEnd,
                   },

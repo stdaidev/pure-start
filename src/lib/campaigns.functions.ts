@@ -114,13 +114,14 @@ export const getCampaign = createServerFn({ method: "POST" })
       .select("status")
       .eq("campaign_id", data.id);
     if (cErr) throw new Error("Falha ao consultar destinatarios");
-    const progress = { total: 0, sent: 0, failed: 0, pending: 0, skipped_optout: 0 };
+    const progress = { total: 0, sent: 0, failed: 0, pending: 0, skipped_optout: 0, stopped_reply: 0 };
     for (const r of counts ?? []) {
       progress.total++;
       if (r.status === "sent") progress.sent++;
       else if (r.status === "failed") progress.failed++;
-      else if (r.status === "pending") progress.pending++;
+      else if (r.status === "pending" || r.status === "sending") progress.pending++;
       else if (r.status === "skipped_optout") progress.skipped_optout++;
+      else if (r.status === "stopped_reply") progress.stopped_reply++;
     }
     return { campaign: row, progress };
   });
@@ -130,13 +131,16 @@ export const createCampaign = createServerFn({ method: "POST" })
     z
       .object({
         name: z.string().min(1).max(200),
-        connection_id: z.string().uuid(),
+        connection_id: z.string().uuid().optional(),
+        connection_ids: z.array(z.string().uuid()).optional(),
+        dispatch_mode: z.enum(["single", "multi"]).default("single"),
         spreadsheet_id: z.string().uuid(),
         template_text: z.string().min(1).max(4000),
         template_id: z.string().uuid().optional(),
         min_ms: z.number().int().min(0).max(600000).default(8000),
         max_ms: z.number().int().min(0).max(600000).default(20000),
         daily_cap: z.number().int().min(1).max(10000).default(200),
+        hourly_limit: z.number().int().min(1).max(1000).default(60),
         window_start: z
           .string()
           .regex(/^\d{2}:\d{2}$/)
@@ -150,6 +154,16 @@ export const createCampaign = createServerFn({ method: "POST" })
       .refine((v) => v.min_ms <= v.max_ms, {
         message: "min_ms deve ser <= max_ms",
       })
+      .refine(
+        (v) =>
+          v.dispatch_mode === "single"
+            ? !!v.connection_id
+            : (v.connection_ids?.length ?? 0) >= 2,
+        {
+          message:
+            "single requer connection_id; multi requer connection_ids com >=2",
+        },
+      )
       .parse(raw),
   )
   .handler(async ({ data }) => {
@@ -189,17 +203,33 @@ export const createCampaign = createServerFn({ method: "POST" })
       }
     }
 
+    // Se multi, valida que todas as conexoes existem no workspace.
+    if (data.dispatch_mode === "multi" && data.connection_ids) {
+      const { data: conns } = await supabaseAdmin
+        .from("connections")
+        .select("id")
+        .eq("workspace_id", DEFAULT_WORKSPACE)
+        .in("id", data.connection_ids);
+      if ((conns?.length ?? 0) !== data.connection_ids.length) {
+        throw new Error("Uma ou mais conexoes invalidas para este workspace");
+      }
+    }
+
     // Cria campanha em draft.
     const insertCampaign: TablesInsert<"campaigns"> = {
       workspace_id: DEFAULT_WORKSPACE,
       name: data.name,
-      connection_id: data.connection_id,
+      // Em modo multi, connection_id fica null; conexoes vao em campaign_connections.
+      connection_id:
+        data.dispatch_mode === "single" ? (data.connection_id ?? null) : null,
+      dispatch_mode: data.dispatch_mode,
       spreadsheet_id: data.spreadsheet_id,
       template_id: data.template_id ?? null,
       status: "draft",
       min_ms: data.min_ms,
       max_ms: data.max_ms,
       daily_cap: data.daily_cap,
+      hourly_limit: data.hourly_limit,
       window_start: data.window_start,
       window_end: data.window_end,
       warmup_per_day: data.warmup_per_day ?? null,
@@ -212,7 +242,25 @@ export const createCampaign = createServerFn({ method: "POST" })
       .single();
     if (cErr || !created) throw new Error("Falha ao criar campanha");
 
+    // Registra conexoes vinculadas se modo multi.
+    if (data.dispatch_mode === "multi" && data.connection_ids?.length) {
+      const links = data.connection_ids.map((connection_id, position) => ({
+        workspace_id: DEFAULT_WORKSPACE,
+        campaign_id: created.id,
+        connection_id,
+        position,
+      }));
+      const { error: linkErr } = await supabaseAdmin
+        .from("campaign_connections")
+        .insert(links);
+      if (linkErr) throw new Error("Falha ao vincular conexoes");
+    }
+
     // Renderiza recipients.
+    // Semeia next_send_at escalonado para evitar rajada no primeiro tick.
+    const avgMs = Math.max(1000, Math.round((data.min_ms + data.max_ms) / 2));
+    const t0 = Date.now();
+    let idx = 0;
     const recipients: TablesInsert<"campaign_recipients">[] = [];
     for (const r of rows) {
       const rowData = (r.data ?? {}) as Record<string, unknown>;
@@ -225,14 +273,19 @@ export const createCampaign = createServerFn({ method: "POST" })
       );
       const contactName = nameKey ? String(rowData[nameKey] ?? "") : null;
       const { text } = renderTemplate(data.template_text, rowData);
+      const isOptOut = optOut.has(phone);
       recipients.push({
         workspace_id: DEFAULT_WORKSPACE,
         campaign_id: created.id,
         contact_phone: phone,
         contact_name: contactName,
         variables: { rendered_text: text } as Json,
-        status: optOut.has(phone) ? "skipped_optout" : "pending",
+        status: isOptOut ? "skipped_optout" : "pending",
+        next_send_at: isOptOut
+          ? null
+          : new Date(t0 + idx * avgMs).toISOString(),
       });
+      if (!isOptOut) idx++;
     }
 
     let inserted = 0;
@@ -286,7 +339,16 @@ export const listRecipients = createServerFn({ method: "POST" })
     z
       .object({
         campaign_id: z.string().uuid(),
-        status: z.enum(["pending", "sent", "failed", "skipped_optout"]).optional(),
+        status: z
+          .enum([
+            "pending",
+            "sending",
+            "sent",
+            "failed",
+            "skipped_optout",
+            "stopped_reply",
+          ])
+          .optional(),
         limit: z.number().int().min(1).max(500).default(100),
         offset: z.number().int().min(0).default(0),
       })
@@ -299,7 +361,7 @@ export const listRecipients = createServerFn({ method: "POST" })
     let q = supabaseAdmin
       .from("campaign_recipients")
       .select(
-        "id, contact_phone, contact_name, status, sent_at, error, updated_at",
+        "id, contact_phone, contact_name, status, sent_at, error, updated_at, last_connection_id, attempt_count",
         { count: "exact" },
       )
       .eq("workspace_id", DEFAULT_WORKSPACE)
@@ -376,4 +438,22 @@ export const deleteCampaign = createServerFn({ method: "POST" })
       .eq("id", data.id);
     if (cErr) throw new Error("Falha ao remover campanha");
     return { ok: true };
+  });
+
+export const getCampaignConnections = createServerFn({ method: "POST" })
+  .inputValidator((raw: unknown) =>
+    z.object({ campaign_id: z.string().uuid() }).parse(raw),
+  )
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import(
+      "@/integrations/supabase/client.server"
+    );
+    const { data: rows, error } = await supabaseAdmin
+      .from("campaign_connections")
+      .select("connection_id, position, connections(id, name, status, instance_name)")
+      .eq("workspace_id", DEFAULT_WORKSPACE)
+      .eq("campaign_id", data.campaign_id)
+      .order("position", { ascending: true });
+    if (error) throw new Error("Falha ao listar conexoes da campanha");
+    return { connections: rows ?? [] };
   });

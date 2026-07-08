@@ -235,6 +235,26 @@ export const Route = createFileRoute("/api/public/evolution/webhook")({
               continue;
             }
 
+            // F6.1 T4 - Stop-on-reply: se e inbound, marca recipients em
+            // campanhas running deste contato para nao enviar mais.
+            if (m.direction === "inbound" && phone) {
+              const { data: runningCamps } = await supabaseAdmin
+                .from("campaigns")
+                .select("id")
+                .eq("workspace_id", DEFAULT_WORKSPACE)
+                .eq("status", "running");
+              const runningIds = (runningCamps ?? []).map((r) => r.id);
+              if (runningIds.length > 0) {
+                await supabaseAdmin
+                  .from("campaign_recipients")
+                  .update({ status: "stopped_reply" })
+                  .eq("workspace_id", DEFAULT_WORKSPACE)
+                  .eq("contact_phone", phone)
+                  .in("status", ["pending", "sending"])
+                  .in("campaign_id", runningIds);
+              }
+            }
+
             // Runtime do agente: so para inbound text. Nunca falha o 200.
             if (m.direction === "inbound" && m.kind === "text" && insertedMsg?.id) {
               try {

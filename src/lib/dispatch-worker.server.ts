@@ -7,6 +7,7 @@ import {
   dailyCapRemaining,
   dateKeySaoPaulo,
 } from "@/lib/anti-ban";
+import { pickConnection } from "@/lib/dispatch-connection.server";
 
 /**
  * F6 T8 - Worker de disparo.
@@ -47,26 +48,27 @@ export async function runDispatchTick(
   const provider = opts.provider ?? evolutionProvider;
   const result: TickResult = { campaigns: 0, sent: 0, failed: 0, skipped: 0 };
 
+  // F6.1: kill-switch por workspace. Se algum workspace estiver pausado,
+  // pula todas as campanhas dele.
+  const { data: pausedWs } = await db
+    .from("workspaces")
+    .select("id")
+    .eq("dispatch_paused", true);
+  const pausedSet = new Set((pausedWs ?? []).map((w) => w.id));
+
   const { data: campaigns, error } = await db
     .from("campaigns")
     .select(
-      "id, workspace_id, connection_id, status, min_ms, max_ms, daily_cap, window_start, window_end, warmup_per_day, sent_today, sent_today_date, started_at",
+      "id, workspace_id, connection_id, status, min_ms, max_ms, daily_cap, hourly_limit, sent_this_hour, sent_this_hour_at, window_start, window_end, warmup_per_day, sent_today, sent_today_date, started_at, dispatch_mode",
     )
     .eq("status", "running");
   if (error) throw new Error("Falha ao listar campanhas running");
 
   for (const c of campaigns ?? []) {
     result.campaigns++;
+    if (pausedSet.has(c.workspace_id)) continue;
     if (!isWithinWindow(now, { start: c.window_start, end: c.window_end }))
       continue;
-    if (!c.connection_id) continue;
-
-    const { data: conn } = await db
-      .from("connections")
-      .select("instance_name, status")
-      .eq("id", c.connection_id)
-      .maybeSingle();
-    if (!conn?.instance_name) continue;
 
     const startedAt = c.started_at ? new Date(c.started_at) : null;
     let remaining = dailyCapRemaining({
@@ -78,6 +80,26 @@ export async function runDispatchTick(
       now,
     });
 
+    // Hourly cap: reset se mudou a hora corrente.
+    const currentHourKey = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      now.getHours(),
+    ).toISOString();
+    const sentThisHourAt = c.sent_this_hour_at
+      ? new Date(c.sent_this_hour_at).toISOString()
+      : null;
+    const sentThisHourAtHour = sentThisHourAt
+      ? new Date(sentThisHourAt).setMinutes(0, 0, 0)
+      : null;
+    const nowHour = new Date(currentHourKey).getTime();
+    let sentThisHour =
+      sentThisHourAtHour === nowHour ? c.sent_this_hour : 0;
+    const hourlyRemaining = Math.max(0, c.hourly_limit - sentThisHour);
+    if (hourlyRemaining <= 0) continue;
+    remaining = Math.min(remaining, hourlyRemaining);
+
     for (let i = 0; i < maxSends && remaining > 0; i++) {
       // Re-check status (kill-switch).
       const { data: fresh } = await db
@@ -87,13 +109,15 @@ export async function runDispatchTick(
         .maybeSingle();
       if (fresh?.status !== "running") break;
 
-      // Proximo pending. Sem SKIP LOCKED via PostgREST; usamos update por id como claim.
+      // F6.1: claim considera next_send_at para nao rajar todo mundo agora.
+      const nowIso = new Date().toISOString();
       const { data: cand } = await db
         .from("campaign_recipients")
-        .select("id, contact_phone, variables")
+        .select("id, contact_phone, variables, attempt_count")
         .eq("campaign_id", c.id)
         .eq("status", "pending")
-        .order("created_at", { ascending: true })
+        .or(`next_send_at.is.null,next_send_at.lte.${nowIso}`)
+        .order("next_send_at", { ascending: true, nullsFirst: true })
         .limit(1)
         .maybeSingle();
       if (!cand) break;
@@ -107,6 +131,22 @@ export async function runDispatchTick(
         .select("id")
         .maybeSingle();
       if (!claimed) continue;
+
+      // F6.1: escolhe conexao (single ou round-robin em multi).
+      const picked = await pickConnection(db, {
+        id: c.id,
+        workspace_id: c.workspace_id,
+        connection_id: c.connection_id,
+        dispatch_mode: c.dispatch_mode,
+      });
+      if (!picked) {
+        // Sem conexao usavel: devolve para pending e sai da campanha.
+        await db
+          .from("campaign_recipients")
+          .update({ status: "pending" })
+          .eq("id", cand.id);
+        break;
+      }
 
       // Opt-out double-check.
       const { data: contact } = await db
@@ -136,36 +176,68 @@ export async function runDispatchTick(
       }
 
       try {
-        await provider.sendText(conn.instance_name, {
+        await provider.sendText(picked.instance_name, {
           to: normalizeMsisdn(cand.contact_phone),
           text,
         });
         await db
           .from("campaign_recipients")
-          .update({ status: "sent", sent_at: new Date().toISOString() })
+          .update({
+            status: "sent",
+            sent_at: new Date().toISOString(),
+            last_connection_id: picked.connection_id,
+          })
           .eq("id", cand.id);
         result.sent++;
 
-        // Atualiza sent_today.
+        // Atualiza sent_today + sent_this_hour.
         const today = dateKeySaoPaulo(now);
         const newCount =
           c.sent_today_date === today ? c.sent_today + 1 : 1;
+        sentThisHour += 1;
         await db
           .from("campaigns")
-          .update({ sent_today: newCount, sent_today_date: today })
+          .update({
+            sent_today: newCount,
+            sent_today_date: today,
+            sent_this_hour: sentThisHour,
+            sent_this_hour_at: currentHourKey,
+          })
           .eq("id", c.id);
         c.sent_today = newCount;
         c.sent_today_date = today;
+        c.sent_this_hour = sentThisHour;
+        c.sent_this_hour_at = currentHourKey;
         remaining--;
       } catch (e) {
-        await db
-          .from("campaign_recipients")
-          .update({
-            status: "failed",
-            error: e instanceof Error ? e.message.slice(0, 200) : "send_failed",
-          })
-          .eq("id", cand.id);
-        result.failed++;
+        // F6.1: retry unico. attempt<1 -> reagenda; senao failed.
+        const attempts = (cand.attempt_count ?? 0) + 1;
+        const errMsg =
+          e instanceof Error ? e.message.slice(0, 200) : "send_failed";
+        if (attempts < 2) {
+          const backoffMs = Math.max(c.min_ms, 30_000);
+          await db
+            .from("campaign_recipients")
+            .update({
+              status: "pending",
+              attempt_count: attempts,
+              error: errMsg,
+              last_connection_id: picked.connection_id,
+              next_send_at: new Date(Date.now() + backoffMs).toISOString(),
+            })
+            .eq("id", cand.id);
+        } else {
+          await db
+            .from("campaign_recipients")
+            .update({
+              status: "failed",
+              attempt_count: attempts,
+              error: errMsg,
+              last_connection_id: picked.connection_id,
+            })
+            .eq("id", cand.id);
+          result.failed++;
+        }
       }
 
       // Delay aleatorio dentro do tick (bounded).
@@ -178,7 +250,7 @@ export async function runDispatchTick(
       .from("campaign_recipients")
       .select("id", { count: "exact", head: true })
       .eq("campaign_id", c.id)
-      .eq("status", "pending");
+      .in("status", ["pending", "sending"]);
     if ((pendingLeft ?? 0) === 0) {
       await db
         .from("campaigns")
