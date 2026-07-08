@@ -150,6 +150,9 @@ export const createCampaign = createServerFn({ method: "POST" })
           .regex(/^\d{2}:\d{2}$/)
           .default("20:00"),
         warmup_per_day: z.number().int().min(1).max(10000).optional(),
+        cooldown_enabled: z.boolean().default(true),
+        cooldown_value: z.number().int().min(0).max(720).optional(),
+        cooldown_unit: z.enum(["hours", "days"]).optional(),
       })
       .refine((v) => v.min_ms <= v.max_ms, {
         message: "min_ms deve ser <= max_ms",
@@ -170,6 +173,24 @@ export const createCampaign = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import(
       "@/integrations/supabase/client.server"
     );
+
+    // Carrega cooldown padrao do workspace.
+    const { data: ws } = await supabaseAdmin
+      .from("workspaces")
+      .select("cooldown_default_hours")
+      .eq("id", DEFAULT_WORKSPACE)
+      .maybeSingle();
+    const defaultHours =
+      (ws as { cooldown_default_hours?: number } | null)
+        ?.cooldown_default_hours ?? 24;
+    const requestedHours = data.cooldown_value
+      ? data.cooldown_unit === "days"
+        ? data.cooldown_value * 24
+        : data.cooldown_value
+      : defaultHours;
+    const effectiveHours = data.cooldown_enabled
+      ? Math.max(defaultHours, requestedHours)
+      : 0;
 
     // Le linhas da planilha.
     const { data: rows, error: rErr } = await supabaseAdmin
@@ -200,6 +221,37 @@ export const createCampaign = createServerFn({ method: "POST" })
       if (cErr) throw new Error("Falha ao consultar contatos");
       for (const c of contacts ?? []) {
         if (c.opt_out) optOut.add(c.phone);
+      }
+    }
+
+    // Cooldown: telefones que ja responderam dentro da janela efetiva.
+    const inCooldown = new Set<string>();
+    if (effectiveHours > 0 && phones.size) {
+      const since = new Date(
+        Date.now() - effectiveHours * 3600_000,
+      ).toISOString();
+      // conversations sao ligadas a contact_phone; buscamos mensagens inbound
+      // do workspace e cruzamos com os telefones da planilha.
+      const { data: convs } = await supabaseAdmin
+        .from("conversations")
+        .select("id, contact_phone")
+        .eq("workspace_id", DEFAULT_WORKSPACE)
+        .in("contact_phone", Array.from(phones));
+      const phoneByConv = new Map<string, string>();
+      for (const c of convs ?? []) phoneByConv.set(c.id, c.contact_phone);
+      const convIds = Array.from(phoneByConv.keys());
+      if (convIds.length > 0) {
+        const { data: msgs } = await supabaseAdmin
+          .from("messages")
+          .select("conversation_id, created_at, direction")
+          .eq("workspace_id", DEFAULT_WORKSPACE)
+          .eq("direction", "inbound")
+          .in("conversation_id", convIds)
+          .gte("created_at", since);
+        for (const m of msgs ?? []) {
+          const phone = phoneByConv.get(m.conversation_id);
+          if (phone) inCooldown.add(phone);
+        }
       }
     }
 
@@ -234,6 +286,11 @@ export const createCampaign = createServerFn({ method: "POST" })
       window_end: data.window_end,
       warmup_per_day: data.warmup_per_day ?? null,
       metadata: { template_text: data.template_text } as Json,
+      ...({
+        cooldown_enabled: data.cooldown_enabled,
+        cooldown_value: effectiveHours,
+        cooldown_unit: "hours",
+      } as Partial<TablesInsert<"campaigns">>),
     };
     const { data: created, error: cErr } = await supabaseAdmin
       .from("campaigns")
@@ -274,18 +331,24 @@ export const createCampaign = createServerFn({ method: "POST" })
       const contactName = nameKey ? String(rowData[nameKey] ?? "") : null;
       const { text } = renderTemplate(data.template_text, rowData);
       const isOptOut = optOut.has(phone);
+      const isCooldown = !isOptOut && inCooldown.has(phone);
+      const statusValue = isOptOut
+        ? "skipped_optout"
+        : isCooldown
+          ? "stopped_recent_reply"
+          : "pending";
       recipients.push({
         workspace_id: DEFAULT_WORKSPACE,
         campaign_id: created.id,
         contact_phone: phone,
         contact_name: contactName,
         variables: { rendered_text: text } as Json,
-        status: isOptOut ? "skipped_optout" : "pending",
-        next_send_at: isOptOut
+        status: statusValue,
+        next_send_at: isOptOut || isCooldown
           ? null
           : new Date(t0 + idx * avgMs).toISOString(),
       });
-      if (!isOptOut) idx++;
+      if (!isOptOut && !isCooldown) idx++;
     }
 
     let inserted = 0;
@@ -304,6 +367,9 @@ export const createCampaign = createServerFn({ method: "POST" })
       recipients_created: inserted,
       opt_outs_skipped: recipients.filter((r) => r.status === "skipped_optout")
         .length,
+      cooldown_skipped: recipients.filter(
+        (r) => r.status === "stopped_recent_reply",
+      ).length,
     };
   });
 
