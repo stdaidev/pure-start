@@ -8,5 +8,5 @@
 | F3 | Runtime do agente (webhook -> buffer -> LLM -> saida humanizada) + modulo Agentes | alto | partial | P4 | ldk/features/f3-runtime-agente/proof.md |
 | F4 | Conversas/inbox + handoff (assumir/devolver IA) | medio | done | P2 | ldk/features/f4-conversas-handoff/proof.md |
 | F5 | Contatos e Planilhas (upload CSV/XLSX, headers->placeholders, opt-out) | medio | done | P2 | ldk/features/f5-contatos-planilhas/proof.md |
-| F6 | Disparos (wizard, template com preview, anti-ban, worker pg_cron, monitor ao vivo) | alto | idea | P4 | |
+| F6 | Disparos (wizard, template com preview, anti-ban, worker pg_cron, monitor ao vivo) | alto | approved | P4 | |
 | F7 | Dashboard + Configuracoes + polimento | baixo | idea | P1 | |

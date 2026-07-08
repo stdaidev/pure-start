@@ -430,3 +430,14 @@ Registro compacto iniciado quando Audit log: on foi habilitado.
 - Decision: incremento sobre F3 partial (AC originais intactos; flexibiliza sem trocar contrato)
 - Known limitations: sem validacao cruzada de custo/tempo se usuario setar ilimitado + modelo caro; teto de rounds em 20 e hardcoded no runtime, nao configuravel via UI.
 - Next: revalidar so se AC de F3 mudar.
+
+## 2026-07-08 - ldk-plan - F6 Disparos
+- Command: ldk-plan
+- User intent: planejar F6 (disparos com anti-ban) apos F5 done
+- State before: F6 idea, F5 done, F3/F1 partial
+- Actions: criado brief.md e plan.md em ldk/features/f6-disparos/; ledger F6 idea -> approved; escopo ajustado para reusar campaign_recipients (ja existente) em vez de campaign_targets
+- Files changed: ldk/features/f6-disparos/brief.md, ldk/features/f6-disparos/plan.md, ldk/ledger.md
+- Evidence: preview na; manual na; tests na; console na; diff na
+- Decision: planned
+- Known limitations: pg_net a confirmar em T9; timezone fixo America/Sao_Paulo v1; envio real via mock em T10
+- Next: /ldk-build-task para T1 (migration anti-ban)
