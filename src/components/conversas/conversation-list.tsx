@@ -8,6 +8,8 @@ export interface ConversationListItem {
   agent_id: string | null;
   last_message_at: string | null;
   preview: { content: string | null; direction: string } | null;
+  connection_id: string | null;
+  connection_name: string | null;
 }
 
 function formatRelative(ts: string | null): string {
