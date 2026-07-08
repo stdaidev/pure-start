@@ -233,12 +233,24 @@ export function NewCampaignDialog(props: {
                   </SelectTrigger>
                   <SelectContent>
                     {availableConns.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
+                      <SelectItem
+                        key={c.id}
+                        value={c.id}
+                        disabled={c.status !== "connected"}
+                      >
                         {c.name} — {c.status}
+                        {c.status !== "connected" ? " (indisponivel)" : ""}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+                {connectionId &&
+                availableConns.find((c) => c.id === connectionId)?.status !==
+                  "connected" ? (
+                  <p className="text-[10px] text-red-400">
+                    conexao nao esta conectada — selecione outra
+                  </p>
+                ) : null}
               </div>
             ) : (
               <div className="flex flex-col gap-2">
@@ -250,12 +262,20 @@ export function NewCampaignDialog(props: {
                     </p>
                   ) : null}
                   {availableConns.map((c) => (
+                    (() => {
+                      const disabled = c.status !== "connected";
+                      return (
                     <label
                       key={c.id}
-                      className="flex items-center gap-2 rounded px-2 py-1 hover:bg-muted/30 cursor-pointer"
+                      className={`flex items-center gap-2 rounded px-2 py-1 ${
+                        disabled
+                          ? "opacity-50 cursor-not-allowed"
+                          : "hover:bg-muted/30 cursor-pointer"
+                      }`}
                     >
                       <input
                         type="checkbox"
+                        disabled={disabled}
                         checked={connectionIds.includes(c.id)}
                         onChange={() => toggleConn(c.id)}
                       />
@@ -266,6 +286,8 @@ export function NewCampaignDialog(props: {
                         </span>
                       </span>
                     </label>
+                      );
+                    })()
                   ))}
                 </div>
                 <p className="text-[10px] text-muted-foreground">
