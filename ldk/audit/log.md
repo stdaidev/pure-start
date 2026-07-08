@@ -1,3 +1,14 @@
+
+## 2026-07-08 - ldk-release - release check
+- Command: ldk-release
+- User intent: rodar checklist de release apos F6.2 DONE
+- State before: F6.2 done; F1/F3/F6/F6.1 partial; F7 idea
+- Actions: gerado `ldk/releases/2026-07-08.md` com decisao NO-GO
+- Files changed: ldk/releases/2026-07-08.md
+- Evidence: preview yes; manual yes (F6.2); tests not run; console na; diff no
+- Decision: NO-GO
+- Known limitations: F1/F3/F6/F6.1 sem prova P3/P4; mobile nao checado; CI nao rodado
+- Next: rodar `/ldk-proof` nas features partial ou aceitar soft-launch interno explicito
 ## 2026-07-07 - ldk-plan approve - F3
 
 ## 2026-07-07 - ldk-build T10+T11 - F3
