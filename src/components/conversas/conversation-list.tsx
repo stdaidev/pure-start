@@ -35,8 +35,9 @@ export function ConversationList(props: {
   activeId: string | null;
   onSelect: (id: string) => void;
   loading?: boolean;
+  showConnection?: boolean;
 }) {
-  const { items, activeId, onSelect, loading } = props;
+  const { items, activeId, onSelect, loading, showConnection } = props;
 
   if (loading) {
     return (
@@ -100,6 +101,15 @@ export function ConversationList(props: {
                 >
                   {b.label}
                 </span>
+                {showConnection && c.connection_name ? (
+                  <span
+                    className="rounded border border-border/60 px-1.5 py-0.5 text-[9px] uppercase tracking-widest text-muted-foreground"
+                    style={{ fontFamily: "var(--font-mono)" }}
+                    title={`recebida via ${c.connection_name}`}
+                  >
+                    via {c.connection_name}
+                  </span>
+                ) : null}
                 <span className="truncate text-xs text-muted-foreground">
                   {c.preview?.direction === "outbound" ? "→ " : ""}
                   {c.preview?.content ?? (c.preview?.media_type ? `[${c.preview.media_type}]` : "—")}
