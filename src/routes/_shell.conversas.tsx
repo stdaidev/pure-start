@@ -236,3 +236,24 @@ function ConversasPage() {
     </div>
   );
 }
+
+function FilterChip(props: {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={props.onClick}
+      className={cn(
+        "rounded border px-2 py-1 text-[10px] uppercase tracking-widest transition-colors",
+        props.active
+          ? "border-primary/60 bg-primary/15 text-primary"
+          : "border-border/60 text-muted-foreground hover:bg-muted/40",
+      )}
+    >
+      {props.label}
+    </button>
+  );
+}
