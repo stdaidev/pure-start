@@ -208,11 +208,14 @@ export const Route = createFileRoute("/api/public/evolution/webhook")({
 
             if (!conversationId) continue;
 
-            // Idempotencia manual: verifica antes de inserir
+            // Idempotencia manual: escopo por conversa (o mesmo id do WhatsApp
+            // aparece em instancias diferentes: cliente fromMe=true e vendedor
+            // fromMe=false compartilham o mesmo key.id).
             const { data: dup } = await supabaseAdmin
               .from("messages")
               .select("id")
               .eq("workspace_id", DEFAULT_WORKSPACE)
+              .eq("conversation_id", conversationId)
               .eq("external_id", m.providerMessageId)
               .maybeSingle();
             if (dup) continue;
