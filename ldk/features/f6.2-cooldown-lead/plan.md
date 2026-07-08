@@ -20,13 +20,13 @@ Modo de execucao recomendado: `ldk-build`
 
 | ID | Descricao | AC | Arquivos esperados | Verificacao | State |
 |----|-----------|----|--------------------|-------------|-------|
-| T1 | Migration cooldown + index messages | AC1, AC2, AC3 | `supabase/migrations/*.sql` | supabase linter | proof-pending |
-| T2 | workspace.functions + UI /configuracoes | AC2 | `src/lib/workspace.functions.ts`, `src/routes/_shell.configuracoes.tsx` | smoke UI | proof-pending |
-| T3 | createCampaign com cooldown | AC3, AC5 | `src/lib/campaigns.functions.ts` | tsgo | proof-pending |
-| T4 | Worker re-check cooldown | AC6 | `src/lib/dispatch-worker.server.ts` | tsgo | proof-pending |
-| T5 | Wizard bloco cooldown | AC4 | `src/components/disparos/new-campaign-dialog.tsx` | preview manual | proof-pending |
-| T6 | Badge + counter monitor | AC1, AC7 | `src/components/disparos/status-badge.tsx`, `src/routes/_shell.disparos.$id.tsx` | preview manual | proof-pending |
-| T7 | Prova P2 | AC1-AC8 | `ldk/features/f6.2-cooldown-lead/proof.md` | manual + tsgo | proof-pending |
+| T1 | Migration cooldown + index messages | AC1, AC2, AC3 | `supabase/migrations/*.sql` | supabase linter | done |
+| T2 | workspace.functions + UI /configuracoes | AC2 | `src/lib/workspace.functions.ts`, `src/routes/_shell.configuracoes.tsx` | smoke UI | done |
+| T3 | createCampaign com cooldown | AC3, AC5 | `src/lib/campaigns.functions.ts` | tsgo | done |
+| T4 | Worker re-check cooldown | AC6 | `src/lib/dispatch-worker.server.ts` | tsgo | done |
+| T5 | Wizard bloco cooldown | AC4 | `src/components/disparos/new-campaign-dialog.tsx` | preview manual | done |
+| T6 | Badge + counter monitor | AC1, AC7 | `src/components/disparos/status-badge.tsx`, `src/routes/_shell.disparos.$id.tsx` | preview manual | done |
+| T7 | Prova P2 | AC1-AC8 | `ldk/features/f6.2-cooldown-lead/proof.md` | manual + tsgo | done |
 
 ## Fluxo
 
