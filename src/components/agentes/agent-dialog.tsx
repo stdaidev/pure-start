@@ -299,6 +299,72 @@ export function AgentDialog({ open, onOpenChange, agentId }: Props) {
             />
           </div>
 
+          <div className="glass-card space-y-4 p-4">
+            <div>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="a-max-tokens">
+                  Max tokens por resposta
+                  {form.max_tokens != null ? `: ${form.max_tokens}` : ""}
+                </Label>
+                <Switch
+                  id="a-max-tokens-on"
+                  checked={form.max_tokens != null}
+                  onCheckedChange={(v) =>
+                    setForm({ ...form, max_tokens: v ? 800 : null })
+                  }
+                />
+              </div>
+              {form.max_tokens != null ? (
+                <Slider
+                  className="mt-2"
+                  min={128}
+                  max={8000}
+                  step={64}
+                  value={[form.max_tokens]}
+                  onValueChange={([v]) => setForm({ ...form, max_tokens: v })}
+                />
+              ) : (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Ilimitado — usa o default do modelo.
+                </p>
+              )}
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="a-max-rounds">
+                  Max iteracoes de tools
+                  {form.max_tool_rounds != null
+                    ? `: ${form.max_tool_rounds}`
+                    : ""}
+                </Label>
+                <Switch
+                  id="a-max-rounds-on"
+                  checked={form.max_tool_rounds != null}
+                  onCheckedChange={(v) =>
+                    setForm({ ...form, max_tool_rounds: v ? 2 : null })
+                  }
+                />
+              </div>
+              {form.max_tool_rounds != null ? (
+                <Slider
+                  className="mt-2"
+                  min={1}
+                  max={20}
+                  step={1}
+                  value={[form.max_tool_rounds]}
+                  onValueChange={([v]) =>
+                    setForm({ ...form, max_tool_rounds: v })
+                  }
+                />
+              ) : (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Ilimitado — teto interno de seguranca em 20.
+                </p>
+              )}
+            </div>
+          </div>
+
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
               Cancelar
