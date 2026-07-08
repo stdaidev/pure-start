@@ -397,3 +397,36 @@ Registro compacto iniciado quando Audit log: on foi habilitado.
 - Decision: incremento sobre F2 done (AC originais intactos)
 - Known limitations: rename nao renomeia a instancia no Evolution (so o rotulo local).
 - Next: se precisar refletir no provedor, criar F2.1.
+
+## 2026-07-08 - prompt-direto - F2/F3 incremento
+- Command: prompt (fora de skill LDK)
+- User intent: sincronizar toggle "Ignorar grupos" com Evolution API
+- State before: F2 done, F3 partial; toggle so persistia local
+- Actions: novo `setSettings?()` em ChannelProvider; EvolutionProvider chama `POST /settings/set/{instance}` com `groups_ignore`/`groupsIgnore`; `setConnectionIgnoreGroups` faz sync best-effort com Evolution (falha no upstream nao bloqueia update local, so console.error server-side).
+- Files changed: src/providers/channel/types.ts, src/providers/channel/evolution.server.ts, src/lib/agents.functions.ts
+- Evidence: preview na; manual na; tests not run; console na; diff na
+- Decision: incremento sobre F2/F3 done (AC originais intactos)
+- Known limitations: sem retry/fila se Evolution estiver offline no momento do toggle; nao ha teste automatizado do sync.
+- Next: revalidar so se AC de F2/F3 mudar.
+
+## 2026-07-08 - prompt-direto - F4 incremento
+- Command: prompt (fora de skill LDK)
+- User intent: apagar conversa (mensagens + registro) na inbox
+- State before: F4 done
+- Actions: nova server fn `deleteConversation` (Zod, workspace-scope; apaga messages -> conversations); UI ganhou botao lixeira no header da conversa com AlertDialog de confirmacao; onSuccess limpa activeId e invalida ["conversations"].
+- Files changed: src/lib/conversations.functions.ts, src/routes/_shell.conversas.tsx
+- Evidence: preview na; manual na; tests not run; console na; diff na
+- Decision: incremento sobre F4 done (AC originais intactos)
+- Known limitations: delecao e hard-delete (nao soft-delete); nao apaga o contato; nao afeta o WhatsApp do usuario final.
+- Next: revalidar so se AC de F4 mudar.
+
+## 2026-07-08 - prompt-direto - F3 incremento
+- Command: prompt (fora de skill LDK)
+- User intent: expor max_tokens e max_tool_rounds por agente, com opcao de desligar (ilimitado)
+- State before: F3 partial; runtime usava constantes fixas (max_tokens 800, MAX_TOOL_ROUNDS 2)
+- Actions: migration adiciona `agents.max_tokens int` e `agents.max_tool_rounds int` (ambos nullable); runtime le os dois (null = ilimitado, teto interno HARD_MAX_TOOL_ROUNDS=20); OpenAIProvider so envia `max_tokens` quando definido; AgentDialog ganhou secao com Switch on/off + Slider para cada limite.
+- Files changed: supabase migration (agents.max_tokens, agents.max_tool_rounds), src/lib/agents.functions.ts, src/lib/agent-runtime.server.ts, src/providers/llm/openai.server.ts, src/components/agentes/agent-dialog.tsx
+- Evidence: preview na; manual na; tests not run; console na; diff na
+- Decision: incremento sobre F3 partial (AC originais intactos; flexibiliza sem trocar contrato)
+- Known limitations: sem validacao cruzada de custo/tempo se usuario setar ilimitado + modelo caro; teto de rounds em 20 e hardcoded no runtime, nao configuravel via UI.
+- Next: revalidar so se AC de F3 mudar.
