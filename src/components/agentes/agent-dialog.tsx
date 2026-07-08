@@ -50,6 +50,7 @@ type FormState = {
   active: boolean;
   max_tokens: number | null;
   max_tool_rounds: number | null;
+  debounce_seconds: number | null;
 };
 
 const empty: FormState = {
@@ -63,6 +64,7 @@ const empty: FormState = {
   active: true,
   max_tokens: 800,
   max_tool_rounds: 2,
+  debounce_seconds: null,
 };
 
 export function AgentDialog({ open, onOpenChange, agentId }: Props) {
@@ -99,6 +101,7 @@ export function AgentDialog({ open, onOpenChange, agentId }: Props) {
         active: a.active ?? true,
         max_tokens: a.max_tokens ?? null,
         max_tool_rounds: a.max_tool_rounds ?? null,
+        debounce_seconds: a.debounce_seconds ?? null,
       });
     }
   }, [open, agentId, loadQuery.data]);
@@ -118,6 +121,7 @@ export function AgentDialog({ open, onOpenChange, agentId }: Props) {
           active: form.active,
           max_tokens: form.max_tokens,
           max_tool_rounds: form.max_tool_rounds,
+          debounce_seconds: form.debounce_seconds,
         },
       }),
     onSuccess: () => {
@@ -363,6 +367,40 @@ export function AgentDialog({ open, onOpenChange, agentId }: Props) {
                 </p>
               )}
             </div>
+          </div>
+
+          <div className="glass-card space-y-2 p-4">
+            <Label htmlFor="a-debounce">
+              Empilhamento (segundos)
+              {form.debounce_seconds && form.debounce_seconds > 0
+                ? `: ${form.debounce_seconds}s`
+                : ""}
+            </Label>
+            <Input
+              id="a-debounce"
+              type="number"
+              min={0}
+              max={10}
+              step={1}
+              value={form.debounce_seconds ?? ""}
+              onChange={(e) => {
+                const raw = e.target.value.trim();
+                if (raw === "") {
+                  setForm({ ...form, debounce_seconds: null });
+                  return;
+                }
+                const n = Math.max(0, Math.min(10, Math.floor(Number(raw))));
+                setForm({
+                  ...form,
+                  debounce_seconds: Number.isFinite(n) ? n : null,
+                });
+              }}
+              placeholder="0 = usar padrao"
+            />
+            <p className="text-xs text-muted-foreground">
+              Janela para agrupar rajadas de mensagens antes de responder.
+              Vazio ou 0 = usa o padrao do sistema (4s). Maximo 10s.
+            </p>
           </div>
 
           <DialogFooter>

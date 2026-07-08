@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           active: boolean
           created_at: string
+          debounce_seconds: number | null
           description: string | null
           humanization: Json
           id: string
@@ -35,6 +36,7 @@ export type Database = {
         Insert: {
           active?: boolean
           created_at?: string
+          debounce_seconds?: number | null
           description?: string | null
           humanization?: Json
           id?: string
@@ -52,6 +54,7 @@ export type Database = {
         Update: {
           active?: boolean
           created_at?: string
+          debounce_seconds?: number | null
           description?: string | null
           humanization?: Json
           id?: string

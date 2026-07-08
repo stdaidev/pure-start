@@ -34,6 +34,7 @@ const agentInputSchema = z.object({
   active: z.boolean().default(true),
   max_tokens: z.number().int().min(1).max(16_000).nullable().optional(),
   max_tool_rounds: z.number().int().min(1).max(20).nullable().optional(),
+  debounce_seconds: z.number().int().min(0).max(10).nullable().optional(),
 });
 
 export const listAgents = createServerFn({ method: "GET" }).handler(async () => {
@@ -89,6 +90,10 @@ export const saveAgent = createServerFn({ method: "POST" })
       active: data.active,
       max_tokens: data.max_tokens ?? null,
       max_tool_rounds: data.max_tool_rounds ?? null,
+      debounce_seconds:
+        data.debounce_seconds == null || data.debounce_seconds === 0
+          ? null
+          : data.debounce_seconds,
     };
 
     if (data.id) {
