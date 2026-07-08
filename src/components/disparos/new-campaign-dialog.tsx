@@ -261,10 +261,9 @@ export function NewCampaignDialog(props: {
                       Nenhuma conexao disponivel.
                     </p>
                   ) : null}
-                  {availableConns.map((c) => (
-                    (() => {
-                      const disabled = c.status !== "connected";
-                      return (
+                  {availableConns.map((c) => {
+                    const disabled = c.status !== "connected";
+                    return (
                     <label
                       key={c.id}
                       className={`flex items-center gap-2 rounded px-2 py-1 ${
@@ -286,9 +285,8 @@ export function NewCampaignDialog(props: {
                         </span>
                       </span>
                     </label>
-                      );
-                    })()
-                  ))}
+                    );
+                  })}
                 </div>
                 <p className="text-[10px] text-muted-foreground">
                   Selecionadas: {connectionIds.length}
