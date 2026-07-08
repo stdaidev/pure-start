@@ -2,7 +2,7 @@ import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Pencil, Plus, RefreshCw, Trash2 } from "lucide-react";
+import { Pencil, Plus, QrCode, RefreshCw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -30,6 +30,7 @@ import {
   deleteConnection,
   getConnectionStatus,
   listConnections,
+  refreshQr,
   renameConnection,
 } from "@/lib/connections.functions";
 import {
@@ -39,6 +40,14 @@ import {
 } from "@/lib/agents.functions";
 import { StatusBadge } from "@/components/conexoes/status-badge";
 import { NewConnectionDialog } from "@/components/conexoes/new-connection-dialog";
+import { QrDisplay } from "@/components/conexoes/qr-display";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/_shell/conexoes")({
   head: () => ({
@@ -54,10 +63,12 @@ function ConexoesPage() {
   const qc = useQueryClient();
   const [newOpen, setNewOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [qrConnId, setQrConnId] = useState<string | null>(null);
 
   const listFn = useServerFn(listConnections);
   const statusFn = useServerFn(getConnectionStatus);
   const deleteFn = useServerFn(deleteConnection);
+  const refreshQrFn = useServerFn(refreshQr);
   const agentsFn = useServerFn(listAgents);
   const setAgentFn = useServerFn(setConnectionAgent);
   const setIgnoreFn = useServerFn(setConnectionIgnoreGroups);
@@ -94,6 +105,24 @@ function ConexoesPage() {
     mutationFn: (id: string) => statusFn({ data: { id } }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["connections"] }),
     onError: (e: Error) => toast.error(e.message || "Falha ao atualizar"),
+  });
+
+  const reconnectMut = useMutation({
+    mutationFn: (id: string) => refreshQrFn({ data: { id } }),
+    onSuccess: (_, id) => {
+      setQrConnId(id);
+      qc.invalidateQueries({ queryKey: ["connections"] });
+    },
+    onError: (e: Error) => toast.error(e.message || "Falha ao gerar QR"),
+  });
+
+  // Enquanto o QR dialog esta aberto, faz polling do status para fechar
+  // sozinho quando o WhatsApp conectar.
+  const qrStatusQuery = useQuery({
+    queryKey: ["connection-qr", qrConnId],
+    queryFn: () => statusFn({ data: { id: qrConnId as string } }),
+    enabled: !!qrConnId,
+    refetchInterval: 3000,
   });
 
   const deleteMut = useMutation({
@@ -224,6 +253,18 @@ function ConexoesPage() {
                   <Button
                     variant="ghost"
                     size="icon"
+                    onClick={() => reconnectMut.mutate(c.id)}
+                    disabled={
+                      reconnectMut.isPending && reconnectMut.variables === c.id
+                    }
+                    aria-label="Reconectar (novo QR)"
+                    title="Reconectar (novo QR)"
+                  >
+                    <QrCode className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={() => setDeleteId(c.id)}
                     aria-label="Remover conexao"
                   >
@@ -280,6 +321,32 @@ function ConexoesPage() {
       )}
 
       <NewConnectionDialog open={newOpen} onOpenChange={setNewOpen} />
+
+      <Dialog
+        open={!!qrConnId}
+        onOpenChange={(o) => !o && setQrConnId(null)}
+      >
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Reconectar WhatsApp</DialogTitle>
+            <DialogDescription>
+              Escaneie o QR no aparelho. Fecha sozinho ao conectar.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col items-center gap-3 py-2">
+            <QrDisplay base64={qrStatusQuery.data?.qr ?? null} />
+            <p
+              className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground"
+              style={{ fontFamily: "var(--font-mono)" }}
+            >
+              status: {qrStatusQuery.data?.status ?? "..."}
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
+      {qrStatusQuery.data?.status === "connected" && qrConnId ? (
+        <AutoCloseOnConnect onDone={() => setQrConnId(null)} />
+      ) : null}
 
       <AlertDialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
         <AlertDialogContent>
