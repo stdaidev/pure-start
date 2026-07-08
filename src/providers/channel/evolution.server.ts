@@ -121,7 +121,7 @@ function mediaDataUrl(base64: unknown, mimeType: unknown): string | undefined {
   const raw = getString(base64);
   if (!raw) return undefined;
   if (raw.startsWith("data:")) return raw;
-  const mime = getString(mimeType) ?? "application/octet-stream";
+  const mime = (getString(mimeType) ?? "application/octet-stream").split(";")[0].trim();
   return `data:${mime};base64,${raw}`;
 }
 
