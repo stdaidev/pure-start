@@ -375,3 +375,25 @@ Registro compacto iniciado quando Audit log: on foi habilitado.
 - Decision: DONE
 - Known limitations: xlsx aumenta bundle; email nao validado; busca so nome/telefone; tags nunca sao removidas no import (union).
 - Next: /ldk-next
+
+## 2026-07-08 - prompt-direto - F4 incremento
+- Command: prompt (fora de skill LDK)
+- User intent: separar inbox por numero e permitir nomear conexao
+- State before: F4 done, F2 done
+- Actions: /conversas ganhou chips de filtro por connection_id com contagem; ConversationListItem passou a expor connection_id/connection_name; listConversations passou a retornar connection_id.
+- Files changed: src/routes/_shell.conversas.tsx, src/components/conversas/conversation-list.tsx, src/lib/conversations.functions.ts
+- Evidence: preview na; manual na; tests not run; console na; diff na
+- Decision: incremento sobre F4 done (AC originais intactos)
+- Known limitations: nao ha teste automatizado do filtro; contagem depende do resultado atual (limit 200).
+- Next: revalidar so se AC de F4 mudar.
+
+## 2026-07-08 - prompt-direto - F2 incremento
+- Command: prompt (fora de skill LDK)
+- User intent: permitir renomear conexao
+- State before: F2 done
+- Actions: nova server fn renameConnection (Zod, workspace-scope); UI inline em /conexoes com click-to-edit + Pencil.
+- Files changed: src/lib/connections.functions.ts, src/routes/_shell.conexoes.tsx
+- Evidence: preview na; manual na; tests not run; console na; diff na
+- Decision: incremento sobre F2 done (AC originais intactos)
+- Known limitations: rename nao renomeia a instancia no Evolution (so o rotulo local).
+- Next: se precisar refletir no provedor, criar F2.1.
