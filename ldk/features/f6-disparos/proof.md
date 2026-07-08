@@ -52,7 +52,7 @@ Fluxo end-to-end de UI completo e observado. Autenticacao do endpoint validada d
 - Diff GitHub: nao verificado nesta skill.
 
 ## Status
-PARTIAL — implementacao completa e provada em UI/API; happy-path `sent=success` do worker deixado para verificacao manual pos-release com numero de teste real (conforme plano). Sem novos riscos abertos.
+DONE — implementacao completa e provada em UI/API; happy-path `sent=success` do worker validado manualmente pelo usuario em 2026-07-08 (ver "Checkpoint pos-teste manual" abaixo). Sem novos riscos abertos.
 
 ## Etapa concluida
 Prova F6 registrada; aguardando proximo comando.
