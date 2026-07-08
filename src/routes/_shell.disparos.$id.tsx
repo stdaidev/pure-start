@@ -9,6 +9,7 @@ import { CampaignStatusBadge } from "@/components/disparos/status-badge";
 import { useCampaignRealtime } from "@/hooks/use-campaign-realtime";
 import {
   getCampaign,
+  getCampaignConnections,
   listRecipients,
   updateCampaignStatus,
 } from "@/lib/campaigns.functions";
@@ -29,12 +30,17 @@ function CampaignMonitor() {
   useCampaignRealtime(id);
 
   const getFn = useServerFn(getCampaign);
+  const getConnsFn = useServerFn(getCampaignConnections);
   const listFn = useServerFn(listRecipients);
   const updateFn = useServerFn(updateCampaignStatus);
 
   const campaignQ = useQuery({
     queryKey: ["campaign", id],
     queryFn: () => getFn({ data: { id } }),
+  });
+  const connsQ = useQuery({
+    queryKey: ["campaign-connections", id],
+    queryFn: () => getConnsFn({ data: { campaign_id: id } }),
   });
   const recipientsQ = useQuery({
     queryKey: ["recipients", id],
@@ -78,6 +84,15 @@ function CampaignMonitor() {
   const campaign = campaignQ.data?.campaign;
   const progress = campaignQ.data?.progress;
   const status = campaign?.status ?? "draft";
+  const isMulti = campaign?.dispatch_mode === "multi";
+  const connName = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const l of connsQ.data?.connections ?? []) {
+      if (l.connections)
+        map.set(l.connections.id, l.connections.name ?? l.connections.instance_name);
+    }
+    return map;
+  }, [connsQ.data]);
 
   const canActivate = status === "draft" || status === "scheduled" || status === "paused";
   const canPause = status === "running";
@@ -89,6 +104,7 @@ function CampaignMonitor() {
       { k: "pendentes", v: progress?.pending ?? 0 },
       { k: "falhas", v: progress?.failed ?? 0 },
       { k: "opt-out", v: progress?.skipped_optout ?? 0 },
+      { k: "respondeu", v: progress?.stopped_reply ?? 0 },
     ],
     [progress],
   );
@@ -147,7 +163,7 @@ function CampaignMonitor() {
       </header>
 
       <div
-        className="grid grid-cols-4 gap-3"
+        className="grid grid-cols-5 gap-3"
         style={{ fontFamily: "var(--font-mono)" }}
       >
         {stats.map((s) => (
@@ -160,6 +176,15 @@ function CampaignMonitor() {
         ))}
       </div>
 
+      {isMulti ? (
+        <div
+          className="text-[10px] uppercase tracking-widest text-muted-foreground"
+          style={{ fontFamily: "var(--font-mono)" }}
+        >
+          modo multi-instancia — {connsQ.data?.connections?.length ?? 0} conexoes em rodizio
+        </div>
+      ) : null}
+
       <div className="flex-1 overflow-auto rounded border border-border/60">
         <table className="w-full text-sm">
           <thead
@@ -170,6 +195,7 @@ function CampaignMonitor() {
               <th className="px-3 py-2">Telefone</th>
               <th className="px-3 py-2">Nome</th>
               <th className="px-3 py-2">Status</th>
+              {isMulti ? <th className="px-3 py-2">Conexao</th> : null}
               <th className="px-3 py-2">Enviado em</th>
               <th className="px-3 py-2">Erro</th>
             </tr>
@@ -184,7 +210,19 @@ function CampaignMonitor() {
                   {maskPhone(r.contact_phone)}
                 </td>
                 <td className="px-3 py-2 text-xs">{r.contact_name ?? "—"}</td>
-                <td className="px-3 py-2 text-xs">{r.status}</td>
+                <td className="px-3 py-2 text-xs">
+                  <CampaignStatusBadge status={r.status} />
+                </td>
+                {isMulti ? (
+                  <td
+                    className="px-3 py-2 text-xs text-muted-foreground"
+                    style={{ fontFamily: "var(--font-mono)" }}
+                  >
+                    {r.last_connection_id
+                      ? connName.get(r.last_connection_id) ?? "?"
+                      : "—"}
+                  </td>
+                ) : null}
                 <td className="px-3 py-2 text-xs text-muted-foreground">
                   {r.sent_at ? new Date(r.sent_at).toLocaleString("pt-BR") : "—"}
                 </td>
@@ -195,7 +233,7 @@ function CampaignMonitor() {
             ))}
             {(recipientsQ.data?.recipients?.length ?? 0) === 0 ? (
               <tr>
-                <td className="px-3 py-6 text-center text-xs text-muted-foreground" colSpan={5}>
+                <td className="px-3 py-6 text-center text-xs text-muted-foreground" colSpan={isMulti ? 6 : 5}>
                   Sem destinatarios.
                 </td>
               </tr>
