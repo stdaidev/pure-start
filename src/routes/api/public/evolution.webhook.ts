@@ -348,11 +348,31 @@ export const Route = createFileRoute("/api/public/evolution/webhook")({
             if (m.direction === "inbound" && m.kind === "text" && insertedMsg?.id) {
               // F9 - Blocklist: se o numero esta na lista de ignorados,
               // grava mensagem normalmente mas nao agenda run do agente.
+              // Compara por variantes BR: com/sem DDI 55 e com/sem 9o digito
+              // no celular, ja que o JID do WhatsApp pode chegar em qualquer
+              // um desses formatos dependendo da versao/Evolution.
+              const variants = new Set<string>();
+              variants.add(phone);
+              const noCc = phone.startsWith("55") ? phone.slice(2) : phone;
+              variants.add(noCc);
+              if (phone.startsWith("55")) variants.add(phone);
+              else variants.add(`55${phone}`);
+              // BR mobile: com/sem "9" apos DDD (posicoes 2-3 do numero local)
+              if (noCc.length === 11 && noCc[2] === "9") {
+                const stripped = noCc.slice(0, 2) + noCc.slice(3);
+                variants.add(stripped);
+                variants.add(`55${stripped}`);
+              } else if (noCc.length === 10) {
+                const added = noCc.slice(0, 2) + "9" + noCc.slice(2);
+                variants.add(added);
+                variants.add(`55${added}`);
+              }
               const { data: blocked } = await supabaseAdmin
                 .from("agent_ignored_numbers")
                 .select("id")
                 .eq("workspace_id", DEFAULT_WORKSPACE)
-                .eq("phone_e164", phone)
+                .in("phone_e164", Array.from(variants))
+                .limit(1)
                 .maybeSingle();
               if (blocked) {
                 console.log(
