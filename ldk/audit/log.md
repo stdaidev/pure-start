@@ -1,4 +1,15 @@
 
+## 2026-07-08 - ldk-build corretivo - F8
+- Command: ldk-build
+- User intent: corrigir a propria F8, pois debounce/lock anterior nao resolveu duplicidade.
+- State before: F8 partial; implementacao usava Map/setTimeout e advisory lock.
+- Actions: trocado para debounce persistente em `conversations` (`agent_run_at`, `agent_running_since`, `agent_latest_message_id`), RPCs `schedule_agent_run`/`claim_due_agent_runs`/`release_agent_run`, webhook agenda no banco, nova rota `/api/public/agent/tick`, cron `agent_tick_every_5s` ativo.
+- Files changed: supabase/migrations/20260708220232_f24f9ad9-afea-4ccd-8fd3-e3e46beea9b2.sql, src/routes/api/public/evolution.webhook.ts, src/routes/api/public/agent.tick.ts, src/lib/agent-runtime.server.ts, src/integrations/supabase/types.ts, ldk/features/f8-debounce-lock/brief.md, ldk/features/f8-debounce-lock/plan.md, ldk/features/f8-debounce-lock/proof.md, ldk/ledger.md
+- Evidence: preview no; manual no; tests pass (`npx tsgo --noEmit`); console no; diff na; backend yes (colunas/RPCs/cron consultados; tick 401 sem apikey e 200 com apikey).
+- Decision: PARTIAL
+- Known limitations: teste real WhatsApp AC6 pendente; se Evolution usa URL publicada, publicar nova versao antes de validar externamente; cron atual aponta para URL preview/dev.
+- Next: validar no WhatsApp com 4 mensagens em <2s e, se responder uma vez, rodar `/ldk-proof` ou `/ldk-release`.
+
 ## 2026-07-08 - ldk-release - release check
 - Command: ldk-release
 - User intent: rodar checklist de release apos F6.2 DONE

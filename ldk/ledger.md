@@ -12,4 +12,4 @@
 | F6.1 | Anti-ban hardening + multi-instancia (next_send_at escalonado, hourly cap, kill-switch global, stop-on-reply, round-robin de conexoes) | alto | done | P4 | ldk/features/f6.1-anti-ban-hardening/proof.md |
 | F6.2 | Cooldown por lead: nao enviar para telefone que ja teve contato inbound recente. Bloqueio duro no create/tick + flag opcional por campanha "ignorar quem contactou nos ultimos X" com unidade selecionavel (horas/dias) | medio | done | P2 | ldk/features/f6.2-cooldown-lead/proof.md |
 | F7 | Dashboard + Configuracoes (secrets/provedores) + polimento (esconde "Disparar agora" em prod) | baixo | done | P2 | ldk/features/f7-dashboard-config/proof.md |
-| F8 | Debounce por conversa + advisory lock no runtime (evita respostas duplicadas em rajadas) | medio | partial | P2 | ldk/features/f8-debounce-lock/proof.md |
+| F8 | Debounce persistente por conversa + run lock no runtime (evita respostas duplicadas em rajadas) | medio | partial | P2 | ldk/features/f8-debounce-lock/proof.md |
