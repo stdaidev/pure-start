@@ -122,7 +122,7 @@ export async function runDispatchTick(
       const nowIso = new Date().toISOString();
       const { data: cand } = await db
         .from("campaign_recipients")
-        .select("id, contact_phone, variables, attempt_count")
+        .select("id, contact_phone, contact_name, variables, attempt_count")
         .eq("campaign_id", c.id)
         .eq("status", "pending")
         .or(`next_send_at.is.null,next_send_at.lte.${nowIso}`)
