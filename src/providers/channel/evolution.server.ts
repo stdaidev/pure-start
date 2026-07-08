@@ -121,6 +121,7 @@ export const evolutionProvider: ChannelProvider = {
   ): Promise<CreateInstanceResult> {
     const raw = (await evoFetch("/instance/create", {
       method: "POST",
+      timeoutMs: 25000,
       body: JSON.stringify({
         instanceName: input.name,
         integration: "WHATSAPP-BAILEYS",
