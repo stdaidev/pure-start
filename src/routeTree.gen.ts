@@ -21,6 +21,7 @@ import { Route as ShellConexoesRouteImport } from './routes/_shell.conexoes'
 import { Route as ShellAgentesRouteImport } from './routes/_shell.agentes'
 import { Route as ShellDisparosIdRouteImport } from './routes/_shell.disparos.$id'
 import { Route as ApiPublicEvolutionWebhookRouteImport } from './routes/api/public/evolution.webhook'
+import { Route as ApiPublicDispatchTickRouteImport } from './routes/api/public/dispatch.tick'
 
 const ShellRoute = ShellRouteImport.update({
   id: '/_shell',
@@ -82,6 +83,11 @@ const ApiPublicEvolutionWebhookRoute =
     path: '/api/public/evolution/webhook',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicDispatchTickRoute = ApiPublicDispatchTickRouteImport.update({
+  id: '/api/public/dispatch/tick',
+  path: '/api/public/dispatch/tick',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -94,6 +100,7 @@ export interface FileRoutesByFullPath {
   '/disparos': typeof ShellDisparosRouteWithChildren
   '/planilhas': typeof ShellPlanilhasRoute
   '/disparos/$id': typeof ShellDisparosIdRoute
+  '/api/public/dispatch/tick': typeof ApiPublicDispatchTickRoute
   '/api/public/evolution/webhook': typeof ApiPublicEvolutionWebhookRoute
 }
 export interface FileRoutesByTo {
@@ -107,6 +114,7 @@ export interface FileRoutesByTo {
   '/disparos': typeof ShellDisparosRouteWithChildren
   '/planilhas': typeof ShellPlanilhasRoute
   '/disparos/$id': typeof ShellDisparosIdRoute
+  '/api/public/dispatch/tick': typeof ApiPublicDispatchTickRoute
   '/api/public/evolution/webhook': typeof ApiPublicEvolutionWebhookRoute
 }
 export interface FileRoutesById {
@@ -122,6 +130,7 @@ export interface FileRoutesById {
   '/_shell/disparos': typeof ShellDisparosRouteWithChildren
   '/_shell/planilhas': typeof ShellPlanilhasRoute
   '/_shell/disparos/$id': typeof ShellDisparosIdRoute
+  '/api/public/dispatch/tick': typeof ApiPublicDispatchTickRoute
   '/api/public/evolution/webhook': typeof ApiPublicEvolutionWebhookRoute
 }
 export interface FileRouteTypes {
@@ -137,6 +146,7 @@ export interface FileRouteTypes {
     | '/disparos'
     | '/planilhas'
     | '/disparos/$id'
+    | '/api/public/dispatch/tick'
     | '/api/public/evolution/webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -150,6 +160,7 @@ export interface FileRouteTypes {
     | '/disparos'
     | '/planilhas'
     | '/disparos/$id'
+    | '/api/public/dispatch/tick'
     | '/api/public/evolution/webhook'
   id:
     | '__root__'
@@ -164,12 +175,14 @@ export interface FileRouteTypes {
     | '/_shell/disparos'
     | '/_shell/planilhas'
     | '/_shell/disparos/$id'
+    | '/api/public/dispatch/tick'
     | '/api/public/evolution/webhook'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ShellRoute: typeof ShellRouteWithChildren
+  ApiPublicDispatchTickRoute: typeof ApiPublicDispatchTickRoute
   ApiPublicEvolutionWebhookRoute: typeof ApiPublicEvolutionWebhookRoute
 }
 
@@ -259,6 +272,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicEvolutionWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/dispatch/tick': {
+      id: '/api/public/dispatch/tick'
+      path: '/api/public/dispatch/tick'
+      fullPath: '/api/public/dispatch/tick'
+      preLoaderRoute: typeof ApiPublicDispatchTickRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -301,6 +321,7 @@ const ShellRouteWithChildren = ShellRoute._addFileChildren(ShellRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ShellRoute: ShellRouteWithChildren,
+  ApiPublicDispatchTickRoute: ApiPublicDispatchTickRoute,
   ApiPublicEvolutionWebhookRoute: ApiPublicEvolutionWebhookRoute,
 }
 export const routeTree = rootRouteImport
