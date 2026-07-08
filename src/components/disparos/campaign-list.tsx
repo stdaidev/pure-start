@@ -1,5 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { CampaignStatusBadge } from "./status-badge";
+import { Button } from "@/components/ui/button";
+import { Trash2 } from "lucide-react";
 
 export type CampaignRow = {
   id: string;
@@ -10,7 +12,15 @@ export type CampaignRow = {
   progress: { total: number; sent: number; failed: number; pending: number };
 };
 
-export function CampaignList({ campaigns }: { campaigns: CampaignRow[] }) {
+export function CampaignList({
+  campaigns,
+  onDelete,
+  deletingId,
+}: {
+  campaigns: CampaignRow[];
+  onDelete?: (c: CampaignRow) => void;
+  deletingId?: string | null;
+}) {
   if (campaigns.length === 0) {
     return (
       <div className="rounded border border-dashed border-border/60 p-10 text-center text-sm text-muted-foreground">
@@ -30,6 +40,7 @@ export function CampaignList({ campaigns }: { campaigns: CampaignRow[] }) {
             <th className="px-3 py-2">Status</th>
             <th className="px-3 py-2">Progresso</th>
             <th className="px-3 py-2">Criada em</th>
+            <th className="px-3 py-2 w-10"></th>
           </tr>
         </thead>
         <tbody>
@@ -69,6 +80,29 @@ export function CampaignList({ campaigns }: { campaigns: CampaignRow[] }) {
                   style={{ fontFamily: "var(--font-mono)" }}
                 >
                   {new Date(c.created_at).toLocaleString("pt-BR")}
+                </td>
+                <td className="px-3 py-2 text-right">
+                  {onDelete ? (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      aria-label={`Excluir campanha ${c.name}`}
+                      disabled={deletingId === c.id}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (
+                          confirm(
+                            `Excluir campanha "${c.name}"? Esta acao remove todos os destinatarios e nao pode ser desfeita.`,
+                          )
+                        ) {
+                          onDelete(c);
+                        }
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4 text-muted-foreground hover:text-red-400" />
+                    </Button>
+                  ) : null}
                 </td>
               </tr>
             );

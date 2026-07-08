@@ -354,3 +354,26 @@ export const getSpreadsheetPreview = createServerFn({ method: "POST" })
     const first = (rows?.[0]?.data ?? null) as Json | null;
     return { sheet, first_row: first };
   });
+
+export const deleteCampaign = createServerFn({ method: "POST" })
+  .inputValidator((raw: unknown) =>
+    z.object({ id: z.string().uuid() }).parse(raw),
+  )
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import(
+      "@/integrations/supabase/client.server"
+    );
+    const { error: rErr } = await supabaseAdmin
+      .from("campaign_recipients")
+      .delete()
+      .eq("workspace_id", DEFAULT_WORKSPACE)
+      .eq("campaign_id", data.id);
+    if (rErr) throw new Error("Falha ao remover destinatarios");
+    const { error: cErr } = await supabaseAdmin
+      .from("campaigns")
+      .delete()
+      .eq("workspace_id", DEFAULT_WORKSPACE)
+      .eq("id", data.id);
+    if (cErr) throw new Error("Falha ao remover campanha");
+    return { ok: true };
+  });
