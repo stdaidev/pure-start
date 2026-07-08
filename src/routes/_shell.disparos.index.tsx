@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { CampaignList, type CampaignRow } from "@/components/disparos/campaign-list";
 import { NewCampaignDialog } from "@/components/disparos/new-campaign-dialog";
-import { listCampaigns } from "@/lib/campaigns.functions";
+import { deleteCampaign, listCampaigns } from "@/lib/campaigns.functions";
 
 export const Route = createFileRoute("/_shell/disparos/")({
   head: () => ({
@@ -20,11 +21,21 @@ export const Route = createFileRoute("/_shell/disparos/")({
 
 function DisparosPage() {
   const listFn = useServerFn(listCampaigns);
+  const deleteFn = useServerFn(deleteCampaign);
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const q = useQuery({
     queryKey: ["campaigns", "list"],
     queryFn: () => listFn({ data: { limit: 50, offset: 0 } }),
+  });
+  const delMut = useMutation({
+    mutationFn: (id: string) => deleteFn({ data: { id } }),
+    onSuccess: () => {
+      toast.success("Campanha excluida");
+      qc.invalidateQueries({ queryKey: ["campaigns", "list"] });
+    },
+    onError: (e) =>
+      toast.error(e instanceof Error ? e.message : "Falha ao excluir"),
   });
 
   const campaigns: CampaignRow[] = (q.data?.campaigns ?? []).map((c) => ({
@@ -64,7 +75,11 @@ function DisparosPage() {
       ) : q.error ? (
         <p className="text-sm text-red-400">Falha ao carregar campanhas.</p>
       ) : (
-        <CampaignList campaigns={campaigns} />
+        <CampaignList
+          campaigns={campaigns}
+          onDelete={(c) => delMut.mutate(c.id)}
+          deletingId={delMut.isPending ? (delMut.variables ?? null) : null}
+        />
       )}
 
       <NewCampaignDialog
