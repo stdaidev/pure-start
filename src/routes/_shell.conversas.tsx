@@ -176,6 +176,7 @@ function ConversasPage() {
             activeId={activeId}
             onSelect={setActiveId}
             loading={listQuery.isLoading}
+            showConnection={connectionFilter === "all"}
           />
         </div>
       </aside>
