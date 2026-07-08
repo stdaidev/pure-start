@@ -210,3 +210,23 @@ export const listConnections = createServerFn({ method: "GET" }).handler(
     return { connections: data ?? [] };
   },
 );
+
+export const renameConnection = createServerFn({ method: "POST" })
+  .inputValidator((raw: unknown) =>
+    z
+      .object({ id: z.string().uuid(), name: z.string().min(1).max(64) })
+      .parse(raw),
+  )
+  .handler(async ({ data }) => {
+    const workspaceId = "00000000-0000-0000-0000-000000000001";
+    const { supabaseAdmin } = await import(
+      "@/integrations/supabase/client.server"
+    );
+    const { error } = await supabaseAdmin
+      .from("connections")
+      .update({ name: data.name.trim() })
+      .eq("id", data.id)
+      .eq("workspace_id", workspaceId);
+    if (error) throw new Error("Falha ao renomear conexao");
+    return { ok: true };
+  });

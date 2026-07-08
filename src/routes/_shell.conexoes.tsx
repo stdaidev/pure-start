@@ -2,10 +2,11 @@ import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Plus, RefreshCw, Trash2 } from "lucide-react";
+import { Pencil, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import {
@@ -29,6 +30,7 @@ import {
   deleteConnection,
   getConnectionStatus,
   listConnections,
+  renameConnection,
 } from "@/lib/connections.functions";
 import {
   listAgents,
@@ -59,6 +61,9 @@ function ConexoesPage() {
   const agentsFn = useServerFn(listAgents);
   const setAgentFn = useServerFn(setConnectionAgent);
   const setIgnoreFn = useServerFn(setConnectionIgnoreGroups);
+  const renameFn = useServerFn(renameConnection);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
 
   const listQuery = useQuery({
     queryKey: ["connections"],
@@ -99,6 +104,15 @@ function ConexoesPage() {
       setDeleteId(null);
     },
     onError: (e: Error) => toast.error(e.message || "Falha ao remover"),
+  });
+
+  const renameMut = useMutation({
+    mutationFn: (v: { id: string; name: string }) => renameFn({ data: v }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["connections"] });
+      setRenamingId(null);
+    },
+    onError: (e: Error) => toast.error(e.message || "Falha ao renomear"),
   });
 
   const connections = listQuery.data?.connections ?? [];
@@ -159,12 +173,42 @@ function ConexoesPage() {
             >
               <div className="flex items-center justify-between gap-4">
                 <div className="flex flex-col gap-1.5">
-                  <span
-                    className="text-sm font-medium"
-                    style={{ fontFamily: "var(--font-display)" }}
-                  >
-                    {c.name}
-                  </span>
+                  {renamingId === c.id ? (
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        const v = renameValue.trim();
+                        if (v && v !== c.name) {
+                          renameMut.mutate({ id: c.id, name: v });
+                        } else {
+                          setRenamingId(null);
+                        }
+                      }}
+                      className="flex items-center gap-2"
+                    >
+                      <Input
+                        autoFocus
+                        value={renameValue}
+                        onChange={(e) => setRenameValue(e.target.value)}
+                        onBlur={() => setRenamingId(null)}
+                        className="h-7 w-56"
+                      />
+                    </form>
+                  ) : (
+                    <button
+                      type="button"
+                      className="group flex items-center gap-2 text-sm font-medium"
+                      style={{ fontFamily: "var(--font-display)" }}
+                      onClick={() => {
+                        setRenameValue(c.name);
+                        setRenamingId(c.id);
+                      }}
+                      aria-label="Renomear conexao"
+                    >
+                      <span>{c.name}</span>
+                      <Pencil className="h-3 w-3 opacity-40 group-hover:opacity-100" />
+                    </button>
+                  )}
                   <StatusBadge status={c.status} />
                 </div>
                 <div className="flex gap-2">
