@@ -54,16 +54,23 @@ interface DebounceEntry {
 }
 const agentDebounceMap = new Map<string, DebounceEntry>();
 
-function getDebounceMs(): number {
+function getDefaultDebounceMs(): number {
   const raw = Number(process.env.AGENT_DEBOUNCE_MS);
   if (!Number.isFinite(raw) || raw <= 0) return DEBOUNCE_DEFAULT_MS;
   return Math.min(raw, DEBOUNCE_CAP_MS);
 }
 
-function scheduleAgentRun(conversationId: string, messageId: string) {
+function scheduleAgentRun(
+  conversationId: string,
+  messageId: string,
+  agentDebounceSeconds: number | null,
+) {
   const existing = agentDebounceMap.get(conversationId);
   if (existing) clearTimeout(existing.timer);
-  const delay = getDebounceMs();
+  const delay =
+    agentDebounceSeconds && agentDebounceSeconds > 0
+      ? Math.min(agentDebounceSeconds * 1000, DEBOUNCE_CAP_MS)
+      : getDefaultDebounceMs();
   const timer = setTimeout(async () => {
     const entry = agentDebounceMap.get(conversationId);
     agentDebounceMap.delete(conversationId);
@@ -360,7 +367,28 @@ export const Route = createFileRoute("/api/public/evolution/webhook")({
 
             // Runtime do agente: so para inbound text. Nunca falha o 200.
             if (m.direction === "inbound" && m.kind === "text" && insertedMsg?.id) {
-              scheduleAgentRun(conversationId, insertedMsg.id);
+              // Resolve o debounce do agente da conversa (fallback: default do sistema).
+              let agentDebounceSeconds: number | null = null;
+              const { data: convRow } = await supabaseAdmin
+                .from("conversations")
+                .select("agent_id")
+                .eq("id", conversationId)
+                .maybeSingle();
+              if (convRow?.agent_id) {
+                const { data: agentRow } = await supabaseAdmin
+                  .from("agents")
+                  .select("debounce_seconds")
+                  .eq("id", convRow.agent_id)
+                  .maybeSingle();
+                agentDebounceSeconds =
+                  (agentRow as { debounce_seconds?: number | null } | null)
+                    ?.debounce_seconds ?? null;
+              }
+              scheduleAgentRun(
+                conversationId,
+                insertedMsg.id,
+                agentDebounceSeconds,
+              );
             }
           }
 
