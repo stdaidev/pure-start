@@ -364,3 +364,14 @@ Registro compacto iniciado quando Audit log: on foi habilitado.
 - Decision: planned
 - Known limitations: sem segmentos nomeados, sem sync CRM, sem enrichment.
 - Next: /ldk-build F5
+
+## 2026-07-08 - ldk-build - F5
+- Command: ldk-build
+- User intent: executar e provar F5 (Contatos e Planilhas)
+- State before: F5 approved (P2)
+- Actions: instalado papaparse+xlsx; criado phone.ts, contacts-parse.ts, contacts.functions.ts; substituido placeholders de /contatos e /planilhas; wizard 3 passos + import batch com merge de metadata e preservacao de opt_out; proof P2.
+- Files changed: package.json, src/lib/phone.ts, src/lib/contacts-parse.ts, src/lib/contacts.functions.ts, src/routes/_shell.contatos.tsx, src/routes/_shell.planilhas.tsx, src/components/contatos/contact-edit-dialog.tsx, src/components/planilhas/mapping-table.tsx, ldk/features/f5-contatos-planilhas/proof.md, plan.md, ldk/ledger.md
+- Evidence: preview yes; manual yes (upload CSV mock -> import -> contatos); tests not run; console yes (sem pageerror); diff na
+- Decision: DONE
+- Known limitations: xlsx aumenta bundle; email nao validado; busca so nome/telefone; tags nunca sao removidas no import (union).
+- Next: /ldk-next

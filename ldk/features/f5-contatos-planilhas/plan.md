@@ -35,13 +35,13 @@ medio - plano completo, `ldk-build` autorizado.
 
 | ID | Descricao | AC | Arquivos esperados | Verificacao | State |
 |----|-----------|----|--------------------|-------------|-------|
-| T1 | Instalar `papaparse` + `xlsx` + `@types/papaparse`. | AC2 | package.json | `bun add` ok. | ready |
-| T2 | Utils client: `parseCsv(File)` e `parseXlsx(File)` -> `{headers, rows}`; `normalizePhone(raw)`. | AC2, AC3, AC5 | `src/lib/contacts-parse.ts`, `src/lib/phone.ts` | Playwright: upload CSV mock renderiza sample. | ready |
-| T3 | Server functions `listContacts`, `updateContact`, `deleteContact`, `importContacts` com Zod, upsert em batch, merge metadata, opt-out preservado. | AC1, AC5, AC6, AC7 | `src/lib/contacts.functions.ts` | `tsgo` verde. | ready |
-| T4 | UI `/contatos`: tabela HUD (nome, telefone, tags, opt-out, atualizado), busca, edicao via dialog, delete com confirm. Link "Importar planilha". | AC1 | `src/routes/_shell.contatos.tsx`, `src/components/contatos/*` | Playwright screenshot. | ready |
-| T5 | UI `/planilhas`: wizard 3 passos (upload -> mapping -> preview) com estado local. Pre-detecta `phone`/`telefone`/`nome`/`email`. | AC2, AC3, AC4 | `src/routes/_shell.planilhas.tsx`, `src/components/planilhas/*` | Playwright screenshot dos 3 passos com CSV mock. | ready |
-| T6 | Import: passo 3 chama `importContacts`, mostra toast com resumo, redireciona para `/contatos`. | AC4, AC5 | edit `src/routes/_shell.planilhas.tsx` | Playwright: importa CSV mock, ve linhas em `/contatos`. | ready |
-| T7 | Prova P2: Playwright smoke completo + proof.md. | AC1-AC8 | `ldk/features/f5-contatos-planilhas/proof.md` | Ver proof.md. | ready |
+| T1 | Instalar `papaparse` + `xlsx` + `@types/papaparse`. | AC2 | package.json | `bun add` ok. | done |
+| T2 | Utils client: `parseCsv(File)` e `parseXlsx(File)` -> `{headers, rows}`; `normalizePhone(raw)`. | AC2, AC3, AC5 | `src/lib/contacts-parse.ts`, `src/lib/phone.ts` | Playwright: upload CSV mock renderiza sample. | done |
+| T3 | Server functions `listContacts`, `updateContact`, `deleteContact`, `importContacts` com Zod, upsert em batch, merge metadata, opt-out preservado. | AC1, AC5, AC6, AC7 | `src/lib/contacts.functions.ts` | `tsgo` verde. | done |
+| T4 | UI `/contatos`: tabela HUD (nome, telefone, tags, opt-out, atualizado), busca, edicao via dialog, delete com confirm. Link "Importar planilha". | AC1 | `src/routes/_shell.contatos.tsx`, `src/components/contatos/*` | Playwright screenshot. | done |
+| T5 | UI `/planilhas`: wizard 3 passos (upload -> mapping -> preview) com estado local. Pre-detecta `phone`/`telefone`/`nome`/`email`. | AC2, AC3, AC4 | `src/routes/_shell.planilhas.tsx`, `src/components/planilhas/*` | Playwright screenshot dos 3 passos com CSV mock. | done |
+| T6 | Import: passo 3 chama `importContacts`, mostra toast com resumo, redireciona para `/contatos`. | AC4, AC5 | edit `src/routes/_shell.planilhas.tsx` | Playwright: importa CSV mock, ve linhas em `/contatos`. | done |
+| T7 | Prova P2: Playwright smoke completo + proof.md. | AC1-AC8 | `ldk/features/f5-contatos-planilhas/proof.md` | Ver proof.md. | done |
 
 ## Arquivos criados/alterados (esperados)
 - src/lib/contacts.functions.ts (novo)
