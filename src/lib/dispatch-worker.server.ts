@@ -101,13 +101,22 @@ export async function runDispatchTick(
     remaining = Math.min(remaining, hourlyRemaining);
 
     for (let i = 0; i < maxSends && remaining > 0; i++) {
-      // Re-check status (kill-switch).
+      // Re-check status (kill-switch) + hourly cap fresco do DB para
+      // evitar corrida quando dois ticks concorrentes disparam (ex: clique
+      // duplo em "Disparar agora").
       const { data: fresh } = await db
         .from("campaigns")
-        .select("status")
+        .select("status, sent_this_hour, sent_this_hour_at, hourly_limit")
         .eq("id", c.id)
         .maybeSingle();
       if (fresh?.status !== "running") break;
+      const freshHourAt = fresh.sent_this_hour_at
+        ? new Date(fresh.sent_this_hour_at).setMinutes(0, 0, 0)
+        : null;
+      const freshSentThisHour =
+        freshHourAt === nowHour ? fresh.sent_this_hour : 0;
+      if (freshSentThisHour >= fresh.hourly_limit) break;
+      sentThisHour = freshSentThisHour;
 
       // F6.1: claim considera next_send_at para nao rajar todo mundo agora.
       const nowIso = new Date().toISOString();
