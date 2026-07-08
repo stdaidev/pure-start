@@ -815,6 +815,11 @@ export type Database = {
     }
     Functions: {
       default_workspace_id: { Args: never; Returns: string }
+      release_agent_lock: {
+        Args: { _conversation_id: string }
+        Returns: boolean
+      }
+      try_agent_lock: { Args: { _conversation_id: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
