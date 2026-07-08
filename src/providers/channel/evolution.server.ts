@@ -57,11 +57,11 @@ async function evoFetch(
 
     const text = await res.text();
     if (!res.ok) {
-      // Log opaco: nao expor apikey nem body do cliente
+      const snippet = text.slice(0, 300).replace(/\s+/g, " ");
       console.error(
-        `[evolution] ${rest.method ?? "GET"} ${path} -> ${res.status}`,
+        `[evolution] ${rest.method ?? "GET"} ${path} -> ${res.status} ${snippet}`,
       );
-      throw new Error(`Evolution upstream error (${res.status})`);
+      throw new Error(`Evolution ${res.status}: ${snippet || "no body"}`);
     }
     return text ? JSON.parse(text) : {};
   } catch (err) {
