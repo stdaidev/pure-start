@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -344,10 +344,6 @@ function ConexoesPage() {
           </div>
         </DialogContent>
       </Dialog>
-      {qrStatusQuery.data?.status === "connected" && qrConnId ? (
-        <AutoCloseOnConnect onDone={() => setQrConnId(null)} />
-      ) : null}
-
       <AlertDialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
