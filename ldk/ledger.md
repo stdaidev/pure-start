@@ -7,6 +7,6 @@
 | F2 | Contratos modulares + EvolutionProvider + modulo Conexoes (QR/status/webhook) | alto | done | P4 | ldk/features/f2-conexoes/proof.md |
 | F3 | Runtime do agente (webhook -> buffer -> LLM -> saida humanizada) + modulo Agentes | alto | partial | P4 | ldk/features/f3-runtime-agente/proof.md |
 | F4 | Conversas/inbox + handoff (assumir/devolver IA) | medio | done | P2 | ldk/features/f4-conversas-handoff/proof.md |
-| F5 | Contatos e Planilhas (upload CSV/XLSX, headers->placeholders, opt-out) | medio | idea | P2 | |
+| F5 | Contatos e Planilhas (upload CSV/XLSX, headers->placeholders, opt-out) | medio | approved | P2 | |
 | F6 | Disparos (wizard, template com preview, anti-ban, worker pg_cron, monitor ao vivo) | alto | idea | P4 | |
 | F7 | Dashboard + Configuracoes + polimento | baixo | idea | P1 | |
