@@ -104,7 +104,10 @@ export const openaiProvider: LlmProvider = {
           messages: toOpenAiMessages(input),
           tools: toOpenAiTools(input),
           temperature: input.temperature ?? 0.7,
-          max_tokens: input.maxTokens ?? DEFAULT_MAX_TOKENS,
+          // Se input.maxTokens for undefined, nao envia (ilimitado / default do modelo).
+          ...(input.maxTokens !== undefined
+            ? { max_tokens: input.maxTokens }
+            : {}),
         }),
         signal: controller.signal,
       });
