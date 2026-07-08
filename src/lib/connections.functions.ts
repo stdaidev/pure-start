@@ -10,43 +10,34 @@ import { z } from "zod";
  * - Nenhum log expoe apikey, QR base64 ou PII.
  */
 
-const DEFAULT_WORKSPACE = "00000000-0000-0000-0000-000000000001";
-
-function resolveWebhookUrl(): string {
-  const PATH = "/api/public/evolution/webhook";
-  // Base publica do app ja publicado (sem auth em /api/public/*).
-  // Override opcional via PUBLIC_WEBHOOK_URL / PUBLIC_BASE_URL.
-  const PUBLISHED_BASE = "https://light-springboard.lovable.app";
-  const explicit =
-    process.env.PUBLIC_WEBHOOK_URL ?? process.env.PUBLIC_BASE_URL;
-  const base = (explicit ?? PUBLISHED_BASE).replace(/\/+$/, "");
-  return base.endsWith(PATH) ? base : `${base}${PATH}`;
-}
-
 export const createConnection = createServerFn({ method: "POST" })
   .inputValidator((raw: unknown) =>
     z.object({ name: z.string().min(1).max(64) }).parse(raw),
   )
   .handler(async ({ data }) => {
+    const workspaceId = "00000000-0000-0000-0000-000000000001";
     const { supabaseAdmin } = await import(
       "@/integrations/supabase/client.server"
     );
     const { evolutionProvider } = await import(
       "@/providers/channel/evolution.server"
     );
+    const { getEvolutionWebhookDeliveryConfig } = await import(
+      "@/lib/evolution-webhook.server"
+    );
 
-    const webhookUrl = resolveWebhookUrl();
+    const webhook = getEvolutionWebhookDeliveryConfig();
 
     // Cria linha em connections primeiro (pending) para termos id estavel
     const { data: row, error: insertErr } = await supabaseAdmin
       .from("connections")
       .insert({
-        workspace_id: DEFAULT_WORKSPACE,
+        workspace_id: workspaceId,
         name: data.name,
         provider: "evolution",
         status: "pending",
         instance_name: data.name,
-        webhook_url: webhookUrl,
+        webhook_url: webhook.publicUrl,
       })
       .select("id, name")
       .single();
@@ -60,7 +51,8 @@ export const createConnection = createServerFn({ method: "POST" })
       const result = await evolutionProvider.createInstance({
         name: data.name,
         connectionId: row.id,
-        webhookUrl,
+        webhookUrl: webhook.deliveryUrl,
+        webhookHeaders: webhook.headers,
       });
 
       await supabaseAdmin
@@ -92,24 +84,44 @@ export const getConnectionStatus = createServerFn({ method: "POST" })
     z.object({ id: z.string().uuid() }).parse(raw),
   )
   .handler(async ({ data }) => {
+    const workspaceId = "00000000-0000-0000-0000-000000000001";
     const { supabaseAdmin } = await import(
       "@/integrations/supabase/client.server"
     );
-    const { evolutionProvider } = await import(
+    const { evolutionProvider, configureEvolutionWebhook } = await import(
       "@/providers/channel/evolution.server"
+    );
+    const { getEvolutionWebhookDeliveryConfig } = await import(
+      "@/lib/evolution-webhook.server"
     );
 
     const { data: row, error } = await supabaseAdmin
       .from("connections")
-      .select("id, instance_name, status, qr_code")
+      .select("id, instance_name, status, qr_code, webhook_url")
       .eq("id", data.id)
       .single();
     if (error || !row) throw new Error("Conexao nao encontrada");
 
     const instance = row.instance_name;
     if (!instance) throw new Error("Instancia sem nome");
+    const webhook = getEvolutionWebhookDeliveryConfig();
 
     try {
+      try {
+        await configureEvolutionWebhook(instance, {
+          webhookUrl: webhook.deliveryUrl,
+          webhookHeaders: webhook.headers,
+        });
+        if (row.webhook_url !== webhook.publicUrl) {
+          await supabaseAdmin
+            .from("connections")
+            .update({ webhook_url: webhook.publicUrl })
+            .eq("id", row.id)
+            .eq("workspace_id", workspaceId);
+        }
+      } catch {
+        // Nao impede leitura de status se o provedor falhar ao reconfigurar webhook.
+      }
       const status = await evolutionProvider.getStatus(instance);
       if (status.status !== row.status) {
         await supabaseAdmin
@@ -185,13 +197,14 @@ export const deleteConnection = createServerFn({ method: "POST" })
 
 export const listConnections = createServerFn({ method: "GET" }).handler(
   async () => {
+    const workspaceId = "00000000-0000-0000-0000-000000000001";
     const { supabaseAdmin } = await import(
       "@/integrations/supabase/client.server"
     );
     const { data, error } = await supabaseAdmin
       .from("connections")
       .select("id, name, status, default_agent_id, ignore_groups, updated_at")
-      .eq("workspace_id", DEFAULT_WORKSPACE)
+      .eq("workspace_id", workspaceId)
       .order("created_at", { ascending: false });
     if (error) throw new Error("Falha ao listar conexoes");
     return { connections: data ?? [] };
