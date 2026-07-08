@@ -16,7 +16,8 @@ import type {
 } from "@/providers/llm/types";
 
 const HISTORY_LIMIT = 20;
-const MAX_TOOL_ROUNDS = 2;
+const DEFAULT_MAX_TOOL_ROUNDS = 2;
+const HARD_MAX_TOOL_ROUNDS = 20; // teto de seguranca mesmo com "ilimitado"
 const HUMANIZE_HARD_CAP_MS = 12_000;
 const RESET_COMMAND = "/resetar";
 
@@ -141,7 +142,7 @@ export async function runAgentForMessage(
   const { data: agent } = await supabaseAdmin
     .from("agents")
     .select(
-      "id, active, model, temperature, system_prompt, tools, humanization",
+      "id, active, model, temperature, system_prompt, tools, humanization, max_tokens, max_tool_rounds",
     )
     .eq("id", conv.agent_id)
     .maybeSingle();
@@ -198,10 +199,14 @@ export async function runAgentForMessage(
   const provider: LlmProvider = getLlmProvider("openai");
 
   const started = Date.now();
+  const roundsLimit =
+    agent.max_tool_rounds == null
+      ? HARD_MAX_TOOL_ROUNDS
+      : Math.min(agent.max_tool_rounds, HARD_MAX_TOOL_ROUNDS);
   let finalText = "";
   let rounds = 0;
 
-  while (rounds < MAX_TOOL_ROUNDS) {
+  while (rounds < roundsLimit) {
     rounds += 1;
     const res = await provider.complete({
       model: agent.model,
@@ -209,7 +214,8 @@ export async function runAgentForMessage(
       messages: llmMessages,
       tools: toolSpecs.length > 0 ? toolSpecs : undefined,
       temperature: agent.temperature,
-      maxTokens: 800,
+      // null no banco = "ilimitado" (nao envia max_tokens para o provedor)
+      maxTokens: agent.max_tokens ?? undefined,
       timeoutMs: 12_000,
     });
 
