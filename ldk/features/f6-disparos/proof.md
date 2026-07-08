@@ -64,3 +64,18 @@ Mudancas operacionais aplicadas apos o proof original, dentro do escopo do F6, c
 - **`normalizeMsisdn(raw)`** em `dispatch-worker.server.ts`: prepend `55` para numeros BR de 10/11 digitos antes do `sendText`. Corrige 400 do Evolution para numeros sem DDI. Preservar em F6.1 T3.
 - **`snippet` de erro** em `evolution.server.ts`: primeiros 300 chars do body de resposta upstream anexados ao erro para debug no campo `campaign_recipients.error`. Sem PII adicional (Evolution nao devolve rendered_text). Preservar.
 - **`deleteCampaign`** server fn + botao lixeira em `campaign-list.tsx`: remove `campaign_recipients` e `campaigns` do workspace. Fora dos ACs originais mas trivial e ja em uso. Preservar em F6.1.
+## Checkpoint pos-teste manual (2026-07-08)
+Usuario executou manualmente com numeros reais e confirmou:
+- C1 happy-path: `sendText` real via Evolution, recipient vira `sent`, mensagem chega no WhatsApp.
+- C6: mensagem outbound gravada em `contacts`/`conversations`/`messages` (fix aplicado em `dispatch-worker.server.ts` -> `persistOutboundMessage`, dedupe por `external_id`), aparece em `/conversas`.
+- C7 kill-switch em execucao: pausar/cancelar durante envio para os proximos.
+- C8 opt-out real: contato marcado `opt_out` entra como `skipped_optout` no create.
+- C9 janela horaria: tick respeita `window_start/window_end` (SP).
+- C10 daily cap: worker para no cap e nao consome cota extra.
+
+Ajustes de UX aplicados nesta rodada (dentro do escopo de F6):
+- C4 wizard bloqueia "Continuar" no passo 2 quando planilha carregou preview mas template tem `{{placeholder}}` sem valor (`new-campaign-dialog.tsx`).
+- C5 wizard desabilita conexao com status != `connected` no select (single) e checkbox (multi) e nao permite avancar do passo 1 com conexao invalida.
+- Botao "Reconectar (QR)" em `/conexoes` -> `refreshQr` + dialog com polling do status, fecha sozinho ao conectar.
+
+Status atualizado: DONE.
