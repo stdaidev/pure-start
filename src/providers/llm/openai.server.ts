@@ -83,7 +83,9 @@ function safeParseArgs(raw: string): Record<string, unknown> {
 export const openaiProvider: LlmProvider = {
   id: "openai",
   async complete(input: LlmCompleteInput): Promise<LlmCompleteResult> {
-    const apiKey = process.env.OPENAI_API_KEY;
+    // F7 T3: prefere DB (workspace_secrets), fallback process.env.
+    const { getSecret } = await import("@/lib/secrets.server");
+    const apiKey = await getSecret("OPENAI_API_KEY");
     if (!apiKey) throw new Error("OPENAI_API_KEY not configured");
 
     const controller = new AbortController();
