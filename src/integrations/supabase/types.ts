@@ -76,14 +76,66 @@ export type Database = {
           },
         ]
       }
+      campaign_connections: {
+        Row: {
+          campaign_id: string
+          connection_id: string
+          created_at: string
+          id: string
+          position: number
+          workspace_id: string
+        }
+        Insert: {
+          campaign_id: string
+          connection_id: string
+          created_at?: string
+          id?: string
+          position?: number
+          workspace_id: string
+        }
+        Update: {
+          campaign_id?: string
+          connection_id?: string
+          created_at?: string
+          id?: string
+          position?: number
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_connections_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_connections_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "connections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_connections_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaign_recipients: {
         Row: {
+          attempt_count: number
           campaign_id: string
           contact_name: string | null
           contact_phone: string
           created_at: string
           error: string | null
           id: string
+          last_connection_id: string | null
+          next_send_at: string | null
           sent_at: string | null
           status: string
           updated_at: string
@@ -91,12 +143,15 @@ export type Database = {
           workspace_id: string
         }
         Insert: {
+          attempt_count?: number
           campaign_id: string
           contact_name?: string | null
           contact_phone: string
           created_at?: string
           error?: string | null
           id?: string
+          last_connection_id?: string | null
+          next_send_at?: string | null
           sent_at?: string | null
           status?: string
           updated_at?: string
@@ -104,12 +159,15 @@ export type Database = {
           workspace_id?: string
         }
         Update: {
+          attempt_count?: number
           campaign_id?: string
           contact_name?: string | null
           contact_phone?: string
           created_at?: string
           error?: string | null
           id?: string
+          last_connection_id?: string | null
+          next_send_at?: string | null
           sent_at?: string | null
           status?: string
           updated_at?: string
@@ -122,6 +180,13 @@ export type Database = {
             columns: ["campaign_id"]
             isOneToOne: false
             referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_recipients_last_connection_id_fkey"
+            columns: ["last_connection_id"]
+            isOneToOne: false
+            referencedRelation: "connections"
             referencedColumns: ["id"]
           },
           {
@@ -138,13 +203,17 @@ export type Database = {
           connection_id: string | null
           created_at: string
           daily_cap: number
+          dispatch_mode: string
           finished_at: string | null
+          hourly_limit: number
           id: string
           max_ms: number
           metadata: Json
           min_ms: number
           name: string
           schedule_at: string | null
+          sent_this_hour: number
+          sent_this_hour_at: string | null
           sent_today: number
           sent_today_date: string | null
           spreadsheet_id: string | null
@@ -162,13 +231,17 @@ export type Database = {
           connection_id?: string | null
           created_at?: string
           daily_cap?: number
+          dispatch_mode?: string
           finished_at?: string | null
+          hourly_limit?: number
           id?: string
           max_ms?: number
           metadata?: Json
           min_ms?: number
           name: string
           schedule_at?: string | null
+          sent_this_hour?: number
+          sent_this_hour_at?: string | null
           sent_today?: number
           sent_today_date?: string | null
           spreadsheet_id?: string | null
@@ -186,13 +259,17 @@ export type Database = {
           connection_id?: string | null
           created_at?: string
           daily_cap?: number
+          dispatch_mode?: string
           finished_at?: string | null
+          hourly_limit?: number
           id?: string
           max_ms?: number
           metadata?: Json
           min_ms?: number
           name?: string
           schedule_at?: string | null
+          sent_this_hour?: number
+          sent_this_hour_at?: string | null
           sent_today?: number
           sent_today_date?: string | null
           spreadsheet_id?: string | null
@@ -664,6 +741,7 @@ export type Database = {
       workspaces: {
         Row: {
           created_at: string
+          dispatch_paused: boolean
           id: string
           name: string
           slug: string
@@ -671,6 +749,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          dispatch_paused?: boolean
           id?: string
           name: string
           slug: string
@@ -678,6 +757,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          dispatch_paused?: boolean
           id?: string
           name?: string
           slug?: string
