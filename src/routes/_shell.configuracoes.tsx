@@ -20,6 +20,7 @@ import {
   updateWorkspaceKillSwitch,
   updateWorkspaceCooldown,
 } from "@/lib/workspace.functions";
+import { ProviderSecretsSection } from "@/components/configuracoes/provider-secrets";
 
 export const Route = createFileRoute("/_shell/configuracoes")({
   head: () => ({
@@ -178,6 +179,8 @@ function ConfigPage() {
           </span>
         </div>
       </section>
+
+      <ProviderSecretsSection />
     </div>
   );
 }
