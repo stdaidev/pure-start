@@ -181,7 +181,7 @@ function ConversasPage() {
         </div>
       </aside>
 
-      <section className="flex min-w-0 flex-1 flex-col bg-hud-grid">
+      <section className="flex min-w-0 flex-1 flex-col">
         {!active ? (
           <div
             className="flex flex-1 items-center justify-center text-sm text-muted-foreground"
