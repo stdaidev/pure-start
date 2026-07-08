@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import type { TablesInsert, TablesUpdate, Json } from "@/integrations/supabase/types";
 
 /**
  * F5 - Contatos e Planilhas.
@@ -56,7 +57,7 @@ export const updateContact = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import(
       "@/integrations/supabase/client.server"
     );
-    const patch: Record<string, unknown> = {};
+    const patch: TablesUpdate<"contacts"> = {};
     if (data.name !== undefined) patch.name = data.name;
     if (data.tags !== undefined) patch.tags = data.tags;
     if (data.opt_out !== undefined) patch.opt_out = data.opt_out;
@@ -134,7 +135,7 @@ export const importContacts = createServerFn({ method: "POST" })
       });
     }
 
-    const payload = uniques.map((r) => {
+    const payload: TablesInsert<"contacts">[] = uniques.map((r) => {
       const prev = existingMap.get(r.phone);
       const mergedMetadata = { ...(prev?.metadata ?? {}), ...(r.metadata ?? {}) };
       const mergedTags = Array.from(
@@ -146,7 +147,7 @@ export const importContacts = createServerFn({ method: "POST" })
         name: r.name ?? null,
         email: r.email ?? null,
         tags: mergedTags,
-        metadata: mergedMetadata,
+        metadata: mergedMetadata as Json,
         opt_out: prev?.opt_out ?? false,
       };
     });
