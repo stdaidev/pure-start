@@ -121,6 +121,7 @@ export const evolutionProvider: ChannelProvider = {
   ): Promise<CreateInstanceResult> {
     const raw = (await evoFetch("/instance/create", {
       method: "POST",
+      timeoutMs: 25000,
       body: JSON.stringify({
         instanceName: input.name,
         integration: "WHATSAPP-BAILEYS",
@@ -144,7 +145,7 @@ export const evolutionProvider: ChannelProvider = {
   async getQrCode(providerInstanceId: string): Promise<QrPayload> {
     const raw = await evoFetch(
       `/instance/connect/${encodeURIComponent(providerInstanceId)}`,
-      { method: "GET" },
+      { method: "GET", timeoutMs: 20000 },
     );
     const qr = extractQr(raw);
     if (!qr) throw new Error("QR indisponivel");
