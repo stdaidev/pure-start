@@ -249,6 +249,7 @@ export const createCampaign = createServerFn({ method: "POST" })
           .eq("workspace_id", DEFAULT_WORKSPACE)
           .in("contact_id", contactIds);
         for (const c of convs ?? []) {
+          if (!c.contact_id) continue;
           const phone = phoneByContact.get(c.contact_id);
           if (phone) phoneByConv.set(c.id, phone);
         }
