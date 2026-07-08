@@ -40,19 +40,10 @@ function getProvidedToken(request: Request): string {
   );
 }
 
-const RUNTIME_HARD_CAP_MS = 12_000;
-
-// F8 - Debounce por conversation_id.
-// Agrupa rajadas de mensagens do mesmo lead numa unica execucao do agente.
-// Map top-level: persistente enquanto o isolate viver.
+// F8 - Debounce persistente por conversation_id.
+// O webhook apenas agenda no banco; /api/public/agent/tick processa depois.
 const DEBOUNCE_DEFAULT_MS = 4_000;
 const DEBOUNCE_CAP_MS = 10_000;
-
-interface DebounceEntry {
-  timer: ReturnType<typeof setTimeout>;
-  latestMessageId: string;
-}
-const agentDebounceMap = new Map<string, DebounceEntry>();
 
 function getDefaultDebounceMs(): number {
   const raw = Number(process.env.AGENT_DEBOUNCE_MS);
@@ -60,44 +51,32 @@ function getDefaultDebounceMs(): number {
   return Math.min(raw, DEBOUNCE_CAP_MS);
 }
 
-function scheduleAgentRun(
+function getDebounceDelayMs(agentDebounceSeconds: number | null): number {
+  return agentDebounceSeconds && agentDebounceSeconds > 0
+    ? Math.min(agentDebounceSeconds * 1000, DEBOUNCE_CAP_MS)
+    : getDefaultDebounceMs();
+}
+
+async function scheduleAgentRun(
+  supabaseAdmin: Awaited<
+    typeof import("@/integrations/supabase/client.server")
+  >["supabaseAdmin"],
   conversationId: string,
   messageId: string,
   agentDebounceSeconds: number | null,
-) {
-  const existing = agentDebounceMap.get(conversationId);
-  if (existing) clearTimeout(existing.timer);
-  const delay =
-    agentDebounceSeconds && agentDebounceSeconds > 0
-      ? Math.min(agentDebounceSeconds * 1000, DEBOUNCE_CAP_MS)
-      : getDefaultDebounceMs();
-  const timer = setTimeout(async () => {
-    const entry = agentDebounceMap.get(conversationId);
-    agentDebounceMap.delete(conversationId);
-    const targetId = entry?.latestMessageId ?? messageId;
-    try {
-      const { runAgentForMessage } = await import(
-        "@/lib/agent-runtime.server"
-      );
-      await Promise.race([
-        runAgentForMessage(targetId),
-        new Promise((_, rej) =>
-          setTimeout(
-            () => rej(new Error("runtime timeout")),
-            RUNTIME_HARD_CAP_MS,
-          ),
-        ),
-      ]);
-    } catch (e) {
-      console.error(
-        "[webhook/evolution] runtime error:",
-        (e as Error).message,
-      );
-    }
-  }, delay);
-  agentDebounceMap.set(conversationId, { timer, latestMessageId: messageId });
+): Promise<void> {
+  const delay = getDebounceDelayMs(agentDebounceSeconds);
+  const { error } = await supabaseAdmin.rpc("schedule_agent_run", {
+    _conversation_id: conversationId,
+    _message_id: messageId,
+    _delay_ms: delay,
+  });
+  if (error) {
+    console.error("[webhook/evolution] schedule_agent_run failed", error.code);
+    return;
+  }
   console.log(
-    `[webhook/evolution] debounced conversation=${conversationId} delay=${delay}`,
+    `[webhook/evolution] queued-agent-run conversation=${conversationId} delay=${delay}`,
   );
 }
 
@@ -384,7 +363,8 @@ export const Route = createFileRoute("/api/public/evolution/webhook")({
                   (agentRow as { debounce_seconds?: number | null } | null)
                     ?.debounce_seconds ?? null;
               }
-              scheduleAgentRun(
+              await scheduleAgentRun(
+                supabaseAdmin,
                 conversationId,
                 insertedMsg.id,
                 agentDebounceSeconds,
