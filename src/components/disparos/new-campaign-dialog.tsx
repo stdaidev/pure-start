@@ -31,6 +31,7 @@ import {
   getSpreadsheetPreview,
 } from "@/lib/campaigns.functions";
 import { getWorkspaceFlags } from "@/lib/workspace.functions";
+import { renderTemplate } from "@/lib/template-render";
 
 type Step = 1 | 2 | 3 | 4;
 
@@ -127,13 +128,27 @@ export function NewCampaignDialog(props: {
     | Record<string, unknown>
     | null;
 
+  const templateMissing = useMemo(
+    () => (sample ? renderTemplate(template, sample).missing : []),
+    [template, sample],
+  );
+
   const canNext = useMemo(() => {
     if (step === 1) {
       if (!name.trim() || !spreadsheetId) return false;
-      if (mode === "single") return !!connectionId;
-      return connectionIds.length >= 2;
+      if (mode === "single") {
+        const c = availableConns.find((x) => x.id === connectionId);
+        return !!c && c.status === "connected";
+      }
+      const picked = availableConns.filter((c) =>
+        connectionIds.includes(c.id),
+      );
+      return (
+        picked.length >= 2 && picked.every((c) => c.status === "connected")
+      );
     }
-    if (step === 2) return template.trim().length > 0;
+    if (step === 2)
+      return template.trim().length > 0 && templateMissing.length === 0;
     if (step === 3)
       return (
         minMs >= 0 &&
@@ -145,9 +160,7 @@ export function NewCampaignDialog(props: {
         !cooldownBelowMin
       );
     return true;
-  }, [step, name, mode, connectionId, connectionIds, spreadsheetId, template, minMs, maxMs, dailyCap, hourlyLimit, windowStart, windowEnd, cooldownBelowMin]);
-
-  const availableConns = connQ.data?.connections ?? [];
+  }, [step, name, mode, connectionId, connectionIds, spreadsheetId, template, templateMissing, minMs, maxMs, dailyCap, hourlyLimit, windowStart, windowEnd, cooldownBelowMin, availableConns]);
 
   function toggleConn(id: string) {
     setConnectionIds((prev) =>
