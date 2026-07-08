@@ -19,6 +19,7 @@ import { Route as ShellContatosRouteImport } from './routes/_shell.contatos'
 import { Route as ShellConfiguracoesRouteImport } from './routes/_shell.configuracoes'
 import { Route as ShellConexoesRouteImport } from './routes/_shell.conexoes'
 import { Route as ShellAgentesRouteImport } from './routes/_shell.agentes'
+import { Route as ShellDisparosIdRouteImport } from './routes/_shell.disparos.$id'
 import { Route as ApiPublicEvolutionWebhookRouteImport } from './routes/api/public/evolution.webhook'
 
 const ShellRoute = ShellRouteImport.update({
@@ -70,6 +71,11 @@ const ShellAgentesRoute = ShellAgentesRouteImport.update({
   path: '/agentes',
   getParentRoute: () => ShellRoute,
 } as any)
+const ShellDisparosIdRoute = ShellDisparosIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ShellDisparosRoute,
+} as any)
 const ApiPublicEvolutionWebhookRoute =
   ApiPublicEvolutionWebhookRouteImport.update({
     id: '/api/public/evolution/webhook',
@@ -85,8 +91,9 @@ export interface FileRoutesByFullPath {
   '/contatos': typeof ShellContatosRoute
   '/conversas': typeof ShellConversasRoute
   '/dashboard': typeof ShellDashboardRoute
-  '/disparos': typeof ShellDisparosRoute
+  '/disparos': typeof ShellDisparosRouteWithChildren
   '/planilhas': typeof ShellPlanilhasRoute
+  '/disparos/$id': typeof ShellDisparosIdRoute
   '/api/public/evolution/webhook': typeof ApiPublicEvolutionWebhookRoute
 }
 export interface FileRoutesByTo {
@@ -97,8 +104,9 @@ export interface FileRoutesByTo {
   '/contatos': typeof ShellContatosRoute
   '/conversas': typeof ShellConversasRoute
   '/dashboard': typeof ShellDashboardRoute
-  '/disparos': typeof ShellDisparosRoute
+  '/disparos': typeof ShellDisparosRouteWithChildren
   '/planilhas': typeof ShellPlanilhasRoute
+  '/disparos/$id': typeof ShellDisparosIdRoute
   '/api/public/evolution/webhook': typeof ApiPublicEvolutionWebhookRoute
 }
 export interface FileRoutesById {
@@ -111,8 +119,9 @@ export interface FileRoutesById {
   '/_shell/contatos': typeof ShellContatosRoute
   '/_shell/conversas': typeof ShellConversasRoute
   '/_shell/dashboard': typeof ShellDashboardRoute
-  '/_shell/disparos': typeof ShellDisparosRoute
+  '/_shell/disparos': typeof ShellDisparosRouteWithChildren
   '/_shell/planilhas': typeof ShellPlanilhasRoute
+  '/_shell/disparos/$id': typeof ShellDisparosIdRoute
   '/api/public/evolution/webhook': typeof ApiPublicEvolutionWebhookRoute
 }
 export interface FileRouteTypes {
@@ -127,6 +136,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/disparos'
     | '/planilhas'
+    | '/disparos/$id'
     | '/api/public/evolution/webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -139,6 +149,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/disparos'
     | '/planilhas'
+    | '/disparos/$id'
     | '/api/public/evolution/webhook'
   id:
     | '__root__'
@@ -152,6 +163,7 @@ export interface FileRouteTypes {
     | '/_shell/dashboard'
     | '/_shell/disparos'
     | '/_shell/planilhas'
+    | '/_shell/disparos/$id'
     | '/api/public/evolution/webhook'
   fileRoutesById: FileRoutesById
 }
@@ -233,6 +245,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShellAgentesRouteImport
       parentRoute: typeof ShellRoute
     }
+    '/_shell/disparos/$id': {
+      id: '/_shell/disparos/$id'
+      path: '/$id'
+      fullPath: '/disparos/$id'
+      preLoaderRoute: typeof ShellDisparosIdRouteImport
+      parentRoute: typeof ShellDisparosRoute
+    }
     '/api/public/evolution/webhook': {
       id: '/api/public/evolution/webhook'
       path: '/api/public/evolution/webhook'
@@ -243,6 +262,18 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface ShellDisparosRouteChildren {
+  ShellDisparosIdRoute: typeof ShellDisparosIdRoute
+}
+
+const ShellDisparosRouteChildren: ShellDisparosRouteChildren = {
+  ShellDisparosIdRoute: ShellDisparosIdRoute,
+}
+
+const ShellDisparosRouteWithChildren = ShellDisparosRoute._addFileChildren(
+  ShellDisparosRouteChildren,
+)
+
 interface ShellRouteChildren {
   ShellAgentesRoute: typeof ShellAgentesRoute
   ShellConexoesRoute: typeof ShellConexoesRoute
@@ -250,7 +281,7 @@ interface ShellRouteChildren {
   ShellContatosRoute: typeof ShellContatosRoute
   ShellConversasRoute: typeof ShellConversasRoute
   ShellDashboardRoute: typeof ShellDashboardRoute
-  ShellDisparosRoute: typeof ShellDisparosRoute
+  ShellDisparosRoute: typeof ShellDisparosRouteWithChildren
   ShellPlanilhasRoute: typeof ShellPlanilhasRoute
 }
 
@@ -261,7 +292,7 @@ const ShellRouteChildren: ShellRouteChildren = {
   ShellContatosRoute: ShellContatosRoute,
   ShellConversasRoute: ShellConversasRoute,
   ShellDashboardRoute: ShellDashboardRoute,
-  ShellDisparosRoute: ShellDisparosRoute,
+  ShellDisparosRoute: ShellDisparosRouteWithChildren,
   ShellPlanilhasRoute: ShellPlanilhasRoute,
 }
 
