@@ -1,14 +1,6 @@
 const WEBHOOK_PATH = "/api/public/evolution/webhook";
 const PUBLISHED_BASE = "https://light-springboard.lovable.app";
 
-function isUnsafePreviewBase(value: string): boolean {
-  return (
-    value.includes("localhost") ||
-    value.includes("127.0.0.1") ||
-    value.includes("id-preview--")
-  );
-}
-
 function stripWebhookToken(rawUrl: string): string {
   try {
     const url = new URL(rawUrl);
