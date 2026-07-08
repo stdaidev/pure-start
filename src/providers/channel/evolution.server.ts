@@ -276,7 +276,21 @@ export const evolutionProvider: ChannelProvider = {
       for (const raw of list) {
         const m = (raw ?? {}) as Record<string, unknown>;
         const key = (m.key ?? {}) as Record<string, unknown>;
-        const message = (m.message ?? {}) as Record<string, unknown>;
+        let message = (m.message ?? {}) as Record<string, unknown>;
+        // Unwrap view-once / ephemeral / device-sent wrappers
+        for (let i = 0; i < 3; i++) {
+          const wrapper =
+            (message.viewOnceMessage as { message?: Record<string, unknown> } | undefined) ??
+            (message.viewOnceMessageV2 as { message?: Record<string, unknown> } | undefined) ??
+            (message.viewOnceMessageV2Extension as { message?: Record<string, unknown> } | undefined) ??
+            (message.ephemeralMessage as { message?: Record<string, unknown> } | undefined) ??
+            (message.deviceSentMessage as { message?: Record<string, unknown> } | undefined);
+          if (wrapper?.message) {
+            message = wrapper.message;
+          } else {
+            break;
+          }
+        }
         const remoteJid = (key.remoteJid as string | undefined) ?? "";
         const fromMe = Boolean(key.fromMe);
         const id =
