@@ -353,3 +353,14 @@ Registro compacto iniciado quando Audit log: on foi habilitado.
 - Decision: DONE
 - Known limitations: envio manual e realtime nao validados end-to-end via WhatsApp real
 - Next: /ldk-next (F5 ou hardening F3)
+
+## 2026-07-08 - ldk-plan - F5
+- Command: ldk-plan
+- User intent: planejar F5 Contatos e Planilhas
+- State before: F5 idea, sem brief/plan
+- Actions: brief.md e plan.md criados; ledger F5 -> approved; 7 tasks ready; decidido parse client-side com papaparse+xlsx.
+- Files changed: ldk/features/f5-contatos-planilhas/brief.md, plan.md, ldk/ledger.md
+- Evidence: preview na; manual na; tests not run; console na; diff na
+- Decision: planned
+- Known limitations: sem segmentos nomeados, sem sync CRM, sem enrichment.
+- Next: /ldk-build F5
