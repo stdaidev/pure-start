@@ -14,7 +14,7 @@ export const getWorkspaceFlags = createServerFn({ method: "GET" }).handler(
     );
     const { data, error } = await supabaseAdmin
       .from("workspaces")
-      .select("id, name, dispatch_paused")
+      .select("id, name, dispatch_paused, cooldown_default_hours")
       .eq("id", DEFAULT_WORKSPACE)
       .maybeSingle();
     if (error) throw new Error("Falha ao carregar workspace");
@@ -22,6 +22,9 @@ export const getWorkspaceFlags = createServerFn({ method: "GET" }).handler(
       id: data?.id ?? DEFAULT_WORKSPACE,
       name: data?.name ?? "workspace",
       dispatch_paused: data?.dispatch_paused ?? false,
+      cooldown_default_hours:
+        (data as { cooldown_default_hours?: number } | null)
+          ?.cooldown_default_hours ?? 24,
     };
   },
 );
@@ -40,4 +43,26 @@ export const updateWorkspaceKillSwitch = createServerFn({ method: "POST" })
       .eq("id", DEFAULT_WORKSPACE);
     if (error) throw new Error("Falha ao atualizar kill-switch");
     return { ok: true, dispatch_paused: data.dispatch_paused };
+  });
+
+export const updateWorkspaceCooldown = createServerFn({ method: "POST" })
+  .inputValidator((raw: unknown) =>
+    z
+      .object({
+        value: z.number().int().min(0).max(720),
+        unit: z.enum(["hours", "days"]),
+      })
+      .parse(raw),
+  )
+  .handler(async ({ data }) => {
+    const hours = data.unit === "days" ? data.value * 24 : data.value;
+    const { supabaseAdmin } = await import(
+      "@/integrations/supabase/client.server"
+    );
+    const { error } = await supabaseAdmin
+      .from("workspaces")
+      .update({ cooldown_default_hours: hours } as never)
+      .eq("id", DEFAULT_WORKSPACE);
+    if (error) throw new Error("Falha ao atualizar cooldown padrao");
+    return { ok: true, cooldown_default_hours: hours };
   });

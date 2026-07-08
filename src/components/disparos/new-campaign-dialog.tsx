@@ -23,12 +23,14 @@ import {
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { TemplateEditor } from "./template-editor";
+import { Switch } from "@/components/ui/switch";
 import { listConnections } from "@/lib/connections.functions";
 import {
   createCampaign,
   listSpreadsheets,
   getSpreadsheetPreview,
 } from "@/lib/campaigns.functions";
+import { getWorkspaceFlags } from "@/lib/workspace.functions";
 
 type Step = 1 | 2 | 3 | 4;
 
@@ -52,11 +54,26 @@ export function NewCampaignDialog(props: {
   const [hourlyLimit, setHourlyLimit] = useState(60);
   const [windowStart, setWindowStart] = useState("09:00");
   const [windowEnd, setWindowEnd] = useState("20:00");
+  const [cooldownEnabled, setCooldownEnabled] = useState(true);
+  const [cooldownValue, setCooldownValue] = useState(24);
+  const [cooldownUnit, setCooldownUnit] = useState<"hours" | "days">("hours");
 
   const listConnFn = useServerFn(listConnections);
   const listSheetFn = useServerFn(listSpreadsheets);
   const previewFn = useServerFn(getSpreadsheetPreview);
   const createFn = useServerFn(createCampaign);
+  const wsFn = useServerFn(getWorkspaceFlags);
+
+  const wsQ = useQuery({
+    queryKey: ["workspace-flags"],
+    queryFn: () => wsFn(),
+    enabled: open,
+  });
+  const defaultCooldownHours = wsQ.data?.cooldown_default_hours ?? 24;
+  const requestedHours =
+    cooldownUnit === "days" ? cooldownValue * 24 : cooldownValue;
+  const cooldownBelowMin =
+    cooldownEnabled && requestedHours < defaultCooldownHours;
 
   const connQ = useQuery({
     queryKey: ["connections", "list"],
@@ -101,6 +118,9 @@ export function NewCampaignDialog(props: {
     setHourlyLimit(60);
     setWindowStart("09:00");
     setWindowEnd("20:00");
+    setCooldownEnabled(true);
+    setCooldownValue(24);
+    setCooldownUnit("hours");
   }
 
   const sample = (previewQ.data?.first_row ?? null) as
@@ -121,10 +141,11 @@ export function NewCampaignDialog(props: {
         dailyCap >= 1 &&
         hourlyLimit >= 1 &&
         /^\d{2}:\d{2}$/.test(windowStart) &&
-        /^\d{2}:\d{2}$/.test(windowEnd)
+        /^\d{2}:\d{2}$/.test(windowEnd) &&
+        !cooldownBelowMin
       );
     return true;
-  }, [step, name, mode, connectionId, connectionIds, spreadsheetId, template, minMs, maxMs, dailyCap, hourlyLimit, windowStart, windowEnd]);
+  }, [step, name, mode, connectionId, connectionIds, spreadsheetId, template, minMs, maxMs, dailyCap, hourlyLimit, windowStart, windowEnd, cooldownBelowMin]);
 
   const availableConns = connQ.data?.connections ?? [];
 
@@ -326,6 +347,55 @@ export function NewCampaignDialog(props: {
                 />
               </div>
             </div>
+            <div className="col-span-2 rounded border border-border/60 bg-muted/10 p-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-sm">Cooldown por lead</Label>
+                  <p className="text-[10px] text-muted-foreground">
+                    Nao enviar para quem respondeu nos ultimos N. Minimo global: {defaultCooldownHours}h.
+                  </p>
+                </div>
+                <Switch
+                  checked={cooldownEnabled}
+                  onCheckedChange={setCooldownEnabled}
+                />
+              </div>
+              {cooldownEnabled ? (
+                <div className="mt-2 flex items-end gap-2">
+                  <div className="flex flex-col gap-1">
+                    <Label className="text-xs">Janela</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={720}
+                      value={cooldownValue}
+                      onChange={(e) => setCooldownValue(Number(e.target.value))}
+                      className="w-28"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <Label className="text-xs">Unidade</Label>
+                    <Select
+                      value={cooldownUnit}
+                      onValueChange={(v) => setCooldownUnit(v as "hours" | "days")}
+                    >
+                      <SelectTrigger className="w-28">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="hours">horas</SelectItem>
+                        <SelectItem value="days">dias</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {cooldownBelowMin ? (
+                    <p className="text-[10px] text-red-400 ml-2">
+                      abaixo do minimo global ({defaultCooldownHours}h)
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
           </div>
         ) : null}
 
@@ -361,6 +431,14 @@ export function NewCampaignDialog(props: {
             <Row k="teto diario" v={String(dailyCap)} />
             <Row k="teto hora" v={String(hourlyLimit)} />
             <Row k="janela" v={`${windowStart} - ${windowEnd} (SP)`} />
+            <Row
+              k="cooldown"
+              v={
+                cooldownEnabled
+                  ? `${cooldownValue} ${cooldownUnit}`
+                  : "desligado"
+              }
+            />
           </div>
         ) : null}
 
@@ -398,6 +476,9 @@ export function NewCampaignDialog(props: {
                     hourly_limit: hourlyLimit,
                     window_start: windowStart,
                     window_end: windowEnd,
+                    cooldown_enabled: cooldownEnabled,
+                    cooldown_value: cooldownValue,
+                    cooldown_unit: cooldownUnit,
                   },
                 })
               }

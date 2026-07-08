@@ -105,6 +105,7 @@ function CampaignMonitor() {
       { k: "falhas", v: progress?.failed ?? 0 },
       { k: "opt-out", v: progress?.skipped_optout ?? 0 },
       { k: "respondeu", v: progress?.stopped_reply ?? 0 },
+      { k: "cooldown", v: (progress as { stopped_recent_reply?: number } | undefined)?.stopped_recent_reply ?? 0 },
     ],
     [progress],
   );
@@ -163,7 +164,7 @@ function CampaignMonitor() {
       </header>
 
       <div
-        className="grid grid-cols-5 gap-3"
+        className="grid grid-cols-6 gap-3"
         style={{ fontFamily: "var(--font-mono)" }}
       >
         {stats.map((s) => (

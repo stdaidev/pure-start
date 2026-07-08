@@ -20,13 +20,13 @@ Modo de execucao recomendado: `ldk-build`
 
 | ID | Descricao | AC | Arquivos esperados | Verificacao | State |
 |----|-----------|----|--------------------|-------------|-------|
-| T1 | Migration: `workspaces.cooldown_default_hours`; `campaigns.cooldown_enabled/value/unit` com CHECK; ampliar CHECK de `campaign_recipients.status` para incluir `stopped_recent_reply`; index em `messages(workspace_id, direction, created_at)` se ainda nao existir | AC1, AC2, AC3 | `supabase/migrations/*.sql` | supabase linter | ready |
-| T2 | `workspace.functions.ts`: `getWorkspaceFlags` retorna `cooldown_default_hours`; `updateWorkspaceCooldown({value, unit})` grava sempre em horas. UI em `/configuracoes`: input numero + selector horas/dias com toast | AC2 | `src/lib/workspace.functions.ts`, `src/routes/_shell.configuracoes.tsx` | preview manual | ready |
-| T3 | `createCampaign`: aceita `cooldown_enabled/value/unit`, calcula janela efetiva `max(pedido_horas, workspace_default)`, faz um SELECT DISTINCT de `messages` inbound por telefone dentro da janela, marca recipients afetados como `stopped_recent_reply` no insert em vez de `pending` | AC3, AC5 | `src/lib/campaigns.functions.ts` | tsgo + query direta | ready |
-| T4 | Worker: helper `isInCooldown(phone, workspaceId, windowHours)` chamado antes do envio. Se true, marca `stopped_recent_reply` e nao decrementa `remaining` nem `sent_this_hour` | AC6 | `src/lib/dispatch-worker.server.ts` | preview manual + query direta | ready |
-| T5 | Wizard: bloco "Cooldown por lead" (switch + numero + selector horas/dias). Texto claro: "nao enviar se o lead respondeu nos ultimos N". Validacao min = default do workspace | AC4 | `src/components/disparos/new-campaign-dialog.tsx` | preview manual | ready |
-| T6 | Badge `stopped_recent_reply` (cinza, "COOLDOWN") em `status-badge.tsx`; card contador no topo de `/disparos/$id` | AC1, AC7 | `src/components/disparos/status-badge.tsx`, `src/routes/_shell.disparos.$id.tsx` | preview manual | ready |
-| T7 | Prova P2: 3 fluxos manuais + screenshots em `proof.md` | AC1-AC8 | `ldk/features/f6.2-cooldown-lead/proof.md` | manual + tsgo | ready |
+| T1 | Migration cooldown + index messages | AC1, AC2, AC3 | `supabase/migrations/*.sql` | supabase linter | proof-pending |
+| T2 | workspace.functions + UI /configuracoes | AC2 | `src/lib/workspace.functions.ts`, `src/routes/_shell.configuracoes.tsx` | smoke UI | proof-pending |
+| T3 | createCampaign com cooldown | AC3, AC5 | `src/lib/campaigns.functions.ts` | tsgo | proof-pending |
+| T4 | Worker re-check cooldown | AC6 | `src/lib/dispatch-worker.server.ts` | tsgo | proof-pending |
+| T5 | Wizard bloco cooldown | AC4 | `src/components/disparos/new-campaign-dialog.tsx` | preview manual | proof-pending |
+| T6 | Badge + counter monitor | AC1, AC7 | `src/components/disparos/status-badge.tsx`, `src/routes/_shell.disparos.$id.tsx` | preview manual | proof-pending |
+| T7 | Prova P2 | AC1-AC8 | `ldk/features/f6.2-cooldown-lead/proof.md` | manual + tsgo | proof-pending |
 
 ## Fluxo
 
