@@ -51,7 +51,7 @@ Codigo cobre 100% dos ACs. Kill-switch e wizard visualmente validados. Nenhum br
 - [x] RLS de `campaign_connections` limitada ao workspace default.
 
 ## Status
-PARTIAL — implementacao completa e smoke test verde; happy-path `sent=success` com rotacao real, stop-on-reply real e hourly-cap real deixados para verificacao manual pos-release com numeros de teste (mesma politica do F6).
+DONE — implementacao completa; happy-path com rotacao real, stop-on-reply real, hourly-cap real e kill-switch global validados manualmente pelo usuario em 2026-07-08 (ver "Checkpoint pos-teste manual" abaixo).
 
 ## Etapa concluida
 Prova F6.1 registrada; aguardando proximo comando.
