@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import type { TablesInsert, Json } from "@/integrations/supabase/types";
+import type { TablesInsert, TablesUpdate, Json } from "@/integrations/supabase/types";
 import { renderTemplate } from "@/lib/template-render";
 
 /**
@@ -267,7 +267,7 @@ export const updateCampaignStatus = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import(
       "@/integrations/supabase/client.server"
     );
-    const patch: Record<string, unknown> = { status: data.status };
+    const patch: TablesUpdate<"campaigns"> = { status: data.status };
     if (data.status === "running") patch.started_at = new Date().toISOString();
     if (data.status === "finished" || data.status === "canceled") {
       patch.finished_at = new Date().toISOString();
