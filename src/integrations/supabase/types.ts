@@ -357,6 +357,12 @@ export type Database = {
         Row: {
           created_at: string
           default_agent_id: string | null
+          dispatch_daily_limit: number
+          dispatch_hourly_limit: number
+          dispatch_sent_this_hour: number
+          dispatch_sent_this_hour_at: string | null
+          dispatch_sent_today: number
+          dispatch_sent_today_date: string | null
           id: string
           ignore_groups: boolean
           instance_name: string | null
@@ -372,6 +378,12 @@ export type Database = {
         Insert: {
           created_at?: string
           default_agent_id?: string | null
+          dispatch_daily_limit?: number
+          dispatch_hourly_limit?: number
+          dispatch_sent_this_hour?: number
+          dispatch_sent_this_hour_at?: string | null
+          dispatch_sent_today?: number
+          dispatch_sent_today_date?: string | null
           id?: string
           ignore_groups?: boolean
           instance_name?: string | null
@@ -387,6 +399,12 @@ export type Database = {
         Update: {
           created_at?: string
           default_agent_id?: string | null
+          dispatch_daily_limit?: number
+          dispatch_hourly_limit?: number
+          dispatch_sent_this_hour?: number
+          dispatch_sent_this_hour_at?: string | null
+          dispatch_sent_today?: number
+          dispatch_sent_today_date?: string | null
           id?: string
           ignore_groups?: boolean
           instance_name?: string | null
@@ -505,9 +523,15 @@ export type Database = {
           connection_id: string | null
           contact_id: string | null
           created_at: string
+          crm_updated_at: string | null
           id: string
           last_message_at: string | null
+          lead_outcome: string | null
+          lead_value_cents: number | null
+          lead_value_currency: string
+          lead_value_note: string | null
           status: string
+          tags: string[]
           updated_at: string
           workspace_id: string
         }
@@ -520,9 +544,15 @@ export type Database = {
           connection_id?: string | null
           contact_id?: string | null
           created_at?: string
+          crm_updated_at?: string | null
           id?: string
           last_message_at?: string | null
+          lead_outcome?: string | null
+          lead_value_cents?: number | null
+          lead_value_currency?: string
+          lead_value_note?: string | null
           status?: string
+          tags?: string[]
           updated_at?: string
           workspace_id?: string
         }
@@ -535,9 +565,15 @@ export type Database = {
           connection_id?: string | null
           contact_id?: string | null
           created_at?: string
+          crm_updated_at?: string | null
           id?: string
           last_message_at?: string | null
+          lead_outcome?: string | null
+          lead_value_cents?: number | null
+          lead_value_currency?: string
+          lead_value_note?: string | null
           status?: string
+          tags?: string[]
           updated_at?: string
           workspace_id?: string
         }
