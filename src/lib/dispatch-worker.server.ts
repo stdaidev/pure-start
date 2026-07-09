@@ -157,6 +157,44 @@ export async function runDispatchTick(
         break;
       }
 
+      // F-antiban-conexao: cota GLOBAL por WhatsApp (connection_id).
+      // Impede que multiplas campanhas somadas estourem o ritmo do mesmo
+      // WhatsApp. Se excedeu, devolve o recipient para pending com
+      // next_send_at futuro (nao marca failed).
+      const todayKey = dateKeySaoPaulo(now);
+      const { data: connState } = await db
+        .from("connections")
+        .select(
+          "dispatch_hourly_limit, dispatch_daily_limit, dispatch_sent_this_hour, dispatch_sent_this_hour_at, dispatch_sent_today, dispatch_sent_today_date",
+        )
+        .eq("id", picked.connection_id)
+        .maybeSingle();
+      if (connState) {
+        const connHourAt = connState.dispatch_sent_this_hour_at
+          ? new Date(connState.dispatch_sent_this_hour_at).setMinutes(0, 0, 0)
+          : null;
+        const connSentHour =
+          connHourAt === nowHour ? connState.dispatch_sent_this_hour : 0;
+        const connSentDay =
+          connState.dispatch_sent_today_date === todayKey
+            ? connState.dispatch_sent_today
+            : 0;
+        const hourFull = connSentHour >= connState.dispatch_hourly_limit;
+        const dayFull = connSentDay >= connState.dispatch_daily_limit;
+        if (hourFull || dayFull) {
+          const backoffMs = hourFull ? 15 * 60_000 : 60 * 60_000;
+          await db
+            .from("campaign_recipients")
+            .update({
+              status: "pending",
+              next_send_at: new Date(Date.now() + backoffMs).toISOString(),
+            })
+            .eq("id", cand.id);
+          result.skipped++;
+          continue;
+        }
+      }
+
       // Opt-out double-check.
       const { data: contact } = await db
         .from("contacts")
@@ -280,6 +318,37 @@ export async function runDispatchTick(
         c.sent_this_hour = sentThisHour;
         c.sent_this_hour_at = currentHourKey;
         remaining--;
+
+        // F-antiban-conexao: incrementa cota GLOBAL por conexao apos envio ok.
+        // Le+escreve; nao e 100% atomico entre workers concorrentes, mas o
+        // gate acima e a cota por campanha bloqueiam picos reais.
+        const { data: connNow } = await db
+          .from("connections")
+          .select(
+            "dispatch_sent_this_hour, dispatch_sent_this_hour_at, dispatch_sent_today, dispatch_sent_today_date",
+          )
+          .eq("id", picked.connection_id)
+          .maybeSingle();
+        if (connNow) {
+          const cHourAt = connNow.dispatch_sent_this_hour_at
+            ? new Date(connNow.dispatch_sent_this_hour_at).setMinutes(0, 0, 0)
+            : null;
+          const cSentHour =
+            (cHourAt === nowHour ? connNow.dispatch_sent_this_hour : 0) + 1;
+          const cSentDay =
+            (connNow.dispatch_sent_today_date === today
+              ? connNow.dispatch_sent_today
+              : 0) + 1;
+          await db
+            .from("connections")
+            .update({
+              dispatch_sent_this_hour: cSentHour,
+              dispatch_sent_this_hour_at: currentHourKey,
+              dispatch_sent_today: cSentDay,
+              dispatch_sent_today_date: today,
+            })
+            .eq("id", picked.connection_id);
+        }
       } catch (e) {
         // F6.1: retry unico. attempt<1 -> reagenda; senao failed.
         const attempts = (cand.attempt_count ?? 0) + 1;
