@@ -4,14 +4,18 @@
 - F0, F1, F2, F4, F5, F6, F6.1, F6.2, F7, F9, Fhot, F10, F11 => done.
 - F3, F8, Fabc => partial (Fabc precisa RPC atomica + stress test 2 campanhas).
 - F12 => planned (tools de IA com aprovacao, depende de fila de approval).
-- Proxima recomendada: **F12** (tools do agente com fila de aprovacao) ou
-  fechar AC6 de F8, hardening P4 de F3 e promover Fabc a done com RPC atomica.
+- Fagx-1, Fagx-2, Fagx-3, F13 => planned (hardening do runtime do agente).
+- Proxima recomendada: **Fagx-1** (lock com run_token + revalidacao +
+  blocklist no runtime). Destrava Fagx-2 e Fagx-3.
 
 ## Readiness
 - verify: F8 (rodar teste manual AC6 no WhatsApp para promover a done).
 - verify: fechar P4 de F3 (teste E2E automatizado + CI) pode virar item proprio de hardening antes do release.
 - verify: Fabc (rodar 2 campanhas simultaneas na mesma conexao apos RPC atomica).
-- ready: F12 (planejar tools + fila de approval).
+- ready: Fagx-1 (planejado, aguarda aprovacao para approved).
+- blocked: Fagx-2 (depende de Fagx-1 done).
+- blocked: Fagx-3 (depende de Fagx-1 e Fagx-2 done).
+- later: F12 (tools + fila de approval); F13 (memoria/resumo por conversa).
 - done: F0, F1, F2, F4, F5, F6, F6.1, F6.2, F7, F9, Fhot, F10, F11.
 - partial: F3, F8, Fabc.
 
