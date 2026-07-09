@@ -19,7 +19,7 @@ export const listConversations = createServerFn({ method: "GET" }).handler(
     const { data, error } = await supabaseAdmin
       .from("conversations")
       .select(
-        "id, agent_id, assigned_to, connection_id, contact_id, status, last_message_at, contacts(name, phone), connections(name), agents(name)",
+        "id, agent_id, assigned_to, connection_id, contact_id, status, last_message_at, tags, lead_value_cents, lead_value_currency, lead_value_note, lead_outcome, contacts(name, phone), connections(name), agents(name)",
       )
       .eq("workspace_id", DEFAULT_WORKSPACE)
       .order("last_message_at", { ascending: false, nullsFirst: false })
@@ -60,11 +60,83 @@ export const listConversations = createServerFn({ method: "GET" }).handler(
         connection_id: c.connection_id,
         connection_name: c.connections?.name ?? null,
         agent_name: c.agents?.name ?? null,
+        tags: (c.tags ?? []) as string[],
+        lead_value_cents: c.lead_value_cents,
+        lead_value_currency: c.lead_value_currency ?? "BRL",
+        lead_value_note: c.lead_value_note,
+        lead_outcome: c.lead_outcome as "won" | "lost" | null,
         preview: previews.get(c.id) ?? null,
       })),
     };
   },
 );
+
+function normalizeTags(raw: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const t of raw) {
+    const clean = t.trim().toLowerCase();
+    if (!clean) continue;
+    if (clean.length > 32) continue;
+    if (seen.has(clean)) continue;
+    seen.add(clean);
+    out.push(clean);
+    if (out.length >= 12) break;
+  }
+  return out;
+}
+
+export const updateConversationCrm = createServerFn({ method: "POST" })
+  .inputValidator((raw: unknown) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        tags: z.array(z.string()).max(24).optional(),
+        lead_value_cents: z
+          .number()
+          .int()
+          .min(0)
+          .max(1_000_000_00)
+          .nullable()
+          .optional(),
+        lead_value_note: z.string().max(280).nullable().optional(),
+        lead_outcome: z
+          .union([z.literal("won"), z.literal("lost"), z.null()])
+          .optional(),
+      })
+      .parse(raw),
+  )
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import(
+      "@/integrations/supabase/client.server"
+    );
+    const patch: {
+      crm_updated_at: string;
+      tags?: string[];
+      lead_value_cents?: number | null;
+      lead_value_currency?: string;
+      lead_value_note?: string | null;
+      lead_outcome?: "won" | "lost" | null;
+    } = { crm_updated_at: new Date().toISOString() };
+    if (data.tags !== undefined) patch.tags = normalizeTags(data.tags);
+    if (data.lead_value_cents !== undefined) {
+      patch.lead_value_cents = data.lead_value_cents;
+      patch.lead_value_currency = "BRL";
+    }
+    if (data.lead_value_note !== undefined) {
+      patch.lead_value_note = data.lead_value_note?.trim() || null;
+    }
+    if (data.lead_outcome !== undefined) {
+      patch.lead_outcome = data.lead_outcome;
+    }
+    const { error } = await supabaseAdmin
+      .from("conversations")
+      .update(patch)
+      .eq("id", data.id)
+      .eq("workspace_id", DEFAULT_WORKSPACE);
+    if (error) throw new Error("Falha ao atualizar CRM");
+    return { ok: true };
+  });
 
 export const getMessages = createServerFn({ method: "POST" })
   .inputValidator((raw: unknown) =>

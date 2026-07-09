@@ -11,6 +11,8 @@ export interface ConversationListItem {
   preview: { content: string | null; direction: string; media_type: string | null } | null;
   connection_id: string | null;
   connection_name: string | null;
+  tags?: string[];
+  lead_value_cents?: number | null;
 }
 
 function formatRelative(ts: string | null): string {
@@ -126,6 +128,31 @@ export function ConversationList(props: {
                   {c.preview?.content ?? (c.preview?.media_type ? `[${c.preview.media_type}]` : "—")}
                 </span>
               </div>
+              {(c.lead_value_cents != null || (c.tags && c.tags.length > 0)) ? (
+                <div className="flex flex-wrap items-center gap-1 pt-0.5">
+                  {c.lead_value_cents != null ? (
+                    <span
+                      className="rounded bg-emerald-500/15 px-1.5 py-0.5 text-[10px] tabular-nums text-emerald-300"
+                      style={{ fontFamily: "var(--font-mono)" }}
+                    >
+                      {(c.lead_value_cents / 100).toLocaleString("pt-BR", {
+                        style: "currency",
+                        currency: "BRL",
+                        maximumFractionDigits: 0,
+                      })}
+                    </span>
+                  ) : null}
+                  {(c.tags ?? []).slice(0, 2).map((t) => (
+                    <span
+                      key={t}
+                      className="rounded border border-border/60 px-1.5 py-0.5 text-[10px] text-muted-foreground"
+                      style={{ fontFamily: "var(--font-mono)" }}
+                    >
+                      #{t}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
             </button>
           </li>
         );
