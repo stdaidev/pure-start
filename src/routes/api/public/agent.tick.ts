@@ -5,9 +5,14 @@ import { createHash, timingSafeEqual } from "node:crypto";
  * F8 - Tick do agente.
  * Chamado por pg_cron/pg_net com header `apikey` = chave publica do backend.
  * Processa conversas vencidas usando trava persistente em `conversations`.
+ *
+ * IMPORTANTE: nao usar Promise.race com timeout aqui. Sem AbortSignal real
+ * dentro do runtime (chamada a OpenAI + envios via Evolution), soltar o lock
+ * enquanto a Promise perdida continua rodando gera respostas duplicadas /
+ * intercaladas. O budget interno de humanizacao ja limita o tempo total do
+ * runtime; aqui sempre aguardamos a execucao terminar antes de liberar.
  */
 
-const RUNTIME_HARD_CAP_MS = 12_000;
 const TICK_LIMIT = 10;
 
 function bufEq(a: string, b: string): boolean {
@@ -49,21 +54,17 @@ export const Route = createFileRoute("/api/public/agent/tick")({
         let failed = 0;
         for (const job of jobs ?? []) {
           try {
-            await Promise.race([
-              runAgentForMessage(job.message_id),
-              new Promise((_, reject) =>
-                setTimeout(
-                  () => reject(new Error("runtime timeout")),
-                  RUNTIME_HARD_CAP_MS,
-                ),
-              ),
-            ]);
+            // Aguarda o runtime terminar por completo (envios inclusos)
+            // antes de liberar o lock. Sem cancelamento real, um race()
+            // aqui abandonaria a Promise mas ela continuaria enviando.
+            await runAgentForMessage(job.message_id);
             processed += 1;
           } catch (err) {
             failed += 1;
             console.error("[agent.tick] runtime failed", {
               conversation: job.conversation_id,
-              error: err instanceof Error ? err.message.slice(0, 160) : "unknown",
+              error:
+                err instanceof Error ? err.message.slice(0, 160) : "unknown",
             });
           } finally {
             await supabaseAdmin.rpc("release_agent_run", {

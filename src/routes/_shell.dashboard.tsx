@@ -82,7 +82,7 @@ function DashboardPage() {
         <KpiCard
           label="respostas hoje"
           value={s ? s.replies_today : "—"}
-          hint="direction = in hoje"
+          hint="mensagens inbound hoje"
         />
       </section>
 

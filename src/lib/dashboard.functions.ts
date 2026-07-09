@@ -55,13 +55,13 @@ export const getDashboardSummary = createServerFn({ method: "GET" }).handler(
         .from("messages")
         .select("id", { count: "exact", head: true })
         .eq("workspace_id", ws)
-        .eq("direction", "in")
+        .eq("direction", "inbound")
         .gte("created_at", startIso),
       supabaseAdmin
         .from("messages")
         .select("id", { count: "exact", head: true })
         .eq("workspace_id", ws)
-        .eq("direction", "out")
+        .eq("direction", "outbound")
         .gte("created_at", startIso),
       supabaseAdmin
         .from("campaigns")

@@ -202,7 +202,7 @@ export async function runAgentForMessage(
   const started = Date.now();
   const roundsLimit =
     agent.max_tool_rounds == null
-      ? HARD_MAX_TOOL_ROUNDS
+      ? DEFAULT_MAX_TOOL_ROUNDS
       : Math.min(agent.max_tool_rounds, HARD_MAX_TOOL_ROUNDS);
   let finalText = "";
   let rounds = 0;
