@@ -130,7 +130,9 @@ export async function runAgentForMessage(
 
   const { data: conv } = await supabaseAdmin
     .from("conversations")
-    .select("id, agent_id, assigned_to, connection_id, contact_id")
+    .select(
+      "id, agent_id, assigned_to, connection_id, contact_id, tags, lead_value_cents, lead_value_currency, lead_value_note",
+    )
     .eq("id", msg.conversation_id)
     .maybeSingle();
   if (!conv) return { status: "error", reason: "conversation not found" };
@@ -152,7 +154,7 @@ export async function runAgentForMessage(
 
   const { data: contact } = await supabaseAdmin
     .from("contacts")
-    .select("phone")
+    .select("phone, tags")
     .eq("id", conv.contact_id)
     .maybeSingle();
   const { data: connection } = await supabaseAdmin
@@ -199,6 +201,30 @@ export async function runAgentForMessage(
 
   const provider: LlmProvider = getLlmProvider("openai");
 
+  // F10/D: contexto interno do lead injetado no system prompt.
+  // Nao logamos telefones nem conteudo, apenas usamos para orientar a IA.
+  const contactTags = Array.isArray((contact as { tags?: unknown }).tags)
+    ? ((contact as { tags: string[] }).tags ?? []).slice(0, 8)
+    : [];
+  const convTags = Array.isArray(conv.tags)
+    ? (conv.tags as string[]).slice(0, 8)
+    : [];
+  const leadCtxParts: string[] = [];
+  if (contactTags.length) leadCtxParts.push(`tags_contato=[${contactTags.join(",")}]`);
+  if (convTags.length) leadCtxParts.push(`tags_conversa=[${convTags.join(",")}]`);
+  if (typeof conv.lead_value_cents === "number") {
+    const currency = conv.lead_value_currency ?? "BRL";
+    leadCtxParts.push(
+      `valor_estimado=${currency} ${(conv.lead_value_cents / 100).toFixed(2)}`,
+    );
+  }
+  if (conv.lead_value_note) {
+    leadCtxParts.push(`nota=${String(conv.lead_value_note).slice(0, 140)}`);
+  }
+  const systemPrompt = leadCtxParts.length
+    ? `${agent.system_prompt}\n\n[Contexto interno do lead — nao repita ao usuario] ${leadCtxParts.join("; ")}`
+    : agent.system_prompt;
+
   const started = Date.now();
   const roundsLimit =
     agent.max_tool_rounds == null
@@ -211,7 +237,7 @@ export async function runAgentForMessage(
     rounds += 1;
     const res = await provider.complete({
       model: agent.model,
-      system: agent.system_prompt,
+      system: systemPrompt,
       messages: llmMessages,
       tools: toolSpecs.length > 0 ? toolSpecs : undefined,
       temperature: agent.temperature,
