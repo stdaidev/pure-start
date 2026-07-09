@@ -19,3 +19,7 @@
 | F10 | CRM leve na conversa: tags, valor do lead, nota, outcome (ganho/perdido), filtro por tag, contexto para IA no system prompt | medio | done | P2 | ldk/features/f10-crm-leve/proof.md |
 | F11 | KPIs pipeline leve: valor em aberto, valor ganho, top tags no dashboard | baixo | done | P1 | ldk/features/f11-pipeline-kpis/proof.md |
 | F12 | Tools do agente com aprovacao: sugerir_tags_conversa, sugerir_valor_lead, fila require_approval | alto | planned | P4 | |
+| Fagx-1 | Lock com run_token + revalidacao pre-envio + blocklist no runtime | alto | planned | P3 | |
+| Fagx-2 | Tools resilientes + erros OpenAI classificados + model default | medio | planned | P2 | |
+| Fagx-3 | Observabilidade estruturada do agente (agent_run_logs) | medio | planned | P2 | |
+| F13 | Memoria/resumo incremental por conversa | medio | planned | P2 | |
