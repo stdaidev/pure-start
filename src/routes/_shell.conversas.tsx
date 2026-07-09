@@ -20,6 +20,7 @@ import { Trash2 } from "lucide-react";
 import { ConversationList } from "@/components/conversas/conversation-list";
 import { MessageList } from "@/components/conversas/message-list";
 import { Composer } from "@/components/conversas/composer";
+import { CrmPanel, formatBRL } from "@/components/conversas/crm-panel";
 import { useConversationsRealtime } from "@/hooks/use-conversations-realtime";
 import {
   assignConversation,
@@ -27,6 +28,7 @@ import {
   getMessages,
   listConversations,
   sendConversationMessage,
+  updateConversationCrm,
 } from "@/lib/conversations.functions";
 import { listConnections } from "@/lib/connections.functions";
 import { cn } from "@/lib/utils";
@@ -47,6 +49,7 @@ function ConversasPage() {
   const [connectionFilter, setConnectionFilter] = useState<string | "all">(
     "all",
   );
+  const [tagFilter, setTagFilter] = useState<string | "all">("all");
 
   const listFn = useServerFn(listConversations);
   const msgsFn = useServerFn(getMessages);
@@ -54,6 +57,7 @@ function ConversasPage() {
   const sendFn = useServerFn(sendConversationMessage);
   const connectionsFn = useServerFn(listConnections);
   const deleteFn = useServerFn(deleteConversation);
+  const crmFn = useServerFn(updateConversationCrm);
 
   const listQuery = useQuery({
     queryKey: ["conversations"],
@@ -112,11 +116,22 @@ function ConversasPage() {
   const connections = connectionsQuery.data?.connections ?? [];
   const conversations = useMemo(
     () =>
-      connectionFilter === "all"
-        ? allConversations
-        : allConversations.filter((c) => c.connection_id === connectionFilter),
-    [allConversations, connectionFilter],
+      allConversations.filter((c) => {
+        if (connectionFilter !== "all" && c.connection_id !== connectionFilter)
+          return false;
+        if (tagFilter !== "all" && !(c.tags ?? []).includes(tagFilter))
+          return false;
+        return true;
+      }),
+    [allConversations, connectionFilter, tagFilter],
   );
+  const allTags = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const c of allConversations) {
+      for (const t of c.tags ?? []) map.set(t, (map.get(t) ?? 0) + 1);
+    }
+    return Array.from(map.entries()).sort((a, b) => b[1] - a[1]).slice(0, 12);
+  }, [allConversations]);
   const countsByConnection = useMemo(() => {
     const map = new Map<string, number>();
     for (const c of allConversations) {
@@ -132,6 +147,20 @@ function ConversasPage() {
   const messages = messagesQuery.data?.messages ?? [];
   const assigned = !!active?.assigned_to;
   const hasAgent = !!active?.agent_id;
+
+  const crmMut = useMutation({
+    mutationFn: (v: {
+      id: string;
+      tags?: string[];
+      lead_value_cents?: number | null;
+      lead_value_note?: string | null;
+      lead_outcome?: "won" | "lost" | null;
+    }) => crmFn({ data: v }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["conversations"] });
+    },
+    onError: (e: Error) => toast.error(e.message || "Falha ao salvar CRM"),
+  });
 
   return (
     <div className="flex h-[calc(100vh-3rem)] w-full">
@@ -166,6 +195,26 @@ function ConversasPage() {
                 active={connectionFilter === c.id}
                 onClick={() => setConnectionFilter(c.id)}
                 label={`${c.name} (${countsByConnection.get(c.id) ?? 0})`}
+              />
+            ))}
+          </div>
+        ) : null}
+        {allTags.length > 0 ? (
+          <div
+            className="flex flex-wrap gap-1 border-b border-border/60 px-3 py-2"
+            style={{ fontFamily: "var(--font-mono)" }}
+          >
+            <FilterChip
+              active={tagFilter === "all"}
+              onClick={() => setTagFilter("all")}
+              label="todas tags"
+            />
+            {allTags.map(([t, n]) => (
+              <FilterChip
+                key={t}
+                active={tagFilter === t}
+                onClick={() => setTagFilter(t)}
+                label={`#${t} (${n})`}
               />
             ))}
           </div>
@@ -207,6 +256,21 @@ function ConversasPage() {
                   {active.agent_name ? ` // ${active.agent_name}` : ""}
                   {active.connection_name ? ` // ${active.connection_name}` : ""}
                 </p>
+                {active.lead_value_cents != null || active.lead_value_note ? (
+                  <p
+                    className="mt-1 inline-flex items-center gap-2 rounded bg-emerald-500/10 px-2 py-0.5 text-xs text-emerald-300"
+                    style={{ fontFamily: "var(--font-mono)" }}
+                  >
+                    {active.lead_value_cents != null
+                      ? formatBRL(active.lead_value_cents)
+                      : null}
+                    {active.lead_value_note ? (
+                      <span className="truncate text-muted-foreground">
+                        · {active.lead_value_note}
+                      </span>
+                    ) : null}
+                  </p>
+                ) : null}
               </div>
               <div className="flex items-center gap-2">
                 {assigned ? (
@@ -263,14 +327,16 @@ function ConversasPage() {
                 </AlertDialog>
               </div>
             </header>
-            <div className="flex-1 overflow-y-auto">
-              <MessageList
-                messages={messages}
-                hasAgent={hasAgent}
-                assigned={assigned}
-              />
-            </div>
-            <Composer
+            <div className="flex min-h-0 flex-1">
+              <div className="flex min-w-0 flex-1 flex-col">
+                <div className="flex-1 overflow-y-auto">
+                  <MessageList
+                    messages={messages}
+                    hasAgent={hasAgent}
+                    assigned={assigned}
+                  />
+                </div>
+                <Composer
               disabled={!assigned}
               pending={sendMut.isPending}
               onSend={async (text) => {
@@ -285,6 +351,21 @@ function ConversasPage() {
                   : undefined
               }
             />
+              </div>
+              <CrmPanel
+                initial={{
+                  tags: active.tags ?? [],
+                  lead_value_cents: active.lead_value_cents ?? null,
+                  lead_value_currency: active.lead_value_currency ?? "BRL",
+                  lead_value_note: active.lead_value_note ?? null,
+                  lead_outcome: active.lead_outcome ?? null,
+                }}
+                pending={crmMut.isPending}
+                onSave={(patch) =>
+                  crmMut.mutate({ id: active.id, ...patch })
+                }
+              />
+            </div>
           </>
         )}
       </section>
