@@ -110,9 +110,14 @@ export const updateConversationCrm = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import(
       "@/integrations/supabase/client.server"
     );
-    const patch: Record<string, unknown> = {
-      crm_updated_at: new Date().toISOString(),
-    };
+    const patch: {
+      crm_updated_at: string;
+      tags?: string[];
+      lead_value_cents?: number | null;
+      lead_value_currency?: string;
+      lead_value_note?: string | null;
+      lead_outcome?: "won" | "lost" | null;
+    } = { crm_updated_at: new Date().toISOString() };
     if (data.tags !== undefined) patch.tags = normalizeTags(data.tags);
     if (data.lead_value_cents !== undefined) {
       patch.lead_value_cents = data.lead_value_cents;
