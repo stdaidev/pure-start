@@ -12,6 +12,11 @@ export interface DashboardSummary {
   campaigns_running: number;
   messages_today: { in: number; out: number };
   replies_today: number;
+  pipeline: {
+    open_value_cents: number;
+    won_value_cents: number;
+    top_tags: Array<{ tag: string; count: number }>;
+  };
   last_campaigns: Array<{
     id: string;
     name: string;
@@ -40,6 +45,7 @@ export const getDashboardSummary = createServerFn({ method: "GET" }).handler(
       msgsInRes,
       msgsOutRes,
       lastCampsRes,
+      crmRes,
     ] = await Promise.all([
       supabaseAdmin
         .from("connections")
@@ -69,6 +75,11 @@ export const getDashboardSummary = createServerFn({ method: "GET" }).handler(
         .eq("workspace_id", ws)
         .order("created_at", { ascending: false })
         .limit(5),
+      supabaseAdmin
+        .from("conversations")
+        .select("tags, lead_value_cents, lead_outcome, status")
+        .eq("workspace_id", ws)
+        .not("lead_value_cents", "is", null),
     ]);
 
     const lastCampaigns = (lastCampsRes.data ?? []) as Array<{
@@ -103,6 +114,26 @@ export const getDashboardSummary = createServerFn({ method: "GET" }).handler(
       }),
     );
 
+    const crmRows = (crmRes.data ?? []) as Array<{
+      tags: string[] | null;
+      lead_value_cents: number | null;
+      lead_outcome: "won" | "lost" | null;
+      status: string | null;
+    }>;
+    let openValue = 0;
+    let wonValue = 0;
+    const tagCounts = new Map<string, number>();
+    for (const r of crmRows) {
+      if (r.lead_outcome === "won") wonValue += r.lead_value_cents ?? 0;
+      else if (r.lead_outcome !== "lost" && r.status !== "closed")
+        openValue += r.lead_value_cents ?? 0;
+      for (const t of r.tags ?? []) tagCounts.set(t, (tagCounts.get(t) ?? 0) + 1);
+    }
+    const topTags = Array.from(tagCounts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([tag, count]) => ({ tag, count }));
+
     return {
       connections_connected: connsRes.count ?? 0,
       campaigns_running: campsRunningRes.count ?? 0,
@@ -111,6 +142,11 @@ export const getDashboardSummary = createServerFn({ method: "GET" }).handler(
         out: msgsOutRes.count ?? 0,
       },
       replies_today: msgsInRes.count ?? 0,
+      pipeline: {
+        open_value_cents: openValue,
+        won_value_cents: wonValue,
+        top_tags: topTags,
+      },
       last_campaigns: enriched,
     };
   },
