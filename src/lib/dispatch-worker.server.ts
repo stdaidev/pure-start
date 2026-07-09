@@ -305,37 +305,17 @@ export async function runDispatchTick(
         c.sent_this_hour_at = currentHourKey;
         remaining--;
 
-        // F-antiban-conexao: incrementa cota GLOBAL por conexao apos envio ok.
-        // Le+escreve; nao e 100% atomico entre workers concorrentes, mas o
-        // gate acima e a cota por campanha bloqueiam picos reais.
-        const { data: connNow } = await db
-          .from("connections")
-          .select(
-            "dispatch_sent_this_hour, dispatch_sent_this_hour_at, dispatch_sent_today, dispatch_sent_today_date",
-          )
-          .eq("id", picked.connection_id)
-          .maybeSingle();
-        if (connNow) {
-          const cHourAt = connNow.dispatch_sent_this_hour_at
-            ? new Date(connNow.dispatch_sent_this_hour_at).setMinutes(0, 0, 0)
-            : null;
-          const cSentHour =
-            (cHourAt === nowHour ? connNow.dispatch_sent_this_hour : 0) + 1;
-          const cSentDay =
-            (connNow.dispatch_sent_today_date === today
-              ? connNow.dispatch_sent_today
-              : 0) + 1;
-          await db
-            .from("connections")
-            .update({
-              dispatch_sent_this_hour: cSentHour,
-              dispatch_sent_this_hour_at: currentHourKey,
-              dispatch_sent_today: cSentDay,
-              dispatch_sent_today_date: today,
-            })
-            .eq("id", picked.connection_id);
-        }
+        // F-antiban-conexao: cota GLOBAL ja foi incrementada atomicamente
+        // via try_reserve_connection_slot antes do envio. Nada a fazer aqui.
       } catch (e) {
+        // Libera a vaga reservada antes do envio (que falhou).
+        try {
+          await db.rpc("release_connection_slot", {
+            _connection_id: picked.connection_id,
+          });
+        } catch {
+          // best-effort; contadores tolerantes a leve overcount.
+        }
         // F6.1: retry unico. attempt<1 -> reagenda; senao failed.
         const attempts = (cand.attempt_count ?? 0) + 1;
         const errMsg =
