@@ -86,6 +86,58 @@ function DashboardPage() {
         />
       </section>
 
+      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <KpiCard
+          label="valor em aberto"
+          value={
+            s
+              ? (s.pipeline.open_value_cents / 100).toLocaleString("pt-BR", {
+                  style: "currency",
+                  currency: "BRL",
+                  maximumFractionDigits: 0,
+                })
+              : "—"
+          }
+          hint="conversas ativas com valor"
+        />
+        <KpiCard
+          label="valor ganho"
+          value={
+            s
+              ? (s.pipeline.won_value_cents / 100).toLocaleString("pt-BR", {
+                  style: "currency",
+                  currency: "BRL",
+                  maximumFractionDigits: 0,
+                })
+              : "—"
+          }
+          hint="outcome = won"
+        />
+        <div className="rounded border border-border/60 bg-muted/10 p-3">
+          <p
+            className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground"
+            style={{ fontFamily: "var(--font-mono)" }}
+          >
+            top tags
+          </p>
+          <div className="mt-2 flex flex-wrap gap-1">
+            {s && s.pipeline.top_tags.length > 0 ? (
+              s.pipeline.top_tags.map((t) => (
+                <span
+                  key={t.tag}
+                  className="rounded border border-border/60 px-1.5 py-0.5 text-[11px] text-muted-foreground"
+                  style={{ fontFamily: "var(--font-mono)" }}
+                >
+                  #{t.tag} · {t.count}
+                </span>
+              ))
+            ) : (
+              <span className="text-xs text-muted-foreground">sem tags ainda</span>
+            )}
+          </div>
+        </div>
+      </section>
+
       <section className="rounded border border-border/60 bg-muted/10">
         <header className="flex items-center justify-between border-b border-border/60 px-4 py-2">
           <h2 className="text-sm font-semibold">Ultimas campanhas</h2>
