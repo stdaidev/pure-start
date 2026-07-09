@@ -78,8 +78,7 @@ export const getDashboardSummary = createServerFn({ method: "GET" }).handler(
       supabaseAdmin
         .from("conversations")
         .select("tags, lead_value_cents, lead_outcome, status")
-        .eq("workspace_id", ws)
-        .not("lead_value_cents", "is", null),
+        .eq("workspace_id", ws),
     ]);
 
     const lastCampaigns = (lastCampsRes.data ?? []) as Array<{
