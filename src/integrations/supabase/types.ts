@@ -912,6 +912,10 @@ export type Database = {
         Args: { _conversation_id: string }
         Returns: undefined
       }
+      release_connection_slot: {
+        Args: { _connection_id: string }
+        Returns: undefined
+      }
       schedule_agent_run: {
         Args: {
           _conversation_id: string
@@ -921,6 +925,14 @@ export type Database = {
         Returns: undefined
       }
       try_agent_lock: { Args: { _conversation_id: string }; Returns: boolean }
+      try_reserve_connection_slot: {
+        Args: { _connection_id: string }
+        Returns: {
+          day_full: boolean
+          hour_full: boolean
+          reserved: boolean
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

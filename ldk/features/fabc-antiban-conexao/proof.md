@@ -1,7 +1,9 @@
 # Fabc - Anti-ban por conexao - Proof
 
 ## Status
-Fabc => DONE (falta stress test real com 2 campanhas para P3)
+Fabc => PARTIAL (gate read+write nao e atomico entre workers concorrentes;
+  precisa RPC `try_reserve_connection_slot` com UPDATE condicional e stress
+  test com 2 campanhas simultaneas na mesma conexao para promover a DONE).
 
 ## Arquivos alterados
 - migration: dispatch_hourly_limit/daily_limit/sent_this_hour(+_at)/
