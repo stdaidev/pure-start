@@ -5,7 +5,13 @@
  */
 
 export type ChannelStatus =
-  "pending" | "qr" | "connecting" | "connected" | "disconnected" | "expired" | "error";
+  | "pending"
+  | "qr"
+  | "connecting"
+  | "connected"
+  | "disconnected"
+  | "expired"
+  | "error";
 
 export interface QrPayload {
   /** QR code em base64 (data URL ou raw base64). */

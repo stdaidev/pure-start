@@ -1,5 +1,8 @@
 export type AgentRunStopStatus =
-  "skipped-human" | "skipped-inactive" | "skipped-no-agent" | "skipped-stale";
+  | "skipped-human"
+  | "skipped-inactive"
+  | "skipped-no-agent"
+  | "skipped-stale";
 
 export interface AgentRunExpectedState {
   messageId: string;

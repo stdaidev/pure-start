@@ -291,7 +291,8 @@ export const evolutionProvider: ChannelProvider = {
             (message.viewOnceMessage as { message?: Record<string, unknown> } | undefined) ??
             (message.viewOnceMessageV2 as { message?: Record<string, unknown> } | undefined) ??
             (message.viewOnceMessageV2Extension as
-              { message?: Record<string, unknown> } | undefined) ??
+              | { message?: Record<string, unknown> }
+              | undefined) ??
             (message.ephemeralMessage as { message?: Record<string, unknown> } | undefined) ??
             (message.deviceSentMessage as { message?: Record<string, unknown> } | undefined);
           if (wrapper?.message) {
