@@ -43,19 +43,11 @@ export function ContactEditDialog(props: {
         <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-1">
             <Label htmlFor="contact-name">Nome</Label>
-            <Input
-              id="contact-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
+            <Input id="contact-name" value={name} onChange={(e) => setName(e.target.value)} />
           </div>
           <div className="flex flex-col gap-1">
             <Label htmlFor="contact-tags">Tags (separadas por virgula)</Label>
-            <Input
-              id="contact-tags"
-              value={tags}
-              onChange={(e) => setTags(e.target.value)}
-            />
+            <Input id="contact-tags" value={tags} onChange={(e) => setTags(e.target.value)} />
           </div>
         </div>
         <DialogFooter>

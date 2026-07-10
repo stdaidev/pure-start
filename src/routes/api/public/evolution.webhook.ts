@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { timingSafeEqual, createHash } from "node:crypto";
+import { phoneVariantsBR } from "@/lib/phone";
 
 /**
  * Webhook publico do Evolution.
@@ -12,6 +13,7 @@ import { timingSafeEqual, createHash } from "node:crypto";
  */
 
 const DEFAULT_WORKSPACE = "00000000-0000-0000-0000-000000000001";
+const MAX_WEBHOOK_BYTES = 8 * 1024 * 1024;
 
 function bufEq(a: string, b: string): boolean {
   // Normaliza tamanhos hasheando ambos (evita leak de tamanho, compare constante)
@@ -30,12 +32,9 @@ function isGroupJid(jid: string): boolean {
 }
 
 function getProvidedToken(request: Request): string {
-  const url = new URL(request.url);
   const auth = request.headers.get("authorization") ?? "";
   return (
     request.headers.get("x-webhook-token") ??
-    url.searchParams.get("token") ??
-    url.searchParams.get("x-webhook-token") ??
     (auth.toLowerCase().startsWith("bearer ") ? auth.slice(7) : "")
   );
 }
@@ -58,9 +57,7 @@ function getDebounceDelayMs(agentDebounceSeconds: number | null): number {
 }
 
 async function scheduleAgentRun(
-  supabaseAdmin: Awaited<
-    typeof import("@/integrations/supabase/client.server")
-  >["supabaseAdmin"],
+  supabaseAdmin: Awaited<typeof import("@/integrations/supabase/client.server")>["supabaseAdmin"],
   conversationId: string,
   messageId: string,
   agentDebounceSeconds: number | null,
@@ -75,9 +72,7 @@ async function scheduleAgentRun(
     console.error("[webhook/evolution] schedule_agent_run failed", error.code);
     return;
   }
-  console.log(
-    `[webhook/evolution] queued-agent-run conversation=${conversationId} delay=${delay}`,
-  );
+  console.log(`[webhook/evolution] queued-agent-run conversation=${conversationId} delay=${delay}`);
 }
 
 export const Route = createFileRoute("/api/public/evolution/webhook")({
@@ -96,26 +91,28 @@ export const Route = createFileRoute("/api/public/evolution/webhook")({
           return new Response("unauthorized", { status: 401 });
         }
 
-        // Le body como texto para poder logar tamanho sem tocar em PII
+        const declaredLength = Number(request.headers.get("content-length") ?? 0);
+        if (Number.isFinite(declaredLength) && declaredLength > MAX_WEBHOOK_BYTES) {
+          return new Response("payload too large", { status: 413 });
+        }
+
+        // Limite tambem cobre requests chunked/sem content-length.
         let body: unknown;
         try {
-          body = await request.json();
+          const rawBody = await request.text();
+          if (new TextEncoder().encode(rawBody).byteLength > MAX_WEBHOOK_BYTES) {
+            return new Response("payload too large", { status: 413 });
+          }
+          body = JSON.parse(rawBody);
         } catch {
           return new Response("bad json", { status: 400 });
         }
 
-        const { supabaseAdmin } = await import(
-          "@/integrations/supabase/client.server"
-        );
-        const { evolutionProvider } = await import(
-          "@/providers/channel/evolution.server"
-        );
-        const { sanitizeEvolutionWebhookPayload } = await import(
-          "@/lib/evolution-webhook.server"
-        );
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const { evolutionProvider } = await import("@/providers/channel/evolution.server");
+        const { sanitizeEvolutionWebhookPayload } = await import("@/lib/evolution-webhook.server");
 
-        const eventType =
-          (body as { event?: string })?.event ?? "unknown";
+        const eventType = (body as { event?: string })?.event ?? "unknown";
 
         // Grava auditoria bruta primeiro (idempotencia externa fica com o provedor)
         const { data: evt } = await supabaseAdmin
@@ -124,7 +121,7 @@ export const Route = createFileRoute("/api/public/evolution/webhook")({
             workspace_id: DEFAULT_WORKSPACE,
             provider: "evolution",
             event_type: eventType,
-             payload: sanitizeEvolutionWebhookPayload(body) as never,
+            payload: sanitizeEvolutionWebhookPayload(body) as never,
             processed: false,
           })
           .select("id")
@@ -136,19 +133,18 @@ export const Route = createFileRoute("/api/public/evolution/webhook")({
           // Atualiza status da connection por instance name, se veio no payload
           const instance =
             (body as { instance?: string })?.instance ??
-            ((body as { sender?: string })?.sender ?? null);
+            (body as { sender?: string })?.sender ??
+            null;
 
           // Extrai o JID/telefone dono da instancia (varia por versao do Evolution).
           // Ex.: body.sender = "5528999914358@s.whatsapp.net", body.data.owner, etc.
           const ownerCandidate =
             (body as { sender?: string })?.sender ??
-            ((body as { data?: { owner?: string } })?.data?.owner) ??
-            ((body as { data?: { instance?: string } })?.data?.instance) ??
+            (body as { data?: { owner?: string } })?.data?.owner ??
+            (body as { data?: { instance?: string } })?.data?.instance ??
             null;
           const ownerPhone =
-            ownerCandidate && ownerCandidate.includes("@")
-              ? jidToPhone(ownerCandidate)
-              : null;
+            ownerCandidate && ownerCandidate.includes("@") ? jidToPhone(ownerCandidate) : null;
 
           if (parsed.statusChange && instance) {
             await supabaseAdmin
@@ -172,7 +168,8 @@ export const Route = createFileRoute("/api/public/evolution/webhook")({
               await supabaseAdmin
                 .from("connections")
                 .update({ metadata: { ...meta, own_phone: ownerPhone } as never })
-                .eq("id", currentConn.id);
+                .eq("id", currentConn.id)
+                .eq("workspace_id", DEFAULT_WORKSPACE);
             }
           }
 
@@ -218,7 +215,7 @@ export const Route = createFileRoute("/api/public/evolution/webhook")({
             if (m.direction === "outbound" && otherOwnPhones.has(phone)) continue;
 
             // Upsert contato por (workspace, phone)
-            const { data: contact } = await supabaseAdmin
+            const { data: contact, error: contactError } = await supabaseAdmin
               .from("contacts")
               .upsert(
                 {
@@ -229,6 +226,10 @@ export const Route = createFileRoute("/api/public/evolution/webhook")({
               )
               .select("id")
               .single();
+            if (contactError || !contact) {
+              console.error("[webhook/evolution] contact upsert failed", contactError?.code);
+              continue;
+            }
 
             // Localiza connection pela instancia (opcional)
             let connectionId: string | null = null;
@@ -277,7 +278,8 @@ export const Route = createFileRoute("/api/public/evolution/webhook")({
                 await supabaseAdmin
                   .from("conversations")
                   .update(patch)
-                  .eq("id", existing.id);
+                  .eq("id", existing.id)
+                  .eq("workspace_id", DEFAULT_WORKSPACE);
               } else {
                 const { data: created } = await supabaseAdmin
                   .from("conversations")
@@ -309,16 +311,20 @@ export const Route = createFileRoute("/api/public/evolution/webhook")({
               .maybeSingle();
             if (dup) continue;
 
-            const { data: insertedMsg, error: insErr } = await supabaseAdmin.from("messages").insert({
-              workspace_id: DEFAULT_WORKSPACE,
-              conversation_id: conversationId,
-              direction: m.direction,
-              content: m.text ?? null,
-              media_url: m.mediaUrl ?? null,
-              media_type: m.kind === "text" ? null : m.kind,
-              status: "received",
-              external_id: m.providerMessageId,
-            }).select("id").single();
+            const { data: insertedMsg, error: insErr } = await supabaseAdmin
+              .from("messages")
+              .insert({
+                workspace_id: DEFAULT_WORKSPACE,
+                conversation_id: conversationId,
+                direction: m.direction,
+                content: m.text ?? null,
+                media_url: m.mediaUrl ?? null,
+                media_type: m.kind === "text" ? null : m.kind,
+                status: "received",
+                external_id: m.providerMessageId,
+              })
+              .select("id")
+              .single();
             if (insErr) {
               console.error("[webhook/evolution] message insert failed:", insErr.code);
               continue;
@@ -351,33 +357,15 @@ export const Route = createFileRoute("/api/public/evolution/webhook")({
               // Compara por variantes BR: com/sem DDI 55 e com/sem 9o digito
               // no celular, ja que o JID do WhatsApp pode chegar em qualquer
               // um desses formatos dependendo da versao/Evolution.
-              const variants = new Set<string>();
-              variants.add(phone);
-              const noCc = phone.startsWith("55") ? phone.slice(2) : phone;
-              variants.add(noCc);
-              if (phone.startsWith("55")) variants.add(phone);
-              else variants.add(`55${phone}`);
-              // BR mobile: com/sem "9" apos DDD (posicoes 2-3 do numero local)
-              if (noCc.length === 11 && noCc[2] === "9") {
-                const stripped = noCc.slice(0, 2) + noCc.slice(3);
-                variants.add(stripped);
-                variants.add(`55${stripped}`);
-              } else if (noCc.length === 10) {
-                const added = noCc.slice(0, 2) + "9" + noCc.slice(2);
-                variants.add(added);
-                variants.add(`55${added}`);
-              }
               const { data: blocked } = await supabaseAdmin
                 .from("agent_ignored_numbers")
                 .select("id")
                 .eq("workspace_id", DEFAULT_WORKSPACE)
-                .in("phone_e164", Array.from(variants))
+                .in("phone_e164", phoneVariantsBR(phone))
                 .limit(1)
                 .maybeSingle();
               if (blocked) {
-                console.log(
-                  `[webhook/evolution] ignored-number conversation=${conversationId}`,
-                );
+                console.log(`[webhook/evolution] ignored-number conversation=${conversationId}`);
                 continue;
               }
 
@@ -387,16 +375,18 @@ export const Route = createFileRoute("/api/public/evolution/webhook")({
                 .from("conversations")
                 .select("agent_id")
                 .eq("id", conversationId)
+                .eq("workspace_id", DEFAULT_WORKSPACE)
                 .maybeSingle();
               if (convRow?.agent_id) {
                 const { data: agentRow } = await supabaseAdmin
                   .from("agents")
                   .select("debounce_seconds")
                   .eq("id", convRow.agent_id)
+                  .eq("workspace_id", DEFAULT_WORKSPACE)
                   .maybeSingle();
                 agentDebounceSeconds =
-                  (agentRow as { debounce_seconds?: number | null } | null)
-                    ?.debounce_seconds ?? null;
+                  (agentRow as { debounce_seconds?: number | null } | null)?.debounce_seconds ??
+                  null;
               }
               await scheduleAgentRun(
                 supabaseAdmin,
@@ -411,7 +401,8 @@ export const Route = createFileRoute("/api/public/evolution/webhook")({
             await supabaseAdmin
               .from("webhook_events")
               .update({ processed: true })
-              .eq("id", evt.id);
+              .eq("id", evt.id)
+              .eq("workspace_id", DEFAULT_WORKSPACE);
           }
 
           return new Response("ok", { status: 200 });

@@ -63,13 +63,16 @@ async function evoFetch(
 
     const text = await res.text();
     if (!res.ok) {
-      const snippet = text.slice(0, 300).replace(/\s+/g, " ");
-      console.error(
-        `[evolution] ${rest.method ?? "GET"} ${path} -> ${res.status} ${snippet}`,
-      );
-      throw new Error(`Evolution ${res.status}: ${snippet || "no body"}`);
+      // O body pode ecoar telefone, mensagem, QR ou credencial. Nunca logar/devolver.
+      console.error(`[evolution] ${rest.method ?? "GET"} ${path} -> ${res.status}`);
+      throw new Error(`Evolution upstream error (${res.status})`);
     }
-    return text ? JSON.parse(text) : {};
+    if (!text) return {};
+    try {
+      return JSON.parse(text);
+    } catch {
+      return { raw: text.slice(0, 160) };
+    }
   } catch (err) {
     if ((err as Error).name === "AbortError") {
       throw new Error("Evolution upstream timeout");
@@ -85,9 +88,9 @@ function mapState(raw: unknown): ChannelStatus {
   const s = (
     (typeof raw === "string"
       ? raw
-      : (raw as { state?: string; instance?: { state?: string } })?.state ??
+      : ((raw as { state?: string; instance?: { state?: string } })?.state ??
         (raw as { instance?: { state?: string } })?.instance?.state ??
-        "") as string
+        "")) as string
   ).toLowerCase();
 
   switch (s) {
@@ -143,9 +146,7 @@ function mediaUrlFrom(message: Record<string, unknown>, media: unknown): string 
 export const evolutionProvider: ChannelProvider = {
   id: "evolution",
 
-  async createInstance(
-    input: CreateInstanceInput,
-  ): Promise<CreateInstanceResult> {
+  async createInstance(input: CreateInstanceInput): Promise<CreateInstanceResult> {
     const raw = (await evoFetch("/instance/create", {
       method: "POST",
       timeoutMs: 25000,
@@ -172,10 +173,10 @@ export const evolutionProvider: ChannelProvider = {
   },
 
   async getQrCode(providerInstanceId: string): Promise<QrPayload> {
-    const raw = await evoFetch(
-      `/instance/connect/${encodeURIComponent(providerInstanceId)}`,
-      { method: "GET", timeoutMs: 20000 },
-    );
+    const raw = await evoFetch(`/instance/connect/${encodeURIComponent(providerInstanceId)}`, {
+      method: "GET",
+      timeoutMs: 20000,
+    });
     const qr = extractQr(raw);
     if (!qr) throw new Error("QR indisponivel");
     return qr;
@@ -198,53 +199,39 @@ export const evolutionProvider: ChannelProvider = {
       body.groups_ignore = settings.groupsIgnore;
       body.groupsIgnore = settings.groupsIgnore;
     }
-    await evoFetch(
-      `/settings/set/${encodeURIComponent(providerInstanceId)}`,
-      { method: "POST", body: JSON.stringify(body) },
-    );
+    await evoFetch(`/settings/set/${encodeURIComponent(providerInstanceId)}`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
   },
 
-  async sendText(
-    providerInstanceId: string,
-    msg: OutboundText,
-  ): Promise<SendResult> {
-    const raw = (await evoFetch(
-      `/message/sendText/${encodeURIComponent(providerInstanceId)}`,
-      {
-        method: "POST",
-        body: JSON.stringify({ number: msg.to, text: msg.text }),
-      },
-    )) as Record<string, unknown>;
+  async sendText(providerInstanceId: string, msg: OutboundText): Promise<SendResult> {
+    const raw = (await evoFetch(`/message/sendText/${encodeURIComponent(providerInstanceId)}`, {
+      method: "POST",
+      body: JSON.stringify({ number: msg.to, text: msg.text }),
+    })) as Record<string, unknown>;
     const key = (raw.key ?? {}) as Record<string, unknown>;
-    return { providerMessageId: (key.id as string) ?? String(Date.now()) };
+    const providerMessageId = getString(key.id);
+    if (!providerMessageId) throw new Error("Evolution response missing message id");
+    return { providerMessageId };
   },
 
-  async sendTyping(
-    providerInstanceId: string,
-    to: string,
-    durationMs: number,
-  ): Promise<void> {
+  async sendTyping(providerInstanceId: string, to: string, durationMs: number): Promise<void> {
     try {
-      await evoFetch(
-        `/chat/sendPresence/${encodeURIComponent(providerInstanceId)}`,
-        {
-          method: "POST",
-          body: JSON.stringify({
-            number: to,
-            presence: "composing",
-            delay: Math.max(500, Math.min(durationMs, 15000)),
-          }),
-        },
-      );
+      await evoFetch(`/chat/sendPresence/${encodeURIComponent(providerInstanceId)}`, {
+        method: "POST",
+        body: JSON.stringify({
+          number: to,
+          presence: "composing",
+          delay: Math.max(500, Math.min(durationMs, 15000)),
+        }),
+      });
     } catch {
       // presence e best-effort; nunca falha o envio
     }
   },
 
-  async sendAudio(
-    providerInstanceId: string,
-    msg: OutboundAudio,
-  ): Promise<SendResult> {
+  async sendAudio(providerInstanceId: string, msg: OutboundAudio): Promise<SendResult> {
     const raw = (await evoFetch(
       `/message/sendWhatsAppAudio/${encodeURIComponent(providerInstanceId)}`,
       {
@@ -253,23 +240,23 @@ export const evolutionProvider: ChannelProvider = {
       },
     )) as Record<string, unknown>;
     const key = (raw.key ?? {}) as Record<string, unknown>;
-    return { providerMessageId: (key.id as string) ?? String(Date.now()) };
+    const providerMessageId = getString(key.id);
+    if (!providerMessageId) throw new Error("Evolution response missing message id");
+    return { providerMessageId };
   },
 
   async deleteInstance(providerInstanceId: string): Promise<void> {
     // Best-effort: logout + delete (Evolution exige logout antes de delete).
     try {
-      await evoFetch(
-        `/instance/logout/${encodeURIComponent(providerInstanceId)}`,
-        { method: "DELETE" },
-      );
+      await evoFetch(`/instance/logout/${encodeURIComponent(providerInstanceId)}`, {
+        method: "DELETE",
+      });
     } catch {
       // ja pode estar deslogado; segue para delete
     }
-    await evoFetch(
-      `/instance/delete/${encodeURIComponent(providerInstanceId)}`,
-      { method: "DELETE" },
-    );
+    await evoFetch(`/instance/delete/${encodeURIComponent(providerInstanceId)}`, {
+      method: "DELETE",
+    });
   },
 
   async handleWebhook(rawBody: unknown): Promise<WebhookResult> {
@@ -290,7 +277,7 @@ export const evolutionProvider: ChannelProvider = {
       const list = Array.isArray(data)
         ? (data as unknown[])
         : Array.isArray((data as { messages?: unknown[] }).messages)
-          ? ((data as { messages: unknown[] }).messages)
+          ? (data as { messages: unknown[] }).messages
           : [data];
 
       const messages: InboundMessage[] = [];
@@ -303,7 +290,8 @@ export const evolutionProvider: ChannelProvider = {
           const wrapper =
             (message.viewOnceMessage as { message?: Record<string, unknown> } | undefined) ??
             (message.viewOnceMessageV2 as { message?: Record<string, unknown> } | undefined) ??
-            (message.viewOnceMessageV2Extension as { message?: Record<string, unknown> } | undefined) ??
+            (message.viewOnceMessageV2Extension as
+              { message?: Record<string, unknown> } | undefined) ??
             (message.ephemeralMessage as { message?: Record<string, unknown> } | undefined) ??
             (message.deviceSentMessage as { message?: Record<string, unknown> } | undefined);
           if (wrapper?.message) {
@@ -314,10 +302,8 @@ export const evolutionProvider: ChannelProvider = {
         }
         const remoteJid = (key.remoteJid as string | undefined) ?? "";
         const fromMe = Boolean(key.fromMe);
-        const id =
-          (key.id as string | undefined) ??
-          (m.id as string | undefined) ??
-          `${Date.now()}`;
+        const id = (key.id as string | undefined) ?? (m.id as string | undefined);
+        if (!id) continue;
 
         let kind: InboundMessage["kind"] = "other";
         let text: string | undefined;
@@ -326,9 +312,7 @@ export const evolutionProvider: ChannelProvider = {
         if (typeof message.conversation === "string") {
           kind = "text";
           text = message.conversation;
-        } else if (
-          (message.extendedTextMessage as { text?: string } | undefined)?.text
-        ) {
+        } else if ((message.extendedTextMessage as { text?: string } | undefined)?.text) {
           kind = "text";
           text = (message.extendedTextMessage as { text: string }).text;
         } else if (message.audioMessage) {

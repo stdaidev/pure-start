@@ -11,6 +11,33 @@ export function normalizePhone(raw: string | null | undefined): string | null {
   return null;
 }
 
+/**
+ * Variantes brasileiras observadas em JIDs/integrações: com/sem DDI 55 e
+ * com/sem nono dígito. A lista é determinística e sem duplicatas.
+ */
+export function phoneVariantsBR(raw: string | null | undefined): string[] {
+  if (!raw) return [];
+  const digits = String(raw).replace(/\D+/g, "");
+  if (!digits) return [];
+
+  const variants = new Set<string>([digits]);
+  const local = digits.startsWith("55") ? digits.slice(2) : digits;
+  variants.add(local);
+  variants.add(`55${local}`);
+
+  if (local.length === 11 && local[2] === "9") {
+    const withoutNinthDigit = local.slice(0, 2) + local.slice(3);
+    variants.add(withoutNinthDigit);
+    variants.add(`55${withoutNinthDigit}`);
+  } else if (local.length === 10) {
+    const withNinthDigit = local.slice(0, 2) + "9" + local.slice(2);
+    variants.add(withNinthDigit);
+    variants.add(`55${withNinthDigit}`);
+  }
+
+  return Array.from(variants);
+}
+
 export function snakeCase(input: string): string {
   return input
     .normalize("NFD")

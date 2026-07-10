@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
+const DEFAULT_WORKSPACE_ID = "00000000-0000-0000-0000-000000000001";
+
 /**
  * Server functions do modulo Conexoes (F2).
  *
@@ -11,20 +13,12 @@ import { z } from "zod";
  */
 
 export const createConnection = createServerFn({ method: "POST" })
-  .inputValidator((raw: unknown) =>
-    z.object({ name: z.string().min(1).max(64) }).parse(raw),
-  )
+  .validator((raw: unknown) => z.object({ name: z.string().min(1).max(64) }).parse(raw))
   .handler(async ({ data }) => {
-    const workspaceId = "00000000-0000-0000-0000-000000000001";
-    const { supabaseAdmin } = await import(
-      "@/integrations/supabase/client.server"
-    );
-    const { evolutionProvider } = await import(
-      "@/providers/channel/evolution.server"
-    );
-    const { getEvolutionWebhookDeliveryConfig } = await import(
-      "@/lib/evolution-webhook.server"
-    );
+    const workspaceId = DEFAULT_WORKSPACE_ID;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { evolutionProvider } = await import("@/providers/channel/evolution.server");
+    const { getEvolutionWebhookDeliveryConfig } = await import("@/lib/evolution-webhook.server");
 
     const webhook = getEvolutionWebhookDeliveryConfig();
 
@@ -55,14 +49,17 @@ export const createConnection = createServerFn({ method: "POST" })
         webhookHeaders: webhook.headers,
       });
 
-      await supabaseAdmin
+      const { error: updateError } = await supabaseAdmin
         .from("connections")
         .update({
           status: result.status.status,
           qr_code: result.qr?.base64 ?? null,
           instance_name: result.providerInstanceId,
         })
-        .eq("id", row.id);
+        .eq("id", row.id)
+        .eq("workspace_id", workspaceId);
+
+      if (updateError) throw new Error("Falha ao salvar estado da conexao");
 
       return {
         id: row.id,
@@ -73,32 +70,27 @@ export const createConnection = createServerFn({ method: "POST" })
       await supabaseAdmin
         .from("connections")
         .update({ status: "error" })
-        .eq("id", row.id);
+        .eq("id", row.id)
+        .eq("workspace_id", workspaceId);
       console.error("[connections] evolution createInstance failed");
       throw new Error((err as Error).message || "Falha no provedor");
     }
   });
 
 export const getConnectionStatus = createServerFn({ method: "POST" })
-  .inputValidator((raw: unknown) =>
-    z.object({ id: z.string().uuid() }).parse(raw),
-  )
+  .validator((raw: unknown) => z.object({ id: z.string().uuid() }).parse(raw))
   .handler(async ({ data }) => {
-    const workspaceId = "00000000-0000-0000-0000-000000000001";
-    const { supabaseAdmin } = await import(
-      "@/integrations/supabase/client.server"
-    );
-    const { evolutionProvider, configureEvolutionWebhook } = await import(
-      "@/providers/channel/evolution.server"
-    );
-    const { getEvolutionWebhookDeliveryConfig } = await import(
-      "@/lib/evolution-webhook.server"
-    );
+    const workspaceId = DEFAULT_WORKSPACE_ID;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { evolutionProvider, configureEvolutionWebhook } =
+      await import("@/providers/channel/evolution.server");
+    const { getEvolutionWebhookDeliveryConfig } = await import("@/lib/evolution-webhook.server");
 
     const { data: row, error } = await supabaseAdmin
       .from("connections")
       .select("id, instance_name, status, qr_code, webhook_url")
       .eq("id", data.id)
+      .eq("workspace_id", workspaceId)
       .single();
     if (error || !row) throw new Error("Conexao nao encontrada");
 
@@ -127,7 +119,8 @@ export const getConnectionStatus = createServerFn({ method: "POST" })
         await supabaseAdmin
           .from("connections")
           .update({ status: status.status })
-          .eq("id", row.id);
+          .eq("id", row.id)
+          .eq("workspace_id", workspaceId);
       }
       return { id: row.id, status: status.status, qr: row.qr_code };
     } catch {
@@ -137,91 +130,81 @@ export const getConnectionStatus = createServerFn({ method: "POST" })
   });
 
 export const refreshQr = createServerFn({ method: "POST" })
-  .inputValidator((raw: unknown) =>
-    z.object({ id: z.string().uuid() }).parse(raw),
-  )
+  .validator((raw: unknown) => z.object({ id: z.string().uuid() }).parse(raw))
   .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import(
-      "@/integrations/supabase/client.server"
-    );
-    const { evolutionProvider } = await import(
-      "@/providers/channel/evolution.server"
-    );
+    const workspaceId = DEFAULT_WORKSPACE_ID;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { evolutionProvider } = await import("@/providers/channel/evolution.server");
 
     const { data: row, error } = await supabaseAdmin
       .from("connections")
       .select("id, instance_name")
       .eq("id", data.id)
+      .eq("workspace_id", workspaceId)
       .single();
     if (error || !row) throw new Error("Conexao nao encontrada");
 
     if (!row.instance_name) throw new Error("Instancia sem nome");
     const qr = await evolutionProvider.getQrCode(row.instance_name);
-    await supabaseAdmin
+    const { error: updateError } = await supabaseAdmin
       .from("connections")
       .update({ qr_code: qr.base64, status: "qr" })
-      .eq("id", row.id);
+      .eq("id", row.id)
+      .eq("workspace_id", workspaceId);
+    if (updateError) throw new Error("Falha ao salvar QR code");
 
     return { id: row.id, qr: qr.base64 };
   });
 
 export const deleteConnection = createServerFn({ method: "POST" })
-  .inputValidator((raw: unknown) =>
-    z.object({ id: z.string().uuid() }).parse(raw),
-  )
+  .validator((raw: unknown) => z.object({ id: z.string().uuid() }).parse(raw))
   .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import(
-      "@/integrations/supabase/client.server"
-    );
-    const { evolutionProvider } = await import(
-      "@/providers/channel/evolution.server"
-    );
+    const workspaceId = DEFAULT_WORKSPACE_ID;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { evolutionProvider } = await import("@/providers/channel/evolution.server");
 
     const { data: row, error } = await supabaseAdmin
       .from("connections")
       .select("id, instance_name")
       .eq("id", data.id)
+      .eq("workspace_id", workspaceId)
       .single();
     if (error || !row) throw new Error("Conexao nao encontrada");
 
     try {
-      if (row.instance_name)
-        await evolutionProvider.deleteInstance(row.instance_name);
+      if (row.instance_name) await evolutionProvider.deleteInstance(row.instance_name);
     } catch {
       // segue mesmo se o Evolution ja tiver perdido a instancia
     }
 
-    await supabaseAdmin.from("connections").delete().eq("id", row.id);
+    const { error: deleteError } = await supabaseAdmin
+      .from("connections")
+      .delete()
+      .eq("id", row.id)
+      .eq("workspace_id", workspaceId);
+    if (deleteError) throw new Error("Falha ao excluir conexao");
     return { id: row.id, deleted: true };
   });
 
-export const listConnections = createServerFn({ method: "GET" }).handler(
-  async () => {
-    const workspaceId = "00000000-0000-0000-0000-000000000001";
-    const { supabaseAdmin } = await import(
-      "@/integrations/supabase/client.server"
-    );
-    const { data, error } = await supabaseAdmin
-      .from("connections")
-      .select("id, name, status, default_agent_id, ignore_groups, updated_at")
-      .eq("workspace_id", workspaceId)
-      .order("created_at", { ascending: false });
-    if (error) throw new Error("Falha ao listar conexoes");
-    return { connections: data ?? [] };
-  },
-);
+export const listConnections = createServerFn({ method: "GET" }).handler(async () => {
+  const workspaceId = DEFAULT_WORKSPACE_ID;
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data, error } = await supabaseAdmin
+    .from("connections")
+    .select("id, name, status, default_agent_id, ignore_groups, updated_at")
+    .eq("workspace_id", workspaceId)
+    .order("created_at", { ascending: false });
+  if (error) throw new Error("Falha ao listar conexoes");
+  return { connections: data ?? [] };
+});
 
 export const renameConnection = createServerFn({ method: "POST" })
-  .inputValidator((raw: unknown) =>
-    z
-      .object({ id: z.string().uuid(), name: z.string().min(1).max(64) })
-      .parse(raw),
+  .validator((raw: unknown) =>
+    z.object({ id: z.string().uuid(), name: z.string().min(1).max(64) }).parse(raw),
   )
   .handler(async ({ data }) => {
-    const workspaceId = "00000000-0000-0000-0000-000000000001";
-    const { supabaseAdmin } = await import(
-      "@/integrations/supabase/client.server"
-    );
+    const workspaceId = DEFAULT_WORKSPACE_ID;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
       .from("connections")
       .update({ name: data.name.trim() })

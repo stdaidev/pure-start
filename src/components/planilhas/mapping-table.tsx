@@ -39,10 +39,7 @@ export function MappingTable(props: {
         <tbody>
           {headers.map((h) => (
             <tr key={h} className="border-b border-border/40">
-              <td
-                className="px-3 py-2 text-xs"
-                style={{ fontFamily: "var(--font-mono)" }}
-              >
+              <td className="px-3 py-2 text-xs" style={{ fontFamily: "var(--font-mono)" }}>
                 {h}
               </td>
               <td className="px-3 py-2">

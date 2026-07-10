@@ -15,11 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
-import {
-  createConnection,
-  getConnectionStatus,
-  refreshQr,
-} from "@/lib/connections.functions";
+import { createConnection, getConnectionStatus, refreshQr } from "@/lib/connections.functions";
 import { QrDisplay } from "./qr-display";
 import { StatusBadge } from "./status-badge";
 
@@ -73,8 +69,7 @@ export function NewConnectionDialog({
 
   const refreshMut = useMutation({
     mutationFn: () => refreshFn({ data: { id: connectionId! } }),
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: ["connection-status", connectionId] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["connection-status", connectionId] }),
     onError: (e: Error) => toast.error(e.message || "Falha ao atualizar QR"),
   });
 
@@ -85,9 +80,7 @@ export function NewConnectionDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle style={{ fontFamily: "var(--font-display)" }}>
-            Nova conexao
-          </DialogTitle>
+          <DialogTitle style={{ fontFamily: "var(--font-display)" }}>Nova conexao</DialogTitle>
           <DialogDescription>
             Escaneie o QR no WhatsApp &gt; Aparelhos conectados.
           </DialogDescription>

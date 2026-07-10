@@ -7,12 +7,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MappingTable } from "@/components/planilhas/mapping-table";
-import {
-  parseSheet,
-  suggestMapping,
-  type FieldRole,
-  type ParsedSheet,
-} from "@/lib/contacts-parse";
+import { parseSheet, suggestMapping, type FieldRole, type ParsedSheet } from "@/lib/contacts-parse";
 import { normalizePhone, snakeCase } from "@/lib/phone";
 import { importContacts } from "@/lib/contacts.functions";
 
@@ -129,10 +124,7 @@ function PlanilhasPage() {
         >
           modulo // F5
         </p>
-        <h1
-          className="text-2xl font-semibold"
-          style={{ fontFamily: "var(--font-display)" }}
-        >
+        <h1 className="text-2xl font-semibold" style={{ fontFamily: "var(--font-display)" }}>
           Planilhas
         </h1>
         <p
@@ -140,7 +132,8 @@ function PlanilhasPage() {
           style={{ fontFamily: "var(--font-mono)" }}
           data-testid="wizard-step"
         >
-          passo {step === "upload" ? "1/3 upload" : step === "map" ? "2/3 mapeamento" : "3/3 preview"}
+          passo{" "}
+          {step === "upload" ? "1/3 upload" : step === "map" ? "2/3 mapeamento" : "3/3 preview"}
         </p>
       </header>
 
@@ -169,26 +162,22 @@ function PlanilhasPage() {
       {step === "map" && sheet ? (
         <div className="flex flex-1 flex-col gap-3 overflow-hidden">
           <p className="text-xs text-muted-foreground">
-            Arquivo: <span style={{ fontFamily: "var(--font-mono)" }}>{fileName}</span> — {sheet.rows.length} linhas
+            Arquivo: <span style={{ fontFamily: "var(--font-mono)" }}>{fileName}</span> —{" "}
+            {sheet.rows.length} linhas
           </p>
           <div className="flex-1 overflow-auto">
             <MappingTable
               headers={sheet.headers}
               sample={sheet.rows.slice(0, 5)}
               mapping={mapping}
-              onChange={(h, role) =>
-                setMapping((m) => ({ ...m, [h]: role }))
-              }
+              onChange={(h, role) => setMapping((m) => ({ ...m, [h]: role }))}
             />
           </div>
           <div className="flex justify-between">
             <Button variant="outline" onClick={() => setStep("upload")}>
               Voltar
             </Button>
-            <Button
-              disabled={!phoneMapped}
-              onClick={() => setStep("preview")}
-            >
+            <Button disabled={!phoneMapped} onClick={() => setStep("preview")}>
               {phoneMapped ? "Continuar" : "Mapeie o telefone"}
             </Button>
           </div>
@@ -197,14 +186,16 @@ function PlanilhasPage() {
 
       {step === "preview" && sheet ? (
         <div className="flex flex-1 flex-col gap-3">
-          <div
-            className="grid grid-cols-4 gap-3"
-            style={{ fontFamily: "var(--font-mono)" }}
-          >
+          <div className="grid grid-cols-4 gap-3" style={{ fontFamily: "var(--font-mono)" }}>
             <Stat label="total validos" value={prepared.valid.length} />
             <Stat label="invalidos" value={prepared.invalid} />
             <Stat label="linhas lidas" value={sheet.rows.length} />
-            <Stat label="colunas mapeadas" value={Object.values(mapping).filter((r) => r !== "ignorar" && r !== "placeholder").length} />
+            <Stat
+              label="colunas mapeadas"
+              value={
+                Object.values(mapping).filter((r) => r !== "ignorar" && r !== "placeholder").length
+              }
+            />
           </div>
           <div className="flex-1 overflow-auto rounded border border-border/60">
             <table className="w-full text-sm">
@@ -223,17 +214,12 @@ function PlanilhasPage() {
               <tbody>
                 {prepared.valid.slice(0, 10).map((r, i) => (
                   <tr key={i} className="border-b border-border/40">
-                    <td
-                      className="px-3 py-2 text-xs"
-                      style={{ fontFamily: "var(--font-mono)" }}
-                    >
+                    <td className="px-3 py-2 text-xs" style={{ fontFamily: "var(--font-mono)" }}>
                       {r.phone}
                     </td>
                     <td className="px-3 py-2 text-xs">{r.name ?? "—"}</td>
                     <td className="px-3 py-2 text-xs">{r.email ?? "—"}</td>
-                    <td className="px-3 py-2 text-xs">
-                      {r.tags.join(", ") || "—"}
-                    </td>
+                    <td className="px-3 py-2 text-xs">{r.tags.join(", ") || "—"}</td>
                     <td className="px-3 py-2 text-xs text-muted-foreground">
                       {Object.keys(r.metadata).join(", ") || "—"}
                     </td>
@@ -277,9 +263,7 @@ function PlanilhasPage() {
 function Stat(props: { label: string; value: number }) {
   return (
     <div className="rounded border border-border/60 p-3">
-      <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
-        {props.label}
-      </p>
+      <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{props.label}</p>
       <p className="text-xl font-semibold">{props.value}</p>
     </div>
   );

@@ -19,17 +19,25 @@ jobs:
         shell: pwsh
         run: ./scripts/ldk-check.ps1 -Root .
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: TypeScript
+        run: bun run typecheck
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Tests
+        run: npm test
+
       - name: Production build
         run: bun run build
-
-      - name: Report unavailable checks honestly
-        run: |
-          echo "No automated test script is declared; tests are unavailable, not passing."
-          echo "Lint is intentionally not a release gate in this migration because the inherited baseline is red."
-          echo "P3/P4 proofs must add current test and lint evidence before claiming those levels."

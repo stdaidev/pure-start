@@ -49,7 +49,7 @@ Autonomy mode: balanced
 | Segredos | Credenciais habilitam operacoes reais | Server-only; nao logar; evoluir armazenamento antes de escala | Grep de bundle/log e revisao de grants |
 | Observabilidade | Jobs assincronos precisam diagnostico | Eventos estruturados e sanitizados | Query de logs sem PII/content |
 | Release | Baseline antiga nao tem CI uniforme | Novas entregas seguem proof atual e observavel | Checker + build/lint/test/CI |
-| Lint herdado | 1.526 apontamentos na baseline, quase todos Prettier | Corrigir separadamente; nunca registrar lint como pass enquanto estiver vermelho | `npm run lint` |
+| Lint herdado | Baseline corrigida em 2026-07-10; restam apenas warnings Fast Refresh dos componentes shadcn | Lint e typecheck viraram gates de CI | `npm run lint` e `npx tsc --noEmit` |
 
 ## Decisoes persistentes
 
@@ -71,6 +71,7 @@ Autonomy mode: balanced
 
 - [ ] Auth e policies por usuario antes de release publico.
 - [ ] Retencao/exclusao/exportacao de PII.
-- [ ] Credencial server-only dedicada para agent/dispatch ticks.
-- [ ] Test runner, CI e smoke browser para P3/P4.
-- [ ] Corrigir o lint herdado em commit mecanico separado.
+- [ ] Aplicar/configurar `INTERNAL_TICK_TOKEN` nos jobs do ambiente publicado.
+- [ ] Executar prova concorrente contra Supabase de staging para P3/P4.
+- [x] Test runner, lint, typecheck, build e CI declarados como gates.
+- [x] Lint herdado corrigido; warnings de Fast Refresh do shadcn permanecem nao bloqueantes.

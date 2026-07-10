@@ -14,7 +14,7 @@ import type { Database } from "@/integrations/supabase/types";
 const DEFAULT_WORKSPACE = "00000000-0000-0000-0000-000000000001";
 
 export const listContacts = createServerFn({ method: "POST" })
-  .inputValidator((raw: unknown) =>
+  .validator((raw: unknown) =>
     z
       .object({
         query: z.string().max(200).optional().default(""),
@@ -24,9 +24,7 @@ export const listContacts = createServerFn({ method: "POST" })
       .parse(raw ?? {}),
   )
   .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import(
-      "@/integrations/supabase/client.server"
-    );
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     let q = supabaseAdmin
       .from("contacts")
       .select("id, name, phone, email, tags, opt_out, metadata, updated_at", {
@@ -45,7 +43,7 @@ export const listContacts = createServerFn({ method: "POST" })
   });
 
 export const updateContact = createServerFn({ method: "POST" })
-  .inputValidator((raw: unknown) =>
+  .validator((raw: unknown) =>
     z
       .object({
         id: z.string().uuid(),
@@ -56,9 +54,7 @@ export const updateContact = createServerFn({ method: "POST" })
       .parse(raw),
   )
   .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import(
-      "@/integrations/supabase/client.server"
-    );
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const patch: TablesUpdate<"contacts"> = {};
     if (data.name !== undefined) patch.name = data.name;
     if (data.tags !== undefined) patch.tags = data.tags;
@@ -74,13 +70,9 @@ export const updateContact = createServerFn({ method: "POST" })
   });
 
 export const deleteContact = createServerFn({ method: "POST" })
-  .inputValidator((raw: unknown) =>
-    z.object({ id: z.string().uuid() }).parse(raw),
-  )
+  .validator((raw: unknown) => z.object({ id: z.string().uuid() }).parse(raw))
   .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import(
-      "@/integrations/supabase/client.server"
-    );
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
       .from("contacts")
       .delete()
@@ -99,7 +91,7 @@ const importRow = z.object({
 });
 
 export const importContacts = createServerFn({ method: "POST" })
-  .inputValidator((raw: unknown) =>
+  .validator((raw: unknown) =>
     z
       .object({
         rows: z.array(importRow).min(1).max(10000),
@@ -107,19 +99,14 @@ export const importContacts = createServerFn({ method: "POST" })
           .object({
             name: z.string().min(1).max(200),
             headers: z.array(z.string().max(120)).min(1).max(200),
-            rawRows: z
-              .array(z.record(z.string(), z.string()))
-              .min(1)
-              .max(10000),
+            rawRows: z.array(z.record(z.string(), z.string())).min(1).max(10000),
           })
           .optional(),
       })
       .parse(raw),
   )
   .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import(
-      "@/integrations/supabase/client.server"
-    );
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     // Dedupe por phone dentro do payload (mantem ultima ocorrencia).
     const byPhone = new Map<string, z.infer<typeof importRow>>();
@@ -150,9 +137,7 @@ export const importContacts = createServerFn({ method: "POST" })
     const payload: TablesInsert<"contacts">[] = uniques.map((r) => {
       const prev = existingMap.get(r.phone);
       const mergedMetadata = { ...(prev?.metadata ?? {}), ...(r.metadata ?? {}) };
-      const mergedTags = Array.from(
-        new Set([...(prev?.tags ?? []), ...(r.tags ?? [])]),
-      );
+      const mergedTags = Array.from(new Set([...(prev?.tags ?? []), ...(r.tags ?? [])]));
       return {
         workspace_id: DEFAULT_WORKSPACE,
         phone: r.phone,
@@ -185,10 +170,7 @@ export const importContacts = createServerFn({ method: "POST" })
       updated,
       opt_outs_preserved: optOutsPreserved,
       total: payload.length,
-      spreadsheet_id: await maybeCreateSpreadsheet(
-        supabaseAdmin,
-        data.spreadsheet,
-      ),
+      spreadsheet_id: await maybeCreateSpreadsheet(supabaseAdmin, data.spreadsheet),
     };
   });
 

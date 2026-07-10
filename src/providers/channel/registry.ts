@@ -11,10 +11,7 @@ export type ChannelProviderId = "evolution";
 
 const registry = new Map<ChannelProviderId, ChannelProvider>();
 
-export function registerChannelProvider(
-  id: ChannelProviderId,
-  provider: ChannelProvider,
-): void {
+export function registerChannelProvider(id: ChannelProviderId, provider: ChannelProvider): void {
   registry.set(id, provider);
 }
 

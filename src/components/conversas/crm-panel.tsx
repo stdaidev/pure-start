@@ -12,16 +12,6 @@ export interface CrmValues {
   lead_outcome: "won" | "lost" | null;
 }
 
-export function formatBRL(cents: number | null): string {
-  if (cents == null) return "";
-  return (cents / 100).toLocaleString("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  });
-}
-
 export function CrmPanel(props: {
   initial: CrmValues;
   pending: boolean;
@@ -35,9 +25,7 @@ export function CrmPanel(props: {
       : "",
   );
   const [note, setNote] = useState(props.initial.lead_value_note ?? "");
-  const [outcome, setOutcome] = useState<"won" | "lost" | null>(
-    props.initial.lead_outcome,
-  );
+  const [outcome, setOutcome] = useState<"won" | "lost" | null>(props.initial.lead_outcome);
 
   useEffect(() => {
     setTags(props.initial.tags);
@@ -100,9 +88,7 @@ export function CrmPanel(props: {
       </div>
 
       <div className="flex flex-col gap-2">
-        <label className="text-[10px] uppercase tracking-widest text-muted-foreground">
-          tags
-        </label>
+        <label className="text-[10px] uppercase tracking-widest text-muted-foreground">tags</label>
         <div className="flex flex-wrap gap-1">
           {tags.length === 0 ? (
             <span className="text-xs text-muted-foreground">sem tags</span>
@@ -158,9 +144,7 @@ export function CrmPanel(props: {
       </div>
 
       <div className="flex flex-col gap-2">
-        <label className="text-[10px] uppercase tracking-widest text-muted-foreground">
-          nota
-        </label>
+        <label className="text-[10px] uppercase tracking-widest text-muted-foreground">nota</label>
         <Textarea
           value={note}
           onChange={(e) => setNote(e.target.value)}

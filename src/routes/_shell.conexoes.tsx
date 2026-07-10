@@ -33,11 +33,7 @@ import {
   refreshQr,
   renameConnection,
 } from "@/lib/connections.functions";
-import {
-  listAgents,
-  setConnectionAgent,
-  setConnectionIgnoreGroups,
-} from "@/lib/agents.functions";
+import { listAgents, setConnectionAgent, setConnectionIgnoreGroups } from "@/lib/agents.functions";
 import { StatusBadge } from "@/components/conexoes/status-badge";
 import { NewConnectionDialog } from "@/components/conexoes/new-connection-dialog";
 import { QrDisplay } from "@/components/conexoes/qr-display";
@@ -88,15 +84,13 @@ function ConexoesPage() {
   });
 
   const setAgentMut = useMutation({
-    mutationFn: (v: { connectionId: string; agentId: string | null }) =>
-      setAgentFn({ data: v }),
+    mutationFn: (v: { connectionId: string; agentId: string | null }) => setAgentFn({ data: v }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["connections"] }),
     onError: (e: Error) => toast.error(e.message || "Falha ao vincular agente"),
   });
 
   const setIgnoreMut = useMutation({
-    mutationFn: (v: { connectionId: string; ignoreGroups: boolean }) =>
-      setIgnoreFn({ data: v }),
+    mutationFn: (v: { connectionId: string; ignoreGroups: boolean }) => setIgnoreFn({ data: v }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["connections"] }),
     onError: (e: Error) => toast.error(e.message || "Falha ao atualizar"),
   });
@@ -203,10 +197,7 @@ function ConexoesPage() {
       ) : (
         <div className="grid gap-3">
           {connections.map((c) => (
-            <div
-              key={c.id}
-              className="glass-card flex flex-col gap-4 px-5 py-4"
-            >
+            <div key={c.id} className="glass-card flex flex-col gap-4 px-5 py-4">
               <div className="flex items-center justify-between gap-4">
                 <div className="flex flex-col gap-1.5">
                   {renamingId === c.id ? (
@@ -261,9 +252,7 @@ function ConexoesPage() {
                     variant="ghost"
                     size="icon"
                     onClick={() => reconnectMut.mutate(c.id)}
-                    disabled={
-                      reconnectMut.isPending && reconnectMut.variables === c.id
-                    }
+                    disabled={reconnectMut.isPending && reconnectMut.variables === c.id}
                     aria-label="Reconectar (novo QR)"
                     title="Reconectar (novo QR)"
                   >
@@ -329,10 +318,7 @@ function ConexoesPage() {
 
       <NewConnectionDialog open={newOpen} onOpenChange={setNewOpen} />
 
-      <Dialog
-        open={!!qrConnId}
-        onOpenChange={(o) => !o && setQrConnId(null)}
-      >
+      <Dialog open={!!qrConnId} onOpenChange={(o) => !o && setQrConnId(null)}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>Reconectar WhatsApp</DialogTitle>

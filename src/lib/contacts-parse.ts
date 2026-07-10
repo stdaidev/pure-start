@@ -60,13 +60,7 @@ export async function parseSheet(file: File): Promise<ParsedSheet> {
   return parseXlsx(file);
 }
 
-export type FieldRole =
-  | "name"
-  | "phone"
-  | "email"
-  | "tags"
-  | "placeholder"
-  | "ignorar";
+export type FieldRole = "name" | "phone" | "email" | "tags" | "placeholder" | "ignorar";
 
 /** Sugere role para cada header baseado em nomes comuns. */
 export function suggestMapping(headers: string[]): Record<string, FieldRole> {

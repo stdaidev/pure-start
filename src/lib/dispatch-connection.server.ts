@@ -29,9 +29,10 @@ export async function pickConnection(
     const { data: c } = await db
       .from("connections")
       .select("id, instance_name, status")
+      .eq("workspace_id", campaign.workspace_id)
       .eq("id", campaign.connection_id)
       .maybeSingle();
-    if (!c?.instance_name) return null;
+    if (!c?.instance_name || c.status !== "connected") return null;
     return { connection_id: c.id, instance_name: c.instance_name };
   }
 
@@ -39,31 +40,22 @@ export async function pickConnection(
   const { data: links } = await db
     .from("campaign_connections")
     .select("connection_id, position, connections(id, instance_name, status)")
+    .eq("workspace_id", campaign.workspace_id)
     .eq("campaign_id", campaign.id)
     .order("position", { ascending: true });
-  const candidates =
-    (links ?? [])
-      .map((l) => l.connections)
-      .filter(
-        (c): c is { id: string; instance_name: string; status: string } =>
-          !!c && !!c.instance_name && c.status === "connected",
-      );
-  if (candidates.length === 0) {
-    // Fallback: aceita qualquer instancia vinculada com instance_name (mesmo sem status connected)
-    const fallback = (links ?? [])
-      .map((l) => l.connections)
-      .filter(
-        (c): c is { id: string; instance_name: string; status: string } =>
-          !!c && !!c.instance_name,
-      );
-    if (fallback.length === 0) return null;
-    candidates.push(...fallback);
-  }
+  const candidates = (links ?? [])
+    .map((l) => l.connections)
+    .filter(
+      (c): c is { id: string; instance_name: string; status: string } =>
+        !!c && !!c.instance_name && c.status === "connected",
+    );
+  if (candidates.length === 0) return null;
 
   // Ultimo enviado -> proximo na lista
   const { data: lastSent } = await db
     .from("campaign_recipients")
     .select("last_connection_id")
+    .eq("workspace_id", campaign.workspace_id)
     .eq("campaign_id", campaign.id)
     .not("last_connection_id", "is", null)
     .order("sent_at", { ascending: false })
@@ -72,9 +64,7 @@ export async function pickConnection(
 
   let startIdx = 0;
   if (lastSent?.last_connection_id) {
-    const idx = candidates.findIndex(
-      (c) => c.id === lastSent.last_connection_id,
-    );
+    const idx = candidates.findIndex((c) => c.id === lastSent.last_connection_id);
     if (idx >= 0) startIdx = (idx + 1) % candidates.length;
   }
   const chosen = candidates[startIdx] ?? candidates[0];

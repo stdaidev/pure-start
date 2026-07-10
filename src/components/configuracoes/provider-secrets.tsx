@@ -46,8 +46,7 @@ export function ProviderSecretsSection() {
   });
 
   const upsert = useMutation({
-    mutationFn: (v: { name: ProviderSecretName; value: string }) =>
-      upsertFn({ data: v }),
+    mutationFn: (v: { name: ProviderSecretName; value: string }) => upsertFn({ data: v }),
     onSuccess: (r) => {
       toast.success(`${r.name}: salvo (${r.masked})`);
       qc.invalidateQueries({ queryKey: ["provider-secrets"] });
@@ -59,9 +58,8 @@ export function ProviderSecretsSection() {
     <section className="rounded border border-border/60 bg-muted/10 p-4">
       <h2 className="text-sm font-semibold">Provedores</h2>
       <p className="mt-1 text-xs text-muted-foreground max-w-xl">
-        Chaves de API dos provedores externos. Ficam somente no backend
-        (nunca no bundle do navegador). Alteracao aplica no proximo tick
-        (ate 30s), sem restart.
+        Chaves de API dos provedores externos. Ficam somente no backend (nunca no bundle do
+        navegador). Alteracao aplica no proximo tick (ate 30s), sem restart.
       </p>
 
       <div className="mt-4 divide-y divide-border/60">
@@ -79,9 +77,7 @@ export function ProviderSecretsSection() {
               masked={row.masked}
               source={row.source}
               saving={upsert.isPending}
-              onSave={(value) =>
-                upsert.mutate({ name: row.name as ProviderSecretName, value })
-              }
+              onSave={(value) => upsert.mutate({ name: row.name as ProviderSecretName, value })}
             />
           ))
         )}

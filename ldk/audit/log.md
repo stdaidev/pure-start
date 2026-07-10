@@ -525,3 +525,13 @@ Registro compacto iniciado quando Audit log: on foi habilitado.
 - Decision: DONE (P2) com [VERIFY] em AC5 e AC6
 - Known limitations: secret em texto plano no DB (RLS + sem grant anon); cache 30s no getSecret; envio real apos troca de chave nao testado nesta sessao; botao "Disparar agora" some em prod nao validado em build final
 - Next: /ldk-release ou /ldk-next
+## 2026-07-10 - revisao-geral - runtime e operacao
+- Command: revisao direta antes da atualizacao do LDK no Lovable
+- User intent: revisar e corrigir o Pure Start, usando o audit log como contexto das decisoes anteriores
+- State before: schema 2 migrado; F1/F2/F6 planned; build verde, lint herdado vermelho e sem testes automatizados
+- Actions: ownership por token e revalidacao do agente; auth server-only dos ticks; resiliencia OpenAI/tools; hardening de webhook/logs; liberacao de reservas nos caminhos de skip/erro; workspace scope; rollback de campanha parcial; metadados; Node 22, testes, lint/typecheck/build no CI; runbook e security review
+- Files changed: runtime/provider/routes/migration/testes/workflow/docs e estado LDK correspondente
+- Evidence: typecheck pass; lint zero erros; testes unitarios pass; build pass; CI e prova Supabase aguardando commit/publicacao
+- Decision: F1 PARTIAL/P4, F2 PARTIAL/P2, F6 PARTIAL/P4; nenhuma declaracao de DONE antes de staging/CI
+- Known limitations: painel sem auth; secrets em texto plano; cotas por campanha ainda nao atomicas entre ticks; migration nao aplicada nesta sessao; LGPD pendente
+- Next: publicar commit, observar CI, aplicar migration e atualizar tokens/jobs em ambiente controlado antes de trafego real

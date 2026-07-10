@@ -36,9 +36,7 @@ export async function getSecret(
 
   let dbValue: string | null = null;
   try {
-    const { supabaseAdmin } = await import(
-      "@/integrations/supabase/client.server"
-    );
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data } = await supabaseAdmin
       .from("workspace_secrets")
       .select("value")
@@ -55,10 +53,7 @@ export async function getSecret(
 }
 
 /** Invalida cache local — usar apos upsert do secret. */
-export function invalidateSecretCache(
-  name: string,
-  workspaceId: string = DEFAULT_WORKSPACE,
-) {
+export function invalidateSecretCache(name: string, workspaceId: string = DEFAULT_WORKSPACE) {
   cache.delete(cacheKey(workspaceId, name));
 }
 

@@ -34,8 +34,7 @@ function DisparosPage() {
       toast.success("Campanha excluida");
       qc.invalidateQueries({ queryKey: ["campaigns", "list"] });
     },
-    onError: (e) =>
-      toast.error(e instanceof Error ? e.message : "Falha ao excluir"),
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Falha ao excluir"),
   });
 
   const campaigns: CampaignRow[] = (q.data?.campaigns ?? []).map((c) => ({
@@ -57,10 +56,7 @@ function DisparosPage() {
           >
             modulo // F6
           </p>
-          <h1
-            className="text-2xl font-semibold"
-            style={{ fontFamily: "var(--font-display)" }}
-          >
+          <h1 className="text-2xl font-semibold" style={{ fontFamily: "var(--font-display)" }}>
             Disparos
           </h1>
           <p className="mt-1 text-xs text-muted-foreground">

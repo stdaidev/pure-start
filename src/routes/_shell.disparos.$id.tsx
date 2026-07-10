@@ -44,8 +44,7 @@ function CampaignMonitor() {
   });
   const recipientsQ = useQuery({
     queryKey: ["recipients", id],
-    queryFn: () =>
-      listFn({ data: { campaign_id: id, limit: 100, offset: 0 } }),
+    queryFn: () => listFn({ data: { campaign_id: id, limit: 100, offset: 0 } }),
   });
 
   const statusMut = useMutation({
@@ -56,29 +55,6 @@ function CampaignMonitor() {
       qc.invalidateQueries({ queryKey: ["campaigns", "list"] });
     },
     onError: (e: Error) => toast.error(e.message || "Falha ao atualizar"),
-  });
-
-  const tickMut = useMutation({
-    mutationFn: async () => {
-      const res = await fetch("/api/public/dispatch/tick", {
-        method: "POST",
-        headers: { apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
-      });
-      if (!res.ok) throw new Error(`tick ${res.status}`);
-      return (await res.json()) as {
-        ok: boolean;
-        sent: number;
-        failed: number;
-        skipped: number;
-        campaigns: number;
-      };
-    },
-    onSuccess: (r) => {
-      toast.success(`Tick: ${r.sent} enviados, ${r.failed} falhas, ${r.skipped} opt-out`);
-      qc.invalidateQueries({ queryKey: ["campaign", id] });
-      qc.invalidateQueries({ queryKey: ["recipients", id] });
-    },
-    onError: (e: Error) => toast.error(e.message || "Falha no tick"),
   });
 
   const campaign = campaignQ.data?.campaign;
@@ -105,7 +81,10 @@ function CampaignMonitor() {
       { k: "falhas", v: progress?.failed ?? 0 },
       { k: "opt-out", v: progress?.skipped_optout ?? 0 },
       { k: "respondeu", v: progress?.stopped_reply ?? 0 },
-      { k: "cooldown", v: (progress as { stopped_recent_reply?: number } | undefined)?.stopped_recent_reply ?? 0 },
+      {
+        k: "cooldown",
+        v: (progress as { stopped_recent_reply?: number } | undefined)?.stopped_recent_reply ?? 0,
+      },
     ],
     [progress],
   );
@@ -122,26 +101,13 @@ function CampaignMonitor() {
             ← disparos
           </Link>
           <div className="mt-1 flex items-center gap-3">
-            <h1
-              className="text-2xl font-semibold"
-              style={{ fontFamily: "var(--font-display)" }}
-            >
+            <h1 className="text-2xl font-semibold" style={{ fontFamily: "var(--font-display)" }}>
               {campaign?.name ?? "Carregando..."}
             </h1>
             <CampaignStatusBadge status={status} />
           </div>
         </div>
         <div className="flex gap-2">
-          {import.meta.env.DEV ? (
-            <Button
-              variant="secondary"
-              disabled={tickMut.isPending}
-              onClick={() => tickMut.mutate()}
-              title="Executa o worker de disparo agora (dev). Substituir por pg_cron em produção."
-            >
-              {tickMut.isPending ? "Disparando…" : "Disparar agora"}
-            </Button>
-          ) : null}
           <Button
             disabled={!canActivate || statusMut.isPending}
             onClick={() => statusMut.mutate({ data: { id, status: "running" } })}
@@ -165,15 +131,10 @@ function CampaignMonitor() {
         </div>
       </header>
 
-      <div
-        className="grid grid-cols-6 gap-3"
-        style={{ fontFamily: "var(--font-mono)" }}
-      >
+      <div className="grid grid-cols-6 gap-3" style={{ fontFamily: "var(--font-mono)" }}>
         {stats.map((s) => (
           <div key={s.k} className="rounded border border-border/60 p-3">
-            <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
-              {s.k}
-            </p>
+            <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{s.k}</p>
             <p className="text-xl font-semibold">{s.v}</p>
           </div>
         ))}
@@ -206,10 +167,7 @@ function CampaignMonitor() {
           <tbody>
             {(recipientsQ.data?.recipients ?? []).map((r) => (
               <tr key={r.id} className="border-b border-border/40">
-                <td
-                  className="px-3 py-2 text-xs"
-                  style={{ fontFamily: "var(--font-mono)" }}
-                >
+                <td className="px-3 py-2 text-xs" style={{ fontFamily: "var(--font-mono)" }}>
                   {maskPhone(r.contact_phone)}
                 </td>
                 <td className="px-3 py-2 text-xs">{r.contact_name ?? "—"}</td>
@@ -221,22 +179,21 @@ function CampaignMonitor() {
                     className="px-3 py-2 text-xs text-muted-foreground"
                     style={{ fontFamily: "var(--font-mono)" }}
                   >
-                    {r.last_connection_id
-                      ? connName.get(r.last_connection_id) ?? "?"
-                      : "—"}
+                    {r.last_connection_id ? (connName.get(r.last_connection_id) ?? "?") : "—"}
                   </td>
                 ) : null}
                 <td className="px-3 py-2 text-xs text-muted-foreground">
                   {r.sent_at ? new Date(r.sent_at).toLocaleString("pt-BR") : "—"}
                 </td>
-                <td className="px-3 py-2 text-xs text-red-400">
-                  {r.error ?? "—"}
-                </td>
+                <td className="px-3 py-2 text-xs text-red-400">{r.error ?? "—"}</td>
               </tr>
             ))}
             {(recipientsQ.data?.recipients?.length ?? 0) === 0 ? (
               <tr>
-                <td className="px-3 py-6 text-center text-xs text-muted-foreground" colSpan={isMulti ? 6 : 5}>
+                <td
+                  className="px-3 py-6 text-center text-xs text-muted-foreground"
+                  colSpan={isMulti ? 6 : 5}
+                >
                   Sem destinatarios.
                 </td>
               </tr>

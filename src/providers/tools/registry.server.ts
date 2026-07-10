@@ -23,10 +23,7 @@ export interface ToolResult {
 
 export interface AgentTool {
   spec: LlmToolSpec;
-  handler: (
-    args: Record<string, unknown>,
-    ctx: ToolContext,
-  ) => Promise<ToolResult>;
+  handler: (args: Record<string, unknown>, ctx: ToolContext) => Promise<ToolResult>;
 }
 
 const resetArgs = z.object({});
@@ -51,7 +48,9 @@ const resetTool: AgentTool = {
     },
   },
   async handler(rawArgs, ctx) {
-    resetArgs.parse(rawArgs);
+    if (!resetArgs.safeParse(rawArgs).success) {
+      return { ok: false, message: "argumentos invalidos" };
+    }
     const admin = await getAdmin();
     const { error } = await admin.from("conversation_markers").insert({
       workspace_id: ctx.workspaceId,
@@ -80,7 +79,9 @@ const transferTool: AgentTool = {
     },
   },
   async handler(rawArgs, ctx) {
-    transferArgs.parse(rawArgs);
+    if (!transferArgs.safeParse(rawArgs).success) {
+      return { ok: false, message: "argumentos invalidos" };
+    }
     const admin = await getAdmin();
     const { error } = await admin
       .from("conversations")
@@ -98,11 +99,10 @@ const registry = new Map<string, AgentTool>([
 ]);
 
 export function listToolSpecs(names?: string[]): LlmToolSpec[] {
-  const src = names && names.length > 0
-    ? names
-        .map((n) => registry.get(n))
-        .filter((t): t is AgentTool => !!t)
-    : Array.from(registry.values());
+  const src =
+    names && names.length > 0
+      ? names.map((n) => registry.get(n)).filter((t): t is AgentTool => !!t)
+      : Array.from(registry.values());
   return src.map((t) => t.spec);
 }
 

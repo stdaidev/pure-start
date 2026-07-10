@@ -59,8 +59,8 @@ export function IgnoredNumbersCard() {
           Numeros que o agente nao atende
         </h2>
         <p className="mt-1 text-xs text-muted-foreground">
-          Amigos, funcionarios ou parceiros. Mensagens desses numeros continuam
-          aparecendo na inbox, mas o agente nao responde automaticamente.
+          Amigos, funcionarios ou parceiros. Mensagens desses numeros continuam aparecendo na inbox,
+          mas o agente nao responde automaticamente.
         </p>
       </div>
 
@@ -103,37 +103,23 @@ export function IgnoredNumbersCard() {
       </form>
 
       {listQuery.isLoading ? (
-        <p
-          className="text-xs text-muted-foreground"
-          style={{ fontFamily: "var(--font-mono)" }}
-        >
+        <p className="text-xs text-muted-foreground" style={{ fontFamily: "var(--font-mono)" }}>
           carregando...
         </p>
       ) : items.length === 0 ? (
-        <p
-          className="text-xs text-muted-foreground"
-          style={{ fontFamily: "var(--font-mono)" }}
-        >
+        <p className="text-xs text-muted-foreground" style={{ fontFamily: "var(--font-mono)" }}>
           nenhum numero na lista
         </p>
       ) : (
         <ul className="divide-y divide-white/5 rounded-md border border-white/5">
           {items.map((it) => (
-            <li
-              key={it.id}
-              className="flex items-center justify-between gap-4 px-4 py-3"
-            >
+            <li key={it.id} className="flex items-center justify-between gap-4 px-4 py-3">
               <div className="flex min-w-0 flex-col">
-                <span
-                  className="truncate text-sm"
-                  style={{ fontFamily: "var(--font-mono)" }}
-                >
+                <span className="truncate text-sm" style={{ fontFamily: "var(--font-mono)" }}>
                   +{it.phone_e164}
                 </span>
                 {it.label ? (
-                  <span className="truncate text-xs text-muted-foreground">
-                    {it.label}
-                  </span>
+                  <span className="truncate text-xs text-muted-foreground">{it.label}</span>
                 ) : null}
               </div>
               <Button

@@ -28,43 +28,39 @@ function maskValue(value: string): string {
   return `****${tail}`;
 }
 
-export const listProviderSecrets = createServerFn({ method: "GET" }).handler(
-  async () => {
-    const { supabaseAdmin } = await import(
-      "@/integrations/supabase/client.server"
-    );
-    const { data, error } = await supabaseAdmin
-      .from("workspace_secrets")
-      .select("name, value, updated_at")
-      .eq("workspace_id", DEFAULT_WORKSPACE);
-    if (error) throw new Error("Falha ao listar secrets");
+export const listProviderSecrets = createServerFn({ method: "GET" }).handler(async () => {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data, error } = await supabaseAdmin
+    .from("workspace_secrets")
+    .select("name, value, updated_at")
+    .eq("workspace_id", DEFAULT_WORKSPACE);
+  if (error) throw new Error("Falha ao listar secrets");
 
-    const byName = new Map<string, { value: string; updated_at: string }>();
-    for (const row of (data ?? []) as Array<{
-      name: string;
-      value: string;
-      updated_at: string;
-    }>) {
-      byName.set(row.name, { value: row.value, updated_at: row.updated_at });
-    }
+  const byName = new Map<string, { value: string; updated_at: string }>();
+  for (const row of (data ?? []) as Array<{
+    name: string;
+    value: string;
+    updated_at: string;
+  }>) {
+    byName.set(row.name, { value: row.value, updated_at: row.updated_at });
+  }
 
-    return PROVIDER_SECRET_NAMES.map((name) => {
-      const row = byName.get(name);
-      const envFallback = Boolean(process.env[name]);
-      const configured = Boolean(row?.value) || envFallback;
-      return {
-        name,
-        configured,
-        source: row?.value ? "db" : envFallback ? "env" : "none",
-        masked: row?.value ? maskValue(row.value) : envFallback ? "****env" : "",
-        updated_at: row?.updated_at ?? null,
-      } as const;
-    });
-  },
-);
+  return PROVIDER_SECRET_NAMES.map((name) => {
+    const row = byName.get(name);
+    const envFallback = Boolean(process.env[name]);
+    const configured = Boolean(row?.value) || envFallback;
+    return {
+      name,
+      configured,
+      source: row?.value ? "db" : envFallback ? "env" : "none",
+      masked: row?.value ? maskValue(row.value) : envFallback ? "****env" : "",
+      updated_at: row?.updated_at ?? null,
+    } as const;
+  });
+});
 
 export const upsertProviderSecret = createServerFn({ method: "POST" })
-  .inputValidator((raw: unknown) =>
+  .validator((raw: unknown) =>
     z
       .object({
         name: z.enum(PROVIDER_SECRET_NAMES),
@@ -73,22 +69,18 @@ export const upsertProviderSecret = createServerFn({ method: "POST" })
       .parse(raw),
   )
   .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import(
-      "@/integrations/supabase/client.server"
-    );
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { invalidateSecretCache } = await import("./secrets.server");
 
-    const { error } = await supabaseAdmin
-      .from("workspace_secrets")
-      .upsert(
-        {
-          workspace_id: DEFAULT_WORKSPACE,
-          name: data.name,
-          value: data.value,
-          updated_at: new Date().toISOString(),
-        } as never,
-        { onConflict: "workspace_id,name" },
-      );
+    const { error } = await supabaseAdmin.from("workspace_secrets").upsert(
+      {
+        workspace_id: DEFAULT_WORKSPACE,
+        name: data.name,
+        value: data.value,
+        updated_at: new Date().toISOString(),
+      } as never,
+      { onConflict: "workspace_id,name" },
+    );
     if (error) throw new Error("Falha ao salvar secret");
 
     invalidateSecretCache(data.name, DEFAULT_WORKSPACE);
@@ -102,13 +94,9 @@ export const upsertProviderSecret = createServerFn({ method: "POST" })
   });
 
 export const deleteProviderSecret = createServerFn({ method: "POST" })
-  .inputValidator((raw: unknown) =>
-    z.object({ name: z.enum(PROVIDER_SECRET_NAMES) }).parse(raw),
-  )
+  .validator((raw: unknown) => z.object({ name: z.enum(PROVIDER_SECRET_NAMES) }).parse(raw))
   .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import(
-      "@/integrations/supabase/client.server"
-    );
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { invalidateSecretCache } = await import("./secrets.server");
     const { error } = await supabaseAdmin
       .from("workspace_secrets")

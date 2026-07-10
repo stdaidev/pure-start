@@ -38,14 +38,10 @@ const agentInputSchema = z.object({
 });
 
 export const listAgents = createServerFn({ method: "GET" }).handler(async () => {
-  const { supabaseAdmin } = await import(
-    "@/integrations/supabase/client.server"
-  );
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data, error } = await supabaseAdmin
     .from("agents")
-    .select(
-      "id, name, description, model, temperature, active, tools, humanization, updated_at",
-    )
+    .select("id, name, description, model, temperature, active, tools, humanization, updated_at")
     .eq("workspace_id", DEFAULT_WORKSPACE)
     .order("created_at", { ascending: false });
   if (error) throw new Error("Falha ao listar agentes");
@@ -53,13 +49,9 @@ export const listAgents = createServerFn({ method: "GET" }).handler(async () => 
 });
 
 export const getAgent = createServerFn({ method: "POST" })
-  .inputValidator((raw: unknown) =>
-    z.object({ id: z.string().uuid() }).parse(raw),
-  )
+  .validator((raw: unknown) => z.object({ id: z.string().uuid() }).parse(raw))
   .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import(
-      "@/integrations/supabase/client.server"
-    );
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: row, error } = await supabaseAdmin
       .from("agents")
       .select("*")
@@ -72,11 +64,9 @@ export const getAgent = createServerFn({ method: "POST" })
   });
 
 export const saveAgent = createServerFn({ method: "POST" })
-  .inputValidator((raw: unknown) => agentInputSchema.parse(raw))
+  .validator((raw: unknown) => agentInputSchema.parse(raw))
   .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import(
-      "@/integrations/supabase/client.server"
-    );
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const payload = {
       workspace_id: DEFAULT_WORKSPACE,
       name: data.name,
@@ -91,9 +81,7 @@ export const saveAgent = createServerFn({ method: "POST" })
       max_tokens: data.max_tokens ?? null,
       max_tool_rounds: data.max_tool_rounds ?? null,
       debounce_seconds:
-        data.debounce_seconds == null || data.debounce_seconds === 0
-          ? null
-          : data.debounce_seconds,
+        data.debounce_seconds == null || data.debounce_seconds === 0 ? null : data.debounce_seconds,
     };
 
     if (data.id) {
@@ -118,13 +106,9 @@ export const saveAgent = createServerFn({ method: "POST" })
   });
 
 export const deleteAgent = createServerFn({ method: "POST" })
-  .inputValidator((raw: unknown) =>
-    z.object({ id: z.string().uuid() }).parse(raw),
-  )
+  .validator((raw: unknown) => z.object({ id: z.string().uuid() }).parse(raw))
   .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import(
-      "@/integrations/supabase/client.server"
-    );
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
       .from("agents")
       .delete()
@@ -135,13 +119,9 @@ export const deleteAgent = createServerFn({ method: "POST" })
   });
 
 export const toggleAgent = createServerFn({ method: "POST" })
-  .inputValidator((raw: unknown) =>
-    z.object({ id: z.string().uuid(), active: z.boolean() }).parse(raw),
-  )
+  .validator((raw: unknown) => z.object({ id: z.string().uuid(), active: z.boolean() }).parse(raw))
   .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import(
-      "@/integrations/supabase/client.server"
-    );
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
       .from("agents")
       .update({ active: data.active })
@@ -152,7 +132,7 @@ export const toggleAgent = createServerFn({ method: "POST" })
   });
 
 export const setConnectionAgent = createServerFn({ method: "POST" })
-  .inputValidator((raw: unknown) =>
+  .validator((raw: unknown) =>
     z
       .object({
         connectionId: z.string().uuid(),
@@ -161,9 +141,7 @@ export const setConnectionAgent = createServerFn({ method: "POST" })
       .parse(raw),
   )
   .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import(
-      "@/integrations/supabase/client.server"
-    );
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
       .from("connections")
       .update({ default_agent_id: data.agentId })
@@ -174,7 +152,7 @@ export const setConnectionAgent = createServerFn({ method: "POST" })
   });
 
 export const setConnectionIgnoreGroups = createServerFn({ method: "POST" })
-  .inputValidator((raw: unknown) =>
+  .validator((raw: unknown) =>
     z
       .object({
         connectionId: z.string().uuid(),
@@ -183,9 +161,7 @@ export const setConnectionIgnoreGroups = createServerFn({ method: "POST" })
       .parse(raw),
   )
   .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import(
-      "@/integrations/supabase/client.server"
-    );
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: row, error: readErr } = await supabaseAdmin
       .from("connections")
       .select("instance_name")
@@ -204,9 +180,7 @@ export const setConnectionIgnoreGroups = createServerFn({ method: "POST" })
     // Sync com Evolution (best-effort; nao bloqueia update local)
     if (row.instance_name) {
       try {
-        const { evolutionProvider } = await import(
-          "@/providers/channel/evolution.server"
-        );
+        const { evolutionProvider } = await import("@/providers/channel/evolution.server");
         await evolutionProvider.setSettings?.(row.instance_name, {
           groupsIgnore: data.ignoreGroups,
         });

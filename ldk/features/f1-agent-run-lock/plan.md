@@ -1,6 +1,6 @@
 # Feature Plan - F1 Agent run ownership
 
-Status: planned
+Status: partial
 Risk: alto
 Proof required: P4
 Discovery revision: 1
@@ -17,15 +17,15 @@ cada efeito externo. Executar em modo `guided` por envolver migration, concorren
 
 ## Tasks
 
-| ID | Descricao | AC | Arquivos esperados | Verificacao | State |
-|----|-----------|----|--------------------|-------------|-------|
-| T1 | Criar migration com `agent_run_token`/`agent_run_started_at` e RPCs de claim/release condicionais. | AC1, AC2 | `supabase/migrations/<timestamp>_agent_run_token.sql` | SQL/linter + claims/releases concorrentes | ready |
-| T2 | Atualizar tipos Supabase para colunas e assinaturas novas. | AC1, AC2 | `src/integrations/supabase/types.ts` | typecheck | ready |
-| T3 | Propagar `messageId`/`runToken` no tick e no runtime. | AC2, AC3 | `src/routes/api/public/agent.tick.ts`, `src/lib/agent-runtime.server.ts` | testes unitarios/integracao | ready |
-| T4 | Implementar revalidacao antes de cada efeito externo e status `skipped-*`. | AC3 | `src/lib/agent-runtime.server.ts` | cenarios handoff/stale/inactive | ready |
-| T5 | Compartilhar normalizacao BR e verificar blocklist antes de LLM/envio. | AC4 | `src/lib/phone.ts`, `src/lib/agent-runtime.server.ts`, webhook quando necessario | teste de variantes | ready |
-| T6 | Criar script/teste reproduzivel dos cenarios concorrentes com provider mockado. | AC3, AC4, AC5 | `tests/agent-run-lock.test.ts` ou equivalente | comando com exit code 0 | ready |
-| T7 | Executar build/lint/test/CI e consolidar proof P4 com diff e checklist. | AC6 | `ldk/features/f1-agent-run-lock/evidence.md`, `proof.md` | CI verde e referencias atuais | ready |
+| ID  | Descricao                                                                                          | AC            | Arquivos esperados                                                               | Verificacao                               | State         |
+| --- | -------------------------------------------------------------------------------------------------- | ------------- | -------------------------------------------------------------------------------- | ----------------------------------------- | ------------- |
+| T1  | Criar migration com `agent_run_token`/`agent_run_started_at` e RPCs de claim/release condicionais. | AC1, AC2      | `supabase/migrations/<timestamp>_agent_run_token.sql`                            | SQL/linter + claims/releases concorrentes | proof-pending |
+| T2  | Atualizar tipos Supabase para colunas e assinaturas novas.                                         | AC1, AC2      | `src/integrations/supabase/types.ts`                                             | typecheck                                 | done          |
+| T3  | Propagar `messageId`/`runToken` no tick e no runtime.                                              | AC2, AC3      | `src/routes/api/public/agent.tick.ts`, `src/lib/agent-runtime.server.ts`         | testes unitarios/integracao               | done          |
+| T4  | Implementar revalidacao antes de cada efeito externo e status `skipped-*`.                         | AC3           | `src/lib/agent-runtime.server.ts`                                                | cenarios handoff/stale/inactive           | done          |
+| T5  | Compartilhar normalizacao BR e verificar blocklist antes de LLM/envio.                             | AC4           | `src/lib/phone.ts`, `src/lib/agent-runtime.server.ts`, webhook quando necessario | teste de variantes                        | done          |
+| T6  | Criar script/teste reproduzivel dos cenarios concorrentes com provider mockado.                    | AC3, AC4, AC5 | `tests/agent-run-lock.test.ts` ou equivalente                                    | comando com exit code 0                   | proof-pending |
+| T7  | Executar build/lint/test/CI e consolidar proof P4 com diff e checklist.                            | AC6           | `ldk/features/f1-agent-run-lock/evidence.md`, `proof.md`                         | CI verde e referencias atuais             | proof-pending |
 
 ## Estrategia de prova
 

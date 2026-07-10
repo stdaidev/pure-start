@@ -5,20 +5,16 @@
  * - `OPENAI_API_KEY` lido de process.env DENTRO da funcao (nunca no bundle client).
  * - Nenhum log de `content` de mensagem. Apenas ids opacos e metadados numericos.
  * - Timeout hard via AbortController (default 12s).
- * - `max_tokens` cap default 800 para conter custo.
+ * - `max_tokens` so e enviado quando configurado; o runtime limita rounds de tools.
  */
 
-import { registerLlmProvider } from "./registry";
-import type {
-  LlmCompleteInput,
-  LlmCompleteResult,
-  LlmProvider,
-  LlmToolCall,
-} from "./types";
+import { registerLlmProvider } from "./registry.ts";
+import type { LlmCompleteInput, LlmCompleteResult, LlmProvider, LlmToolCall } from "./types";
+import { OpenAiError, openAiErrorFromStatus, openAiRetryDelayMs } from "./openai-errors.ts";
 
 const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
 const DEFAULT_TIMEOUT_MS = 12_000;
-const DEFAULT_MAX_TOKENS = 800;
+const MAX_RETRIES = 2;
 
 interface OpenAiChoiceMessage {
   role: string;
@@ -93,22 +89,38 @@ function safeParseArgs(raw: string): Record<string, unknown> {
   }
 }
 
-export const openaiProvider: LlmProvider = {
-  id: "openai",
-  async complete(input: LlmCompleteInput): Promise<LlmCompleteResult> {
-    // F7 T3: prefere DB (workspace_secrets), fallback process.env.
-    const { getSecret } = await import("@/lib/secrets.server");
-    const apiKey = await getSecret("OPENAI_API_KEY");
-    if (!apiKey) throw new Error("OPENAI_API_KEY not configured");
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
+function normalizeOpenAiError(error: unknown): OpenAiError {
+  if (error instanceof OpenAiError) return error;
+  if (error instanceof Error && error.name === "AbortError") {
+    return new OpenAiError("openai_timeout", { retryable: true });
+  }
+  if (error instanceof TypeError) {
+    return new OpenAiError("openai_network_error", { retryable: true });
+  }
+  return new OpenAiError("openai_unknown", { retryable: false });
+}
+
+export async function completeOpenAi(
+  input: LlmCompleteInput,
+  apiKey: string,
+  dependencies: {
+    fetchImpl?: typeof fetch;
+    sleepImpl?: (ms: number) => Promise<void>;
+  } = {},
+): Promise<LlmCompleteResult> {
+  const fetchImpl = dependencies.fetchImpl ?? fetch;
+  const sleepImpl = dependencies.sleepImpl ?? sleep;
+
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     const controller = new AbortController();
-    const timeout = setTimeout(
-      () => controller.abort(),
-      input.timeoutMs ?? DEFAULT_TIMEOUT_MS,
-    );
+    const timeout = setTimeout(() => controller.abort(), input.timeoutMs ?? DEFAULT_TIMEOUT_MS);
 
     try {
-      const res = await fetch(OPENAI_URL, {
+      const res = await fetchImpl(OPENAI_URL, {
         method: "POST",
         headers: {
           "content-type": "application/json",
@@ -119,33 +131,30 @@ export const openaiProvider: LlmProvider = {
           messages: toOpenAiMessages(input),
           tools: toOpenAiTools(input),
           temperature: input.temperature ?? 0.7,
-          // Se input.maxTokens for undefined, nao envia (ilimitado / default do modelo).
-          ...(input.maxTokens !== undefined
-            ? { max_tokens: input.maxTokens }
-            : {}),
+          ...(input.maxTokens !== undefined ? { max_tokens: input.maxTokens } : {}),
         }),
         signal: controller.signal,
       });
 
-      if (!res.ok) {
-        // Nao loga corpo (pode conter echo do prompt).
-        throw new Error(`openai http ${res.status}`);
-      }
+      if (!res.ok) throw openAiErrorFromStatus(res.status);
 
       const data = (await res.json()) as OpenAiResponse;
       const choice = data.choices?.[0];
       const msg = choice?.message;
+      if (!choice || !msg) {
+        throw new OpenAiError("openai_unknown", { retryable: false });
+      }
 
-      const toolCalls: LlmToolCall[] = (msg?.tool_calls ?? []).map((tc) => ({
+      const toolCalls: LlmToolCall[] = (msg.tool_calls ?? []).map((tc) => ({
         id: tc.id,
         name: tc.function.name,
         arguments: safeParseArgs(tc.function.arguments),
       }));
 
       return {
-        text: msg?.content ?? "",
+        text: msg.content ?? "",
         toolCalls,
-        finishReason: choice?.finish_reason ?? "stop",
+        finishReason: choice.finish_reason ?? "stop",
         usage: data.usage
           ? {
               promptTokens: data.usage.prompt_tokens,
@@ -154,14 +163,27 @@ export const openaiProvider: LlmProvider = {
             }
           : undefined,
       };
-    } catch (err) {
-      const name = (err as Error).name;
-      if (name === "AbortError") throw new Error("openai timeout");
-      // Mensagem generica; nao vaza payload.
-      throw new Error(`openai error: ${name}`);
+    } catch (error) {
+      const normalized = normalizeOpenAiError(error);
+      if (!normalized.retryable || attempt >= MAX_RETRIES) throw normalized;
+      await sleepImpl(openAiRetryDelayMs(attempt));
     } finally {
       clearTimeout(timeout);
     }
+  }
+
+  throw new OpenAiError("openai_unknown", { retryable: false });
+}
+
+export const openaiProvider: LlmProvider = {
+  id: "openai",
+  async complete(input: LlmCompleteInput): Promise<LlmCompleteResult> {
+    // F7 T3: prefere DB (workspace_secrets), fallback process.env.
+    const { getSecret } = await import("@/lib/secrets.server");
+    const apiKey = await getSecret("OPENAI_API_KEY");
+    if (!apiKey) throw new Error("OPENAI_API_KEY not configured");
+
+    return completeOpenAi(input, apiKey);
   },
 };
 
