@@ -1,28 +1,51 @@
 # LDK Roadmap
 
-## Estado atual
-- F0, F1, F2, F4, F5, F6, F6.1, F6.2, F7, F9, Fhot, F10, F11 => done.
-- F3, F8, Fabc => partial (Fabc precisa RPC atomica + stress test 2 campanhas).
-- F12 => planned (tools de IA com aprovacao, depende de fila de approval).
-- Fagx-1, Fagx-2, Fagx-3, F13 => planned (hardening do runtime do agente).
-- Proxima recomendada: **Fagx-1** (lock com run_token + revalidacao +
-  blocklist no runtime). Destrava Fagx-2 e Fagx-3.
+Status: current
+Discovery revision: 1
+Updated: 2026-07-10
+Source: `ldk/discovery.md` revision 1 and migrated active backlog
 
-## Readiness
-- verify: F8 (rodar teste manual AC6 no WhatsApp para promover a done).
-- verify: fechar P4 de F3 (teste E2E automatizado + CI) pode virar item proprio de hardening antes do release.
-- verify: Fabc (rodar 2 campanhas simultaneas na mesma conexao apos RPC atomica).
-- ready: Fagx-1 (planejado, aguarda aprovacao para approved).
-- blocked: Fagx-2 (depende de Fagx-1 done).
-- blocked: Fagx-3 (depende de Fagx-1 e Fagx-2 done).
-- later: F12 (tools + fila de approval); F13 (memoria/resumo por conversa).
-- done: F0, F1, F2, F4, F5, F6, F6.1, F6.2, F7, F9, Fhot, F10, F11.
-- partial: F3, F8, Fabc.
+## Next recommended feature
 
-## Bloqueios conhecidos
-- F8 partial: depende de teste manual ponta-a-ponta no WhatsApp e, se o
-  Evolution apontar para a URL publicada, publicar a versao nova para o
-  webhook externo usar a correcao persistente.
-- Fabc partial: gate atual e read+write, nao 100% atomico entre workers
-  concorrentes. Precisa RPC `try_reserve_connection_slot` com UPDATE
-  condicional (WHERE contador < limite RETURNING) antes de virar done.
+- Feature: F1 - ownership do run do agente.
+- Why: fecha a maior janela conhecida de resposta duplicada, obsoleta ou posterior a handoff/blocklist.
+- Etapa concluida: roadmap migrado; F1 aguarda aprovacao consciente do plano.
+
+## Feature order
+
+| ID | Feature | Depends on | Readiness | Risk | Proof | Reason |
+|----|---------|------------|-----------|------|-------|--------|
+| F1 | Ownership/revalidacao do run | baseline | ready | alto | P4 | Previne envio por run velho e destrava o hardening seguinte |
+| F6 | Prova concorrente dos limites por conexao | baseline | verify | alto | P4 | RPC existe; falta stress test atual e CI |
+| F2 | Tools e OpenAI resilientes | F1 | blocked | medio | P2 | Assume status e ownership confiaveis do runtime |
+| F3 | Observabilidade estruturada | F1, F2 | blocked | medio | P2 | Depende dos status e error codes estabilizados |
+| F7 | Suite E2E do runtime | F1, F2, F3 | later | alto | P4 | Consolida prova do caminho critico antes de release publico |
+| F4 | Tools com aprovacao humana | F1, F2, F3 | later | alto | P4 | Novo comportamento sensivel; nao pertence ao hardening imediato |
+| F5 | Memoria incremental | F3 | later | medio | P2 | Exige retencao/privacidade e observabilidade definidas |
+
+## Blockers
+
+| Feature | Blocker | Needed decision/evidence |
+|---------|---------|--------------------------|
+| F6 | Ambiente real e CI ainda nao preparados | Duas campanhas concorrentes, referencias de CI/diff e checklist P4 |
+| F2 | F1 ainda nao concluida | Proof P4 de F1 |
+| F3 | Status/error codes ainda mudarao | F1 e F2 done |
+| F7 | Infra de teste inexistente | Test runner, fixtures/mocks, CI e smoke browser |
+| Release publico | Auth/RLS e credencial dos ticks | Decisao e implementacao antes de GO |
+
+## Later / out of MVP
+
+- F4, F5 e expansao multi-workspace.
+- Analytics de marketing, SEO, pagamentos e API oficial do WhatsApp.
+
+## Etapa concluida
+
+- Roadmap pronto e aguardando aprovacao do plano de F1.
+
+## Readiness vocabulary
+
+- `ready`: pode planejar/aprovar agora.
+- `blocked`: depende de feature, decisao, acesso ou risco nao resolvido.
+- `later`: fora do recorte imediato.
+- `done`: concluida com proof atual.
+- `verify`: precisa evidencia/ambiente antes de executar ou promover.
