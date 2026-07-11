@@ -21,3 +21,10 @@ Status: PARTIAL
 AC1, AC2 e AC5 dependem da migration aplicada e de dois claims reais concorrentes em Supabase de staging. Nao houve
 execucao contra banco remoto nem envio real nesta revisao. A feature nao deve ser marcada `done` antes dessa prova e
 do CI do commit publicado.
+
+## Evidencia remota - 2026-07-11
+
+- Migration aplicada no Lovable Cloud; colunas e assinaturas verificadas.
+- Claim gera token; release divergente preserva ownership; release correto limpa o token.
+- API publicada rejeita ausencia de token e chave publicavel com `401`.
+- AC5 continua pendente: nao houve dois runtimes concorrentes com provider mockado comprovando no maximo um efeito.
