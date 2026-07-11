@@ -913,6 +913,14 @@ export type Database = {
         Args: { _conversation_id: string; _run_token: string };
         Returns: boolean;
       };
+      release_campaign_slot: {
+        Args: {
+          _campaign_id: string;
+          _reservation_day: string;
+          _reservation_hour: string;
+        };
+        Returns: boolean;
+      };
       release_connection_slot: {
         Args: { _connection_id: string };
         Returns: undefined;
@@ -926,6 +934,20 @@ export type Database = {
         Returns: undefined;
       };
       try_agent_lock: { Args: { _conversation_id: string }; Returns: boolean };
+      try_reserve_campaign_slot: {
+        Args: {
+          _campaign_id: string;
+          _daily_limit: number;
+          _now?: string;
+        };
+        Returns: {
+          day_full: boolean;
+          hour_full: boolean;
+          reservation_day: string;
+          reservation_hour: string;
+          reserved: boolean;
+        }[];
+      };
       try_reserve_connection_slot: {
         Args: { _connection_id: string };
         Returns: {

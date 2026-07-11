@@ -7,7 +7,7 @@
 | F3 | Observabilidade estruturada e sanitizada do agente | medio | planned | P2 | |
 | F4 | Tools do agente com aprovacao humana | alto | idea | P4 | |
 | F5 | Memoria e resumo incremental por conversa | medio | idea | P2 | |
-| F6 | Prova concorrente dos limites globais por conexao | alto | partial | P4 | `docs/security-review-2026-07-10.md` |
+| F6 | Prova concorrente dos limites globais por conexao e campanha | alto | building | P4 | |
 | F7 | Suite E2E e fechamento de prova do runtime existente | alto | idea | P4 | |
 
 ## Baseline anterior

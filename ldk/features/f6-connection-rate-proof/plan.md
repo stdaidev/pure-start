@@ -1,6 +1,6 @@
 # Feature Plan - F6 Connection rate proof
 
-Status: planned
+Status: building
 Risk: alto
 Proof required: P4
 Discovery revision: 1
@@ -17,12 +17,12 @@ promover a evidencia quando caps e rollback forem observados sob disputa.
 
 ## Tasks
 
-| ID | Descricao | AC | Arquivos esperados | Verificacao | State |
-|----|-----------|----|--------------------|-------------|-------|
-| T1 | Auditar RPCs, invariantes e grants da reserva/liberacao. | AC1-AC4 | migrations atuais, possivel migration corretiva | catalog/SQL review | ready |
-| T2 | Criar fixture/harness com duas campanhas concorrentes e provider sem efeito real. | AC1, AC2 | `tests/connection-rate.test.ts` ou equivalente | stress test reproduzivel | ready |
-| T3 | Cobrir falha apos reserva e contrato de compensacao/release. | AC3 | worker/testes | asserts de contador/estado | ready |
-| T4 | Rodar build/lint/test/CI e consolidar proof P4. | AC4, AC5 | `evidence.md`, `proof.md` | CI, diff e checklist | ready |
+| ID  | Descricao                                                                         | AC       | Arquivos esperados                              | Verificacao                | State         |
+| --- | --------------------------------------------------------------------------------- | -------- | ----------------------------------------------- | -------------------------- | ------------- |
+| T1  | Auditar RPCs, invariantes e grants da reserva/liberacao.                          | AC1-AC4  | migrations atuais, possivel migration corretiva | catalog/SQL review         | done          |
+| T2  | Criar fixture/harness com duas campanhas concorrentes e provider sem efeito real. | AC1, AC2 | `tests/connection-rate.test.ts` ou equivalente  | stress test reproduzivel   | proof-pending |
+| T3  | Cobrir falha apos reserva e contrato de compensacao/release.                      | AC3      | worker/testes                                   | asserts de contador/estado | done          |
+| T4  | Rodar build/lint/test/CI e consolidar proof P4.                                   | AC4, AC5 | `evidence.md`, `proof.md`                       | CI, diff e checklist       | proof-pending |
 
 ## Estrategia de prova
 

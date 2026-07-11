@@ -1,7 +1,13 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { evolutionProvider } from "@/providers/channel/evolution.server";
-import { isWithinWindow, nextDelayMs, dailyCapRemaining, dateKeySaoPaulo } from "@/lib/anti-ban";
+import {
+  isWithinWindow,
+  nextDelayMs,
+  dailyCapRemaining,
+  dateKeySaoPaulo,
+  effectiveCap,
+} from "@/lib/anti-ban";
 import { pickConnection } from "@/lib/dispatch-connection.server";
 
 /**
@@ -15,6 +21,28 @@ import { pickConnection } from "@/lib/dispatch-connection.server";
  */
 
 type Db = SupabaseClient<Database>;
+
+type CampaignReservation = {
+  reservationHour: string;
+  reservationDay: string;
+};
+
+async function releaseCampaignReservation(
+  db: Db,
+  campaignId: string,
+  reservation: CampaignReservation,
+): Promise<boolean> {
+  const { data, error } = await db.rpc("release_campaign_slot", {
+    _campaign_id: campaignId,
+    _reservation_hour: reservation.reservationHour,
+    _reservation_day: reservation.reservationDay,
+  });
+  if (error || data !== true) {
+    console.error("[dispatch] campaign reservation release failed", error?.code);
+    return false;
+  }
+  return true;
+}
 
 async function releaseConnectionReservation(db: Db, connectionId: string): Promise<boolean> {
   const { error } = await db.rpc("release_connection_slot", {
@@ -117,6 +145,12 @@ export async function runDispatchTick(db: Db, opts: TickOptions = {}): Promise<T
     if (!isWithinWindow(now, { start: c.window_start, end: c.window_end })) continue;
 
     const startedAt = c.started_at ? new Date(c.started_at) : null;
+    const dailyLimit = effectiveCap({
+      dailyCap: c.daily_cap,
+      warmupPerDay: c.warmup_per_day,
+      startedAt,
+      now,
+    });
     let remaining = dailyCapRemaining({
       dailyCap: c.daily_cap,
       warmupPerDay: c.warmup_per_day,
@@ -181,6 +215,45 @@ export async function runDispatchTick(db: Db, opts: TickOptions = {}): Promise<T
         .maybeSingle();
       if (!claimed) continue;
 
+      // Reserva atomica da cota da campanha. O FOR UPDATE no RPC impede que
+      // ticks concorrentes ultrapassem os limites horario, diario ou warm-up.
+      const { data: campaignReserveResult, error: campaignReserveError } = await db.rpc(
+        "try_reserve_campaign_slot",
+        {
+          _campaign_id: c.id,
+          _daily_limit: dailyLimit,
+          _now: now.toISOString(),
+        },
+      );
+      const campaignSlot = Array.isArray(campaignReserveResult)
+        ? campaignReserveResult[0]
+        : campaignReserveResult;
+      if (
+        campaignReserveError ||
+        campaignSlot?.reserved !== true ||
+        !campaignSlot.reservation_hour ||
+        !campaignSlot.reservation_day
+      ) {
+        if (campaignReserveError) {
+          console.error("[dispatch] campaign reservation failed", campaignReserveError.code);
+        }
+        const backoffMs = campaignSlot?.hour_full ? 15 * 60_000 : 60 * 60_000;
+        await db
+          .from("campaign_recipients")
+          .update({
+            status: "pending",
+            next_send_at: new Date(Date.now() + backoffMs).toISOString(),
+          })
+          .eq("id", cand.id)
+          .eq("status", "sending");
+        result.skipped++;
+        break;
+      }
+      const campaignReservation: CampaignReservation = {
+        reservationHour: campaignSlot.reservation_hour,
+        reservationDay: campaignSlot.reservation_day,
+      };
+
       // F6.1: escolhe conexao (single ou round-robin em multi).
       const picked = await pickConnection(db, {
         id: c.id,
@@ -189,6 +262,7 @@ export async function runDispatchTick(db: Db, opts: TickOptions = {}): Promise<T
         dispatch_mode: c.dispatch_mode,
       });
       if (!picked) {
+        await releaseCampaignReservation(db, c.id, campaignReservation);
         // Sem conexao usavel: devolve para pending e sai da campanha.
         await db.from("campaign_recipients").update({ status: "pending" }).eq("id", cand.id);
         break;
@@ -208,6 +282,7 @@ export async function runDispatchTick(db: Db, opts: TickOptions = {}): Promise<T
       const reservation = Array.isArray(reserveRes) ? reserveRes[0] : reserveRes;
       const slotReserved = reservation?.reserved === true;
       if (!slotReserved) {
+        await releaseCampaignReservation(db, c.id, campaignReservation);
         if (reservationError) {
           console.error("[dispatch] connection reservation failed", reservationError.code);
         }
@@ -232,6 +307,7 @@ export async function runDispatchTick(db: Db, opts: TickOptions = {}): Promise<T
         .maybeSingle();
       if (contactError) {
         await releaseConnectionReservation(db, picked.connection_id);
+        await releaseCampaignReservation(db, c.id, campaignReservation);
         await db
           .from("campaign_recipients")
           .update({
@@ -245,6 +321,7 @@ export async function runDispatchTick(db: Db, opts: TickOptions = {}): Promise<T
       }
       if (contact?.opt_out) {
         await releaseConnectionReservation(db, picked.connection_id);
+        await releaseCampaignReservation(db, c.id, campaignReservation);
         await db.from("campaign_recipients").update({ status: "skipped_optout" }).eq("id", cand.id);
         result.skipped++;
         continue;
@@ -284,6 +361,7 @@ export async function runDispatchTick(db: Db, opts: TickOptions = {}): Promise<T
               .maybeSingle();
             if (hit) {
               await releaseConnectionReservation(db, picked.connection_id);
+              await releaseCampaignReservation(db, c.id, campaignReservation);
               await db
                 .from("campaign_recipients")
                 .update({ status: "stopped_recent_reply" })
@@ -299,6 +377,7 @@ export async function runDispatchTick(db: Db, opts: TickOptions = {}): Promise<T
       const text = String(vars.rendered_text ?? "");
       if (!text) {
         await releaseConnectionReservation(db, picked.connection_id);
+        await releaseCampaignReservation(db, c.id, campaignReservation);
         await db
           .from("campaign_recipients")
           .update({ status: "failed", error: "empty_text" })
@@ -317,6 +396,7 @@ export async function runDispatchTick(db: Db, opts: TickOptions = {}): Promise<T
       });
       if (sendGate !== "proceed") {
         await releaseConnectionReservation(db, picked.connection_id);
+        await releaseCampaignReservation(db, c.id, campaignReservation);
         if (sendGate !== "recipient-stopped") {
           await db
             .from("campaign_recipients")
@@ -337,7 +417,7 @@ export async function runDispatchTick(db: Db, opts: TickOptions = {}): Promise<T
           to: normalizeMsisdn(cand.contact_phone),
           text,
         });
-        await db
+        const { error: sentStateError } = await db
           .from("campaign_recipients")
           .update({
             status: "sent",
@@ -345,6 +425,9 @@ export async function runDispatchTick(db: Db, opts: TickOptions = {}): Promise<T
             last_connection_id: picked.connection_id,
           })
           .eq("id", cand.id);
+        if (sentStateError) {
+          console.error("[dispatch] recipient sent state failed", sentStateError.code);
+        }
         result.sent++;
 
         // C6: espelha na aba Conversas — upsert contact + conversation + message outbound.
@@ -365,19 +448,10 @@ export async function runDispatchTick(db: Db, opts: TickOptions = {}): Promise<T
           );
         }
 
-        // Atualiza sent_today + sent_this_hour.
+        // A cota ja foi incrementada de forma atomica no RPC antes do envio.
         const today = dateKeySaoPaulo(now);
         const newCount = c.sent_today_date === today ? c.sent_today + 1 : 1;
         sentThisHour += 1;
-        await db
-          .from("campaigns")
-          .update({
-            sent_today: newCount,
-            sent_today_date: today,
-            sent_this_hour: sentThisHour,
-            sent_this_hour_at: currentHourKey,
-          })
-          .eq("id", c.id);
         c.sent_today = newCount;
         c.sent_today_date = today;
         c.sent_this_hour = sentThisHour;
@@ -387,8 +461,9 @@ export async function runDispatchTick(db: Db, opts: TickOptions = {}): Promise<T
         // F-antiban-conexao: cota GLOBAL ja foi incrementada atomicamente
         // via try_reserve_connection_slot antes do envio. Nada a fazer aqui.
       } catch (e) {
-        // Libera a vaga reservada antes do envio (que falhou).
+        // Libera ambas as cotas quando o provider nao confirmou o envio.
         await releaseConnectionReservation(db, picked.connection_id);
+        await releaseCampaignReservation(db, c.id, campaignReservation);
         // F6.1: retry unico. attempt<1 -> reagenda; senao failed.
         const attempts = (cand.attempt_count ?? 0) + 1;
         const errMsg = e instanceof Error ? e.message.slice(0, 200) : "send_failed";

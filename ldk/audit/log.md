@@ -535,3 +535,14 @@ Registro compacto iniciado quando Audit log: on foi habilitado.
 - Decision: F1 PARTIAL/P4, F2 PARTIAL/P2, F6 PARTIAL/P4; nenhuma declaracao de DONE antes de staging/CI
 - Known limitations: painel sem auth; secrets em texto plano; cotas por campanha ainda nao atomicas entre ticks; migration nao aplicada nesta sessao; LGPD pendente
 - Next: publicar commit, observar CI, aplicar migration e atualizar tokens/jobs em ambiente controlado antes de trafego real
+
+## 2026-07-10 - hardening - cota atomica de campanha
+- Command: execucao direta dos itens 1-7 solicitados pelo owner
+- User intent: fechar concorrencia, merge, migrations, ambiente, jobs, publicacao e smoke controlado
+- State before: reserva por conexao atomica; contadores de campanha ainda sujeitos a corrida entre ticks
+- Actions: criada reserva/compensacao transacional por campanha; worker passou a reservar antes do efeito e compensar todos os caminhos sem envio confirmado; protecao temporaria via login Lovable aceita pelo owner
+- Files changed: migration de quota, worker, tipos, security review e estado/evidencia F6
+- Evidence: typecheck pass; lint zero erros; 19 testes pass; prova concorrente remota ainda pendente
+- Decision: F6 BUILDING/P4 ate migration, stress sem provider e CI
+- Known limitations: auth interna do app, secrets em texto plano e LGPD permanecem fora desta execucao
+- Next: publicar no PR, aguardar CI, mergear e aplicar/configurar o ambiente
