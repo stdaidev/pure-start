@@ -311,6 +311,23 @@ export const Route = createFileRoute("/api/public/evolution/webhook")({
               .maybeSingle();
             if (dup) continue;
 
+            let persistedMediaUrl: string | null = null;
+            if (m.mediaUrl) {
+              try {
+                const { persistInboundMedia } = await import("@/lib/message-media.server");
+                persistedMediaUrl = await persistInboundMedia({
+                  workspaceId: DEFAULT_WORKSPACE,
+                  conversationId,
+                  providerMessageId: m.providerMessageId,
+                  mediaType: m.kind,
+                  source: m.mediaUrl,
+                });
+              } catch {
+                // A mensagem deve continuar existindo mesmo se o storage estiver indisponivel.
+                console.error("[webhook/evolution] media persistence failed");
+              }
+            }
+
             const { data: insertedMsg, error: insErr } = await supabaseAdmin
               .from("messages")
               .insert({
@@ -318,7 +335,7 @@ export const Route = createFileRoute("/api/public/evolution/webhook")({
                 conversation_id: conversationId,
                 direction: m.direction,
                 content: m.text ?? null,
-                media_url: m.mediaUrl ?? null,
+                media_url: persistedMediaUrl,
                 media_type: m.kind === "text" ? null : m.kind,
                 status: "received",
                 external_id: m.providerMessageId,

@@ -147,7 +147,8 @@ export const getMessages = createServerFn({ method: "POST" })
       .order("created_at", { ascending: true })
       .limit(data.limit);
     if (error) throw new Error("Falha ao carregar mensagens");
-    return { messages: rows ?? [] };
+    const { resolvePrivateMediaUrls } = await import("@/lib/message-media.server");
+    return { messages: await resolvePrivateMediaUrls(rows ?? []) };
   });
 
 export const assignConversation = createServerFn({ method: "POST" })
