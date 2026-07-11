@@ -115,7 +115,7 @@ export type TickOptions = {
   provider?: {
     sendText: (
       instance: string,
-      msg: { to: string; text: string },
+      msg: { to: string; text: string; delayMs?: number },
     ) => Promise<{ providerMessageId: string }>;
   };
 };
@@ -413,9 +413,13 @@ export async function runDispatchTick(db: Db, opts: TickOptions = {}): Promise<T
       }
 
       try {
+        // Delay anti-ban vai no proprio body do sendText: Evolution segura
+        // a mensagem mostrando "digitando" e envia atomicamente.
+        const perMsgDelay = Math.min(nextDelayMs(c.min_ms, c.max_ms, Math.random), 15000);
         const sent = await provider.sendText(picked.instance_name, {
           to: normalizeMsisdn(cand.contact_phone),
           text,
+          delayMs: perMsgDelay,
         });
         const { error: sentStateError } = await db
           .from("campaign_recipients")
@@ -492,10 +496,6 @@ export async function runDispatchTick(db: Db, opts: TickOptions = {}): Promise<T
           result.failed++;
         }
       }
-
-      // Delay aleatorio dentro do tick (bounded).
-      const delay = Math.min(nextDelayMs(c.min_ms, c.max_ms, Math.random), 15000);
-      await sleep(delay);
     }
 
     // Se acabaram os pendentes, finaliza.
