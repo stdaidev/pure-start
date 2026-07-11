@@ -206,29 +206,21 @@ export const evolutionProvider: ChannelProvider = {
   },
 
   async sendText(providerInstanceId: string, msg: OutboundText): Promise<SendResult> {
+    const body: Record<string, unknown> = { number: msg.to, text: msg.text };
+    if (typeof msg.delayMs === "number" && msg.delayMs > 0) {
+      // Evolution API: `delay` no corpo do sendText segura a mensagem N ms
+      // mostrando "digitando" no cliente antes do envio real (atomico).
+      body.delay = Math.max(0, Math.min(Math.round(msg.delayMs), 20000));
+    }
     const raw = (await evoFetch(`/message/sendText/${encodeURIComponent(providerInstanceId)}`, {
       method: "POST",
-      body: JSON.stringify({ number: msg.to, text: msg.text }),
+      body: JSON.stringify(body),
+      timeoutMs: 30000,
     })) as Record<string, unknown>;
     const key = (raw.key ?? {}) as Record<string, unknown>;
     const providerMessageId = getString(key.id);
     if (!providerMessageId) throw new Error("Evolution response missing message id");
     return { providerMessageId };
-  },
-
-  async sendTyping(providerInstanceId: string, to: string, durationMs: number): Promise<void> {
-    try {
-      await evoFetch(`/chat/sendPresence/${encodeURIComponent(providerInstanceId)}`, {
-        method: "POST",
-        body: JSON.stringify({
-          number: to,
-          presence: "composing",
-          delay: Math.max(500, Math.min(durationMs, 15000)),
-        }),
-      });
-    } catch {
-      // presence e best-effort; nunca falha o envio
-    }
   },
 
   async sendAudio(providerInstanceId: string, msg: OutboundAudio): Promise<SendResult> {
