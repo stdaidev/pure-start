@@ -9,10 +9,7 @@ export function TemplateEditor(props: {
 }) {
   const { value, onChange, sample } = props;
   const placeholders = useMemo(() => extractPlaceholders(value), [value]);
-  const preview = useMemo(
-    () => renderTemplate(value, sample ?? {}),
-    [value, sample],
-  );
+  const preview = useMemo(() => renderTemplate(value, sample ?? {}), [value, sample]);
   return (
     <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
       <div className="flex flex-col gap-2">
@@ -44,8 +41,12 @@ export function TemplateEditor(props: {
           className="min-h-[240px] whitespace-pre-wrap rounded border border-border/60 bg-muted/20 p-3 text-sm"
           style={{ fontFamily: "var(--font-mono)" }}
         >
-          {sample ? preview.text || <span className="text-muted-foreground">(vazio)</span> : (
-            <span className="text-muted-foreground">Selecione uma planilha para ver o preview.</span>
+          {sample ? (
+            preview.text || <span className="text-muted-foreground">(vazio)</span>
+          ) : (
+            <span className="text-muted-foreground">
+              Selecione uma planilha para ver o preview.
+            </span>
           )}
         </div>
         {preview.missing.length > 0 && sample ? (

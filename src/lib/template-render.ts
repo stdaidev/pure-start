@@ -23,10 +23,7 @@ export function extractPlaceholders(template: string): string[] {
   return Array.from(set);
 }
 
-export function renderTemplate(
-  template: string,
-  vars: Record<string, unknown>,
-): RenderResult {
+export function renderTemplate(template: string, vars: Record<string, unknown>): RenderResult {
   const lookup = new Map<string, string>();
   for (const [k, v] of Object.entries(vars ?? {})) {
     if (v === null || v === undefined) continue;

@@ -50,17 +50,12 @@ export function MessageList(props: {
         return (
           <div
             key={m.id}
-            className={cn(
-              "flex flex-col gap-1",
-              isOut ? "items-end" : "items-start",
-            )}
+            className={cn("flex flex-col gap-1", isOut ? "items-end" : "items-start")}
           >
             <div
               className={cn(
                 "max-w-[75%] rounded-lg px-3 py-2 text-sm",
-                isOut
-                  ? "bg-primary/20 text-foreground"
-                  : "bg-muted text-foreground",
+                isOut ? "bg-primary/20 text-foreground" : "bg-muted text-foreground",
               )}
             >
               <MessageBody message={m} fallback={body} />

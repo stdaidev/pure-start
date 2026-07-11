@@ -29,9 +29,7 @@ export interface DashboardSummary {
 
 export const getDashboardSummary = createServerFn({ method: "GET" }).handler(
   async (): Promise<DashboardSummary> => {
-    const { supabaseAdmin } = await import(
-      "@/integrations/supabase/client.server"
-    );
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
@@ -39,47 +37,41 @@ export const getDashboardSummary = createServerFn({ method: "GET" }).handler(
 
     const ws = DEFAULT_WORKSPACE;
 
-    const [
-      connsRes,
-      campsRunningRes,
-      msgsInRes,
-      msgsOutRes,
-      lastCampsRes,
-      crmRes,
-    ] = await Promise.all([
-      supabaseAdmin
-        .from("connections")
-        .select("id", { count: "exact", head: true })
-        .eq("workspace_id", ws)
-        .eq("status", "connected"),
-      supabaseAdmin
-        .from("campaigns")
-        .select("id", { count: "exact", head: true })
-        .eq("workspace_id", ws)
-        .eq("status", "running"),
-      supabaseAdmin
-        .from("messages")
-        .select("id", { count: "exact", head: true })
-        .eq("workspace_id", ws)
-        .eq("direction", "inbound")
-        .gte("created_at", startIso),
-      supabaseAdmin
-        .from("messages")
-        .select("id", { count: "exact", head: true })
-        .eq("workspace_id", ws)
-        .eq("direction", "outbound")
-        .gte("created_at", startIso),
-      supabaseAdmin
-        .from("campaigns")
-        .select("id, name, status, created_at")
-        .eq("workspace_id", ws)
-        .order("created_at", { ascending: false })
-        .limit(5),
-      supabaseAdmin
-        .from("conversations")
-        .select("tags, lead_value_cents, lead_outcome, status")
-        .eq("workspace_id", ws),
-    ]);
+    const [connsRes, campsRunningRes, msgsInRes, msgsOutRes, lastCampsRes, crmRes] =
+      await Promise.all([
+        supabaseAdmin
+          .from("connections")
+          .select("id", { count: "exact", head: true })
+          .eq("workspace_id", ws)
+          .eq("status", "connected"),
+        supabaseAdmin
+          .from("campaigns")
+          .select("id", { count: "exact", head: true })
+          .eq("workspace_id", ws)
+          .eq("status", "running"),
+        supabaseAdmin
+          .from("messages")
+          .select("id", { count: "exact", head: true })
+          .eq("workspace_id", ws)
+          .eq("direction", "inbound")
+          .gte("created_at", startIso),
+        supabaseAdmin
+          .from("messages")
+          .select("id", { count: "exact", head: true })
+          .eq("workspace_id", ws)
+          .eq("direction", "outbound")
+          .gte("created_at", startIso),
+        supabaseAdmin
+          .from("campaigns")
+          .select("id, name, status, created_at")
+          .eq("workspace_id", ws)
+          .order("created_at", { ascending: false })
+          .limit(5),
+        supabaseAdmin
+          .from("conversations")
+          .select("tags, lead_value_cents, lead_outcome, status")
+          .eq("workspace_id", ws),
+      ]);
 
     const lastCampaigns = (lastCampsRes.data ?? []) as Array<{
       id: string;

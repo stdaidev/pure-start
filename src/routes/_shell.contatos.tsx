@@ -7,15 +7,8 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import {
-  ContactEditDialog,
-  type EditableContact,
-} from "@/components/contatos/contact-edit-dialog";
-import {
-  deleteContact,
-  listContacts,
-  updateContact,
-} from "@/lib/contacts.functions";
+import { ContactEditDialog, type EditableContact } from "@/components/contatos/contact-edit-dialog";
+import { deleteContact, listContacts, updateContact } from "@/lib/contacts.functions";
 
 export const Route = createFileRoute("/_shell/contatos")({
   head: () => ({
@@ -65,10 +58,7 @@ function ContatosPage() {
 
   const contacts = listQuery.data?.contacts ?? [];
   const total = listQuery.data?.total ?? 0;
-  const totalPages = useMemo(
-    () => Math.max(1, Math.ceil(total / PAGE_SIZE)),
-    [total],
-  );
+  const totalPages = useMemo(() => Math.max(1, Math.ceil(total / PAGE_SIZE)), [total]);
 
   return (
     <div className="flex h-full w-full flex-col gap-4 p-6">
@@ -80,15 +70,10 @@ function ContatosPage() {
           >
             modulo // F5
           </p>
-          <h1
-            className="text-2xl font-semibold"
-            style={{ fontFamily: "var(--font-display)" }}
-          >
+          <h1 className="text-2xl font-semibold" style={{ fontFamily: "var(--font-display)" }}>
             Contatos
           </h1>
-          <p className="text-xs text-muted-foreground">
-            {total} contato(s) no workspace
-          </p>
+          <p className="text-xs text-muted-foreground">{total} contato(s) no workspace</p>
         </div>
         <div className="flex items-center gap-2">
           <Input
@@ -156,26 +141,16 @@ function ContatosPage() {
               </tr>
             ) : (
               contacts.map((c) => (
-                <tr
-                  key={c.id}
-                  className="border-b border-border/40 hover:bg-muted/20"
-                >
+                <tr key={c.id} className="border-b border-border/40 hover:bg-muted/20">
                   <td className="px-3 py-2">{c.name ?? "—"}</td>
-                  <td
-                    className="px-3 py-2 text-xs"
-                    style={{ fontFamily: "var(--font-mono)" }}
-                  >
+                  <td className="px-3 py-2 text-xs" style={{ fontFamily: "var(--font-mono)" }}>
                     {c.phone}
                   </td>
-                  <td className="px-3 py-2 text-xs">
-                    {(c.tags ?? []).join(", ") || "—"}
-                  </td>
+                  <td className="px-3 py-2 text-xs">{(c.tags ?? []).join(", ") || "—"}</td>
                   <td className="px-3 py-2">
                     <Switch
                       checked={c.opt_out}
-                      onCheckedChange={(v) =>
-                        updateMut.mutate({ data: { id: c.id, opt_out: v } })
-                      }
+                      onCheckedChange={(v) => updateMut.mutate({ data: { id: c.id, opt_out: v } })}
                     />
                   </td>
                   <td

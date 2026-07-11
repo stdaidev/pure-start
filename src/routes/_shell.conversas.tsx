@@ -20,7 +20,8 @@ import { Trash2 } from "lucide-react";
 import { ConversationList } from "@/components/conversas/conversation-list";
 import { MessageList } from "@/components/conversas/message-list";
 import { Composer } from "@/components/conversas/composer";
-import { CrmPanel, formatBRL } from "@/components/conversas/crm-panel";
+import { CrmPanel } from "@/components/conversas/crm-panel";
+import { formatBRL } from "@/lib/crm-format";
 import { useConversationsRealtime } from "@/hooks/use-conversations-realtime";
 import {
   assignConversation,
@@ -46,9 +47,7 @@ export const Route = createFileRoute("/_shell/conversas")({
 function ConversasPage() {
   const qc = useQueryClient();
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [connectionFilter, setConnectionFilter] = useState<string | "all">(
-    "all",
-  );
+  const [connectionFilter, setConnectionFilter] = useState<string | "all">("all");
   const [tagFilter, setTagFilter] = useState<string | "all">("all");
 
   const listFn = useServerFn(listConversations);
@@ -82,8 +81,7 @@ function ConversasPage() {
   useConversationsRealtime(activeId);
 
   const assignMut = useMutation({
-    mutationFn: (v: { id: string; to: "human" | null }) =>
-      assignFn({ data: v }),
+    mutationFn: (v: { id: string; to: "human" | null }) => assignFn({ data: v }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["conversations"] });
     },
@@ -91,8 +89,7 @@ function ConversasPage() {
   });
 
   const sendMut = useMutation({
-    mutationFn: (v: { conversationId: string; text: string }) =>
-      sendFn({ data: v }),
+    mutationFn: (v: { conversationId: string; text: string }) => sendFn({ data: v }),
     onSuccess: () => {
       if (activeId) {
         qc.invalidateQueries({ queryKey: ["messages", activeId] });
@@ -112,15 +109,16 @@ function ConversasPage() {
     onError: (e: Error) => toast.error(e.message || "Falha ao apagar"),
   });
 
-  const allConversations = listQuery.data?.conversations ?? [];
+  const allConversations = useMemo(
+    () => listQuery.data?.conversations ?? [],
+    [listQuery.data?.conversations],
+  );
   const connections = connectionsQuery.data?.connections ?? [];
   const conversations = useMemo(
     () =>
       allConversations.filter((c) => {
-        if (connectionFilter !== "all" && c.connection_id !== connectionFilter)
-          return false;
-        if (tagFilter !== "all" && !(c.tags ?? []).includes(tagFilter))
-          return false;
+        if (connectionFilter !== "all" && c.connection_id !== connectionFilter) return false;
+        if (tagFilter !== "all" && !(c.tags ?? []).includes(tagFilter)) return false;
         return true;
       }),
     [allConversations, connectionFilter, tagFilter],
@@ -130,7 +128,9 @@ function ConversasPage() {
     for (const c of allConversations) {
       for (const t of c.tags ?? []) map.set(t, (map.get(t) ?? 0) + 1);
     }
-    return Array.from(map.entries()).sort((a, b) => b[1] - a[1]).slice(0, 12);
+    return Array.from(map.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 12);
   }, [allConversations]);
   const countsByConnection = useMemo(() => {
     const map = new Map<string, number>();
@@ -172,10 +172,7 @@ function ConversasPage() {
           >
             modulo // F4
           </p>
-          <h1
-            className="mt-1 text-lg font-semibold"
-            style={{ fontFamily: "var(--font-display)" }}
-          >
+          <h1 className="mt-1 text-lg font-semibold" style={{ fontFamily: "var(--font-display)" }}>
             Conversas
           </h1>
         </div>
@@ -261,9 +258,7 @@ function ConversasPage() {
                     className="mt-1 inline-flex items-center gap-2 rounded bg-emerald-500/10 px-2 py-0.5 text-xs text-emerald-300"
                     style={{ fontFamily: "var(--font-mono)" }}
                   >
-                    {active.lead_value_cents != null
-                      ? formatBRL(active.lead_value_cents)
-                      : null}
+                    {active.lead_value_cents != null ? formatBRL(active.lead_value_cents) : null}
                     {active.lead_value_note ? (
                       <span className="truncate text-muted-foreground">
                         · {active.lead_value_note}
@@ -277,9 +272,7 @@ function ConversasPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() =>
-                      assignMut.mutate({ id: active.id, to: null })
-                    }
+                    onClick={() => assignMut.mutate({ id: active.id, to: null })}
                     disabled={assignMut.isPending}
                   >
                     Devolver para IA
@@ -287,9 +280,7 @@ function ConversasPage() {
                 ) : (
                   <Button
                     size="sm"
-                    onClick={() =>
-                      assignMut.mutate({ id: active.id, to: "human" })
-                    }
+                    onClick={() => assignMut.mutate({ id: active.id, to: "human" })}
                     disabled={assignMut.isPending}
                   >
                     Assumir
@@ -310,16 +301,13 @@ function ConversasPage() {
                     <AlertDialogHeader>
                       <AlertDialogTitle>Apagar conversa?</AlertDialogTitle>
                       <AlertDialogDescription>
-                        Todas as mensagens desta conversa serao removidas do
-                        banco. Esta acao nao pode ser desfeita. Nao afeta o
-                        WhatsApp do contato.
+                        Todas as mensagens desta conversa serao removidas do banco. Esta acao nao
+                        pode ser desfeita. Nao afeta o WhatsApp do contato.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={() => deleteMut.mutate({ id: active.id })}
-                      >
+                      <AlertDialogAction onClick={() => deleteMut.mutate({ id: active.id })}>
                         Apagar
                       </AlertDialogAction>
                     </AlertDialogFooter>
@@ -330,27 +318,19 @@ function ConversasPage() {
             <div className="flex min-h-0 flex-1">
               <div className="flex min-w-0 flex-1 flex-col">
                 <div className="flex-1 overflow-y-auto">
-                  <MessageList
-                    messages={messages}
-                    hasAgent={hasAgent}
-                    assigned={assigned}
-                  />
+                  <MessageList messages={messages} hasAgent={hasAgent} assigned={assigned} />
                 </div>
                 <Composer
-              disabled={!assigned}
-              pending={sendMut.isPending}
-              onSend={async (text) => {
-                await sendMut.mutateAsync({
-                  conversationId: active.id,
-                  text,
-                });
-              }}
-              hint={
-                !assigned
-                  ? 'clique em "Assumir" para responder manualmente'
-                  : undefined
-              }
-            />
+                  disabled={!assigned}
+                  pending={sendMut.isPending}
+                  onSend={async (text) => {
+                    await sendMut.mutateAsync({
+                      conversationId: active.id,
+                      text,
+                    });
+                  }}
+                  hint={!assigned ? 'clique em "Assumir" para responder manualmente' : undefined}
+                />
               </div>
               <CrmPanel
                 initial={{
@@ -361,9 +341,7 @@ function ConversasPage() {
                   lead_outcome: active.lead_outcome ?? null,
                 }}
                 pending={crmMut.isPending}
-                onSave={(patch) =>
-                  crmMut.mutate({ id: active.id, ...patch })
-                }
+                onSave={(patch) => crmMut.mutate({ id: active.id, ...patch })}
               />
             </div>
           </>
@@ -373,11 +351,7 @@ function ConversasPage() {
   );
 }
 
-function FilterChip(props: {
-  active: boolean;
-  onClick: () => void;
-  label: string;
-}) {
+function FilterChip(props: { active: boolean; onClick: () => void; label: string }) {
   return (
     <button
       type="button"

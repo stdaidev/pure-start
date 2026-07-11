@@ -76,9 +76,7 @@ export function ConversationList(props: {
               onClick={() => onSelect(c.id)}
               className={cn(
                 "flex w-full flex-col gap-1 border-b border-border/40 px-4 py-3 text-left transition-colors",
-                active
-                  ? "bg-primary/10"
-                  : "hover:bg-muted/40",
+                active ? "bg-primary/10" : "hover:bg-muted/40",
               )}
             >
               <div className="flex items-start justify-between gap-2">
@@ -125,10 +123,11 @@ export function ConversationList(props: {
                   {b.label}
                 </span>
                 <span className="truncate text-xs text-muted-foreground">
-                  {c.preview?.content ?? (c.preview?.media_type ? `[${c.preview.media_type}]` : "—")}
+                  {c.preview?.content ??
+                    (c.preview?.media_type ? `[${c.preview.media_type}]` : "—")}
                 </span>
               </div>
-              {(c.lead_value_cents != null || (c.tags && c.tags.length > 0)) ? (
+              {c.lead_value_cents != null || (c.tags && c.tags.length > 0) ? (
                 <div className="flex flex-wrap items-center gap-1 pt-0.5">
                   {c.lead_value_cents != null ? (
                     <span

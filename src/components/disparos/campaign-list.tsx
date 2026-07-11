@@ -48,10 +48,7 @@ export function CampaignList({
             const p = c.progress;
             const done = p.sent + p.failed;
             return (
-              <tr
-                key={c.id}
-                className="border-b border-border/40 hover:bg-muted/20"
-              >
+              <tr key={c.id} className="border-b border-border/40 hover:bg-muted/20">
                 <td className="px-3 py-2">
                   <Link
                     to="/disparos/$id"
@@ -64,15 +61,10 @@ export function CampaignList({
                 <td className="px-3 py-2">
                   <CampaignStatusBadge status={c.status} />
                 </td>
-                <td
-                  className="px-3 py-2 text-xs"
-                  style={{ fontFamily: "var(--font-mono)" }}
-                >
+                <td className="px-3 py-2 text-xs" style={{ fontFamily: "var(--font-mono)" }}>
                   {done}/{p.total}
                   {p.failed > 0 ? (
-                    <span className="ml-2 text-red-400">
-                      {p.failed} falhas
-                    </span>
+                    <span className="ml-2 text-red-400">{p.failed} falhas</span>
                   ) : null}
                 </td>
                 <td

@@ -25,11 +25,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { TemplateEditor } from "./template-editor";
 import { Switch } from "@/components/ui/switch";
 import { listConnections } from "@/lib/connections.functions";
-import {
-  createCampaign,
-  listSpreadsheets,
-  getSpreadsheetPreview,
-} from "@/lib/campaigns.functions";
+import { createCampaign, listSpreadsheets, getSpreadsheetPreview } from "@/lib/campaigns.functions";
 import { getWorkspaceFlags } from "@/lib/workspace.functions";
 import { renderTemplate } from "@/lib/template-render";
 
@@ -71,10 +67,8 @@ export function NewCampaignDialog(props: {
     enabled: open,
   });
   const defaultCooldownHours = wsQ.data?.cooldown_default_hours ?? 24;
-  const requestedHours =
-    cooldownUnit === "days" ? cooldownValue * 24 : cooldownValue;
-  const cooldownBelowMin =
-    cooldownEnabled && requestedHours < defaultCooldownHours;
+  const requestedHours = cooldownUnit === "days" ? cooldownValue * 24 : cooldownValue;
+  const cooldownBelowMin = cooldownEnabled && requestedHours < defaultCooldownHours;
 
   const connQ = useQuery({
     queryKey: ["connections", "list"],
@@ -88,8 +82,7 @@ export function NewCampaignDialog(props: {
   });
   const previewQ = useQuery({
     queryKey: ["spreadsheet-preview", spreadsheetId],
-    queryFn: () =>
-      previewFn({ data: { spreadsheet_id: spreadsheetId } }),
+    queryFn: () => previewFn({ data: { spreadsheet_id: spreadsheetId } }),
     enabled: open && !!spreadsheetId,
   });
 
@@ -124,16 +117,14 @@ export function NewCampaignDialog(props: {
     setCooldownUnit("hours");
   }
 
-  const sample = (previewQ.data?.first_row ?? null) as
-    | Record<string, unknown>
-    | null;
+  const sample = (previewQ.data?.first_row ?? null) as Record<string, unknown> | null;
 
   const templateMissing = useMemo(
     () => (sample ? renderTemplate(template, sample).missing : []),
     [template, sample],
   );
 
-  const availableConns = connQ.data?.connections ?? [];
+  const availableConns = useMemo(() => connQ.data?.connections ?? [], [connQ.data?.connections]);
 
   const canNext = useMemo(() => {
     if (step === 1) {
@@ -142,15 +133,10 @@ export function NewCampaignDialog(props: {
         const c = availableConns.find((x) => x.id === connectionId);
         return !!c && c.status === "connected";
       }
-      const picked = availableConns.filter((c) =>
-        connectionIds.includes(c.id),
-      );
-      return (
-        picked.length >= 2 && picked.every((c) => c.status === "connected")
-      );
+      const picked = availableConns.filter((c) => connectionIds.includes(c.id));
+      return picked.length >= 2 && picked.every((c) => c.status === "connected");
     }
-    if (step === 2)
-      return template.trim().length > 0 && templateMissing.length === 0;
+    if (step === 2) return template.trim().length > 0 && templateMissing.length === 0;
     if (step === 3)
       return (
         minMs >= 0 &&
@@ -162,12 +148,27 @@ export function NewCampaignDialog(props: {
         !cooldownBelowMin
       );
     return true;
-  }, [step, name, mode, connectionId, connectionIds, spreadsheetId, template, templateMissing, minMs, maxMs, dailyCap, hourlyLimit, windowStart, windowEnd, cooldownBelowMin, availableConns]);
+  }, [
+    step,
+    name,
+    mode,
+    connectionId,
+    connectionIds,
+    spreadsheetId,
+    template,
+    templateMissing,
+    minMs,
+    maxMs,
+    dailyCap,
+    hourlyLimit,
+    windowStart,
+    windowEnd,
+    cooldownBelowMin,
+    availableConns,
+  ]);
 
   function toggleConn(id: string) {
-    setConnectionIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-    );
+    setConnectionIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   }
 
   return (
@@ -233,11 +234,7 @@ export function NewCampaignDialog(props: {
                   </SelectTrigger>
                   <SelectContent>
                     {availableConns.map((c) => (
-                      <SelectItem
-                        key={c.id}
-                        value={c.id}
-                        disabled={c.status !== "connected"}
-                      >
+                      <SelectItem key={c.id} value={c.id} disabled={c.status !== "connected"}>
                         {c.name} — {c.status}
                         {c.status !== "connected" ? " (indisponivel)" : ""}
                       </SelectItem>
@@ -245,8 +242,7 @@ export function NewCampaignDialog(props: {
                   </SelectContent>
                 </Select>
                 {connectionId &&
-                availableConns.find((c) => c.id === connectionId)?.status !==
-                  "connected" ? (
+                availableConns.find((c) => c.id === connectionId)?.status !== "connected" ? (
                   <p className="text-[10px] text-red-400">
                     conexao nao esta conectada — selecione outra
                   </p>
@@ -257,34 +253,30 @@ export function NewCampaignDialog(props: {
                 <Label>Conexoes (min 2)</Label>
                 <div className="flex flex-col gap-1 rounded border border-border/60 p-2 max-h-48 overflow-auto">
                   {availableConns.length === 0 ? (
-                    <p className="text-xs text-muted-foreground p-2">
-                      Nenhuma conexao disponivel.
-                    </p>
+                    <p className="text-xs text-muted-foreground p-2">Nenhuma conexao disponivel.</p>
                   ) : null}
                   {availableConns.map((c) => {
                     const disabled = c.status !== "connected";
                     return (
-                    <label
-                      key={c.id}
-                      className={`flex items-center gap-2 rounded px-2 py-1 ${
-                        disabled
-                          ? "opacity-50 cursor-not-allowed"
-                          : "hover:bg-muted/30 cursor-pointer"
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        disabled={disabled}
-                        checked={connectionIds.includes(c.id)}
-                        onChange={() => toggleConn(c.id)}
-                      />
-                      <span className="text-sm">
-                        {c.name}{" "}
-                        <span className="text-xs text-muted-foreground">
-                          — {c.status}
+                      <label
+                        key={c.id}
+                        className={`flex items-center gap-2 rounded px-2 py-1 ${
+                          disabled
+                            ? "opacity-50 cursor-not-allowed"
+                            : "hover:bg-muted/30 cursor-pointer"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          disabled={disabled}
+                          checked={connectionIds.includes(c.id)}
+                          onChange={() => toggleConn(c.id)}
+                        />
+                        <span className="text-sm">
+                          {c.name}{" "}
+                          <span className="text-xs text-muted-foreground">— {c.status}</span>
                         </span>
-                      </span>
-                    </label>
+                      </label>
                     );
                   })}
                 </div>
@@ -313,11 +305,7 @@ export function NewCampaignDialog(props: {
 
         {step === 2 ? (
           <div className="flex flex-col gap-2">
-            <TemplateEditor
-              value={template}
-              onChange={setTemplate}
-              sample={sample}
-            />
+            <TemplateEditor value={template} onChange={setTemplate} sample={sample} />
             {sample && templateMissing.length > 0 ? (
               <p className="text-[11px] text-red-400">
                 nao e possivel avancar: a planilha nao tem valor para{" "}
@@ -355,9 +343,7 @@ export function NewCampaignDialog(props: {
                 onChange={(e) => setMaxMs(Number(e.target.value))}
               />
               {maxMs < minMs ? (
-                <p className="text-[10px] text-red-400">
-                  max deve ser &gt;= min
-                </p>
+                <p className="text-[10px] text-red-400">max deve ser &gt;= min</p>
               ) : null}
             </div>
             <div className="flex flex-col gap-2">
@@ -400,13 +386,11 @@ export function NewCampaignDialog(props: {
                 <div>
                   <Label className="text-sm">Cooldown por lead</Label>
                   <p className="text-[10px] text-muted-foreground">
-                    Nao enviar para quem respondeu nos ultimos N. Minimo global: {defaultCooldownHours}h.
+                    Nao enviar para quem respondeu nos ultimos N. Minimo global:{" "}
+                    {defaultCooldownHours}h.
                   </p>
                 </div>
-                <Switch
-                  checked={cooldownEnabled}
-                  onCheckedChange={setCooldownEnabled}
-                />
+                <Switch checked={cooldownEnabled} onCheckedChange={setCooldownEnabled} />
               </div>
               {cooldownEnabled ? (
                 <div className="mt-2 flex items-end gap-2">
@@ -458,21 +442,17 @@ export function NewCampaignDialog(props: {
               k={mode === "single" ? "conexao" : "conexoes"}
               v={
                 mode === "single"
-                  ? availableConns.find((c) => c.id === connectionId)?.name ??
-                    connectionId
+                  ? (availableConns.find((c) => c.id === connectionId)?.name ?? connectionId)
                   : connectionIds
-                      .map(
-                        (id) =>
-                          availableConns.find((c) => c.id === id)?.name ?? id,
-                      )
+                      .map((id) => availableConns.find((c) => c.id === id)?.name ?? id)
                       .join(", ")
               }
             />
             <Row
               k="planilha"
               v={
-                sheetQ.data?.spreadsheets?.find((s) => s.id === spreadsheetId)
-                  ?.name ?? spreadsheetId
+                sheetQ.data?.spreadsheets?.find((s) => s.id === spreadsheetId)?.name ??
+                spreadsheetId
               }
             />
             <Row k="intervalo" v={`${minMs}-${maxMs} ms`} />
@@ -481,11 +461,7 @@ export function NewCampaignDialog(props: {
             <Row k="janela" v={`${windowStart} - ${windowEnd} (SP)`} />
             <Row
               k="cooldown"
-              v={
-                cooldownEnabled
-                  ? `${cooldownValue} ${cooldownUnit}`
-                  : "desligado"
-              }
+              v={cooldownEnabled ? `${cooldownValue} ${cooldownUnit}` : "desligado"}
             />
           </div>
         ) : null}
@@ -499,10 +475,7 @@ export function NewCampaignDialog(props: {
             Voltar
           </Button>
           {step < 4 ? (
-            <Button
-              disabled={!canNext}
-              onClick={() => setStep((s) => (s + 1) as Step)}
-            >
+            <Button disabled={!canNext} onClick={() => setStep((s) => (s + 1) as Step)}>
               Continuar
             </Button>
           ) : (
@@ -543,9 +516,7 @@ export function NewCampaignDialog(props: {
 function Row({ k, v }: { k: string; v: string }) {
   return (
     <div className="flex items-baseline justify-between gap-4 border-b border-border/40 py-1 last:border-0">
-      <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
-        {k}
-      </span>
+      <span className="text-[10px] uppercase tracking-widest text-muted-foreground">{k}</span>
       <span className="text-sm">{v}</span>
     </div>
   );

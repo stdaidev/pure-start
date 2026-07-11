@@ -50,15 +50,10 @@ function DashboardPage() {
         >
           modulo // F7
         </p>
-        <h1
-          className="text-2xl font-semibold"
-          style={{ fontFamily: "var(--font-display)" }}
-        >
+        <h1 className="text-2xl font-semibold" style={{ fontFamily: "var(--font-display)" }}>
           Dashboard
         </h1>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Atualiza a cada 15s.
-        </p>
+        <p className="mt-1 text-xs text-muted-foreground">Atualiza a cada 15s.</p>
       </header>
 
       <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -74,9 +69,7 @@ function DashboardPage() {
         />
         <KpiCard
           label="msgs hoje (out/in)"
-          value={
-            s ? `${s.messages_today.out} / ${s.messages_today.in}` : "—"
-          }
+          value={s ? `${s.messages_today.out} / ${s.messages_today.in}` : "—"}
           hint="desde 00:00 local"
         />
         <KpiCard
@@ -151,17 +144,11 @@ function DashboardPage() {
         </header>
         <div className="divide-y divide-border/60">
           {q.isLoading ? (
-            <p className="px-4 py-6 text-xs text-muted-foreground">
-              Carregando…
-            </p>
+            <p className="px-4 py-6 text-xs text-muted-foreground">Carregando…</p>
           ) : q.isError ? (
-            <p className="px-4 py-6 text-xs text-red-400">
-              Falha ao carregar sumario.
-            </p>
+            <p className="px-4 py-6 text-xs text-red-400">Falha ao carregar sumario.</p>
           ) : s && s.last_campaigns.length === 0 ? (
-            <p className="px-4 py-6 text-xs text-muted-foreground">
-              Nenhuma campanha ainda.
-            </p>
+            <p className="px-4 py-6 text-xs text-muted-foreground">Nenhuma campanha ainda.</p>
           ) : (
             s?.last_campaigns.map((c) => (
               <Link

@@ -25,10 +25,8 @@ export function useConversationsRealtime(activeConversationId?: string | null) {
         (payload) => {
           qc.invalidateQueries({ queryKey: ["conversations"] });
           const cid =
-            (payload.new as { conversation_id?: string } | null)
-              ?.conversation_id ??
-            (payload.old as { conversation_id?: string } | null)
-              ?.conversation_id;
+            (payload.new as { conversation_id?: string } | null)?.conversation_id ??
+            (payload.old as { conversation_id?: string } | null)?.conversation_id;
           if (cid) {
             qc.invalidateQueries({ queryKey: ["messages", cid] });
           }

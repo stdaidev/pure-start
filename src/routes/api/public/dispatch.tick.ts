@@ -1,37 +1,27 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { createHash, timingSafeEqual } from "node:crypto";
+import { authorizeInternalTick } from "@/lib/internal-tick-auth";
 
 /**
  * F6 T8 - Tick do worker de disparo.
- * Chamado por pg_cron via pg_net com header `apikey` = SUPABASE anon key.
+ * Chamado por pg_cron via pg_net com credencial server-only.
  * Bypass de auth do prefixo /api/public/* + validacao propria.
  */
-
-function bufEq(a: string, b: string): boolean {
-  const ha = createHash("sha256").update(a).digest();
-  const hb = createHash("sha256").update(b).digest();
-  return timingSafeEqual(ha, hb);
-}
 
 export const Route = createFileRoute("/api/public/dispatch/tick")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const expected =
-          process.env.SUPABASE_PUBLISHABLE_KEY ??
-          process.env.SUPABASE_ANON_KEY ??
-          "";
-        const provided = request.headers.get("apikey") ?? "";
-        if (!expected || !provided || !bufEq(expected, provided)) {
+        const authorization = authorizeInternalTick(request);
+        if (authorization === "misconfigured") {
+          console.error("[dispatch.tick] internal token not configured");
+          return new Response("Service unavailable", { status: 503 });
+        }
+        if (authorization !== "authorized") {
           return new Response("Unauthorized", { status: 401 });
         }
 
-        const { supabaseAdmin } = await import(
-          "@/integrations/supabase/client.server"
-        );
-        const { runDispatchTick } = await import(
-          "@/lib/dispatch-worker.server"
-        );
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const { runDispatchTick } = await import("@/lib/dispatch-worker.server");
 
         try {
           const result = await runDispatchTick(supabaseAdmin);

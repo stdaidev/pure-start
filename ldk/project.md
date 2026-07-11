@@ -1,82 +1,77 @@
-# Project - Substituto do n8n (Atendimento + Disparo WhatsApp)
+# LDK Project - Pure Start
+
+LDK Version: 0.2.0
+LDK Schema: 2
+Discovery revision: 1
+Autonomy mode: balanced
 
 ## Produto
-- Nome: (a definir - workspace default)
-- Objetivo: substituir fluxos n8n em duas frentes: (1) agente de IA humanizado no WhatsApp e (2) disparo de campanhas a partir de planilha.
-- Usuario principal: operador unico na v1 (sem login), com backend preparado para multiusuario depois.
-- Resultado esperado: configurar agente e campanhas por formularios declarativos, sem codigo, com anti-ban e humanizacao.
+
+- Nome: Pure Start (nome comercial ainda pode mudar).
+- Objetivo: substituir automacoes fragmentadas de atendimento por IA e campanhas no WhatsApp.
+- Usuario principal: operador unico do workspace na etapa atual.
+- Resultado: configurar agentes, conexoes e campanhas sem codigo, com controle humano e rastreabilidade.
+
+## Baseline atual
+
+- Conexoes Evolution, QR/status e webhook.
+- Agentes configuraveis, inbox, handoff e blocklist.
+- Contatos, planilhas, campanhas, cooldown, limites e kill-switch.
+- Dashboard, configuracoes de provedores, CRM leve e KPIs.
+- Historico anterior: `ldk/history/v0.1/`; audit: `ldk/audit/log.md`; releases: `ldk/releases/`.
 
 ## Plataforma
-- Frontend: React + TypeScript + Tailwind + shadcn/ui (sidebar fixa, tema claro/escuro, PT-BR).
-- Backend: Supabase (Postgres + Edge Functions Deno/TS + pg_cron + Storage + Secrets). [VERIFY] habilitar Lovable Cloud.
-- Provedor WhatsApp inicial: Evolution API 2.3.7 (nao oficial), atras de contrato ChannelProvider.
-- LLM inicial: OpenAI via LLMProvider. Transcricao: Whisper. TTS: ElevenLabs (eleven_multilingual_v2).
-- Sem login v1. Coluna workspace_id em todas as tabelas com default fixo.
 
-## Design system (F0)
-- Estetica: terminal/HUD premium, dark-first (app abre no dark), monocromatico + acento laranja neon.
-- Base: shadcn/ui new-york + lucide + tokens OKLCH em src/styles.css.
-- Tipografia (Google Fonts via <link> no __root.tsx):
-  - Space Grotesk: titulos e numeros grandes (escala fluida com clamp()).
-  - JetBrains Mono: labels, metricas, IDs, timestamps, codigos.
-  - Inter: corpo e UI.
-- Paleta principal (dark) e .light opcional: ver bloco :root/.light acordado no intake. --primary laranja neon oklch(0.72 0.19 48), background quase-preto oklch(0.15 0 0), border = laranja translucido.
-- Tratamentos permitidos (curados, estaticos/sutis):
-  - Glass cards (backdrop-filter blur(10px), borda laranja translucida, rounded-2xl, hover com leve glow externo + 2px de elevacao).
-  - Cantos em L (UI brackets) como pseudo-elementos, 100% estaticos.
-  - Grid de fundo sutil (linhas laranja 4-6% opacidade, 60x60px, estatico).
-  - Glow discreto e fixo em botoes/icones primarios (sem pulsar).
-  - Ruido opcional (SVG turbulence ~3%, mix-blend-mode overlay).
-  - Fade-up de secao uma unica vez ao carregar (opcional, sem loops).
-- Selection em laranja translucido.
-- PROIBIDO: flicker, shimmer varrendo texto, blink, scanline, marquee, orbit, qualquer animacao sobre letras. Unica excecao permitida: pulse lento apenas no dot de status "online".
+- Lovable project: conectado a este repositorio.
+- GitHub repo: `https://github.com/stdaidev/pure-start`.
+- Stack: TanStack Start, React, TypeScript, Tailwind e shadcn/ui.
+- Backend: Supabase/Postgres, server functions, rotas publicas controladas e jobs agendados.
+- Dados/estado: workspace unico com contatos, conversas, mensagens, agentes, campanhas e configuracoes.
+- Identidade e acesso: sem login na etapa atual; nao aprovado para exposicao publica irrestrita.
+- Operacoes de alto impacto: disparo de mensagens, delecao, alteracao de secrets, handoff e automacao por IA.
+- Integracoes: Evolution API, OpenAI e Supabase.
 
-## Fonte da verdade
-- Contexto: ldk/project.md
-- Ledger: ldk/ledger.md
-- Roadmap: ldk/roadmap.md
-- Features: ldk/features/
-- Provas: ldk/features/*/proof.md
+## Direcao visual persistente
 
-## Riscos
-- Dados pessoais: telefones e conteudo de conversas (LGPD). Alto.
-- Pagamentos: fora de escopo v1.
-- Permissoes/admin: sem login v1; RLS ligado com policies do workspace default.
-- Integracoes externas: Evolution (API nao oficial - risco de ban), OpenAI, ElevenLabs. Alto.
-- Supabase/RLS: obrigatorio em todas as tabelas.
-- Compliance: anti-ban (warm-up, janela horaria, intervalo aleatorio, opt-out, kill-switch).
+- HUD premium dark-first, tokens OKLCH, acento laranja, glass cards, grid sutil e tipografia funcional.
+- Sem flicker, marquee, scanline, animacao sobre letras ou movimento decorativo continuo.
+- Mudancas visuais devem preservar acessibilidade, responsividade e legibilidade operacional.
 
-## MVP (criterios de aceite v1 do spec)
-1. Parear instancia Evolution via QR com status ao vivo.
-2. Criar agente com prompt em blocos + tools declarativas + humanizacao.
-3. /resetar, tool transferir humano, assumir/devolver pela inbox.
-4. Upload planilha, headers->placeholders, template com preview real.
-5. Campanha com anti-ban (intervalo, teto, janela, warm-up, distribuicao) + monitor ao vivo.
-6. Nenhuma chave no navegador; worker por pg_cron.
-7. Novo provider/tool = so implementar contrato.
+## Preocupacoes aplicaveis
 
-## Fora de escopo v1
-- Login/auth real (estrutura preparada).
-- Pagamentos.
-- API oficial WhatsApp Business.
-- Multi-workspace real.
+| Concern | Why it matters | Decision | Proof/validation |
+|---------|----------------|----------|------------------|
+| Auth/RLS | Policies anon alcancam dados do workspace default | Uso interno ate hardening; gate de release publico | Teste de papeis e revisao de grants/policies |
+| PII/LGPD | Telefones, mensagens, notas e campanhas | Logs minimizados; retencao/exclusao ainda a definir | Checklist e testes de exclusao/exportacao |
+| Concorrencia | Ticks e webhooks podem disputar o mesmo estado | Lock com ownership, claims atomicos e revalidacao | Testes concorrentes P3/P4 |
+| Reputacao/abuso | Disparos afetam numero e destinatarios | Limites, cooldown, opt-out, kill-switch e stop-on-reply | Stress test controlado e prova manual |
+| Provedores | Falhas e rate limits externos sao esperados | Timeout, retry limitado, backoff e erro classificado | Mocks de 429/5xx/timeout |
+| Segredos | Credenciais habilitam operacoes reais | Server-only; nao logar; evoluir armazenamento antes de escala | Grep de bundle/log e revisao de grants |
+| Observabilidade | Jobs assincronos precisam diagnostico | Eventos estruturados e sanitizados | Query de logs sem PII/content |
+| Release | Baseline antiga nao tem CI uniforme | Novas entregas seguem proof atual e observavel | Checker + build/lint/test/CI |
+| Lint herdado | Baseline corrigida em 2026-07-10; restam apenas warnings Fast Refresh dos componentes shadcn | Lint e typecheck viraram gates de CI | `npm run lint` e `npx tsc --noEmit` |
 
-## Regras
-- Nenhum segredo no bundle/frontend/log. Toda chamada externa em Edge Function.
-- Webhook publico protegido por WEBHOOK_VERIFY_TOKEN.
-- Contratos modulares em supabase/functions/_shared/providers/.
-- Registry de tools plugavel.
-- Idempotencia por message.id, retry com backoff.
-- Todas as tabelas: id uuid, workspace_id, created_at, updated_at, RLS.
+## Decisoes persistentes
+
+| Decisao | Escolha | Fonte |
+|---------|---------|-------|
+| Canal atual | Evolution API atras de ChannelProvider | Codigo e intake original |
+| LLM atual | OpenAI atras de LLMProvider | Codigo e audit log |
+| Modelo default | `gpt-4.1-mini` | Audit log de F3 |
+| Escopo de acesso | Operacao interna de workspace unico | Discovery revision 1 |
+| Auditoria LDK | on; `ldk/audit/log.md` | Configuracao anterior preservada |
+| Estado anterior | Snapshot somente leitura em `ldk/history/v0.1/` | Migracao schema 2 |
 
 ## Auditoria LDK
+
 - Audit log: on
-- Audit log file: ldk/audit/log.md
+- Audit log file: `ldk/audit/log.md`
 
 ## Pendencias [VERIFY]
-- [VERIFY] Habilitar Lovable Cloud (Supabase).
-- [VERIFY] Secrets: EVOLUTION_BASE_URL, EVOLUTION_API_KEY, OPENAI_API_KEY, ELEVENLABS_API_KEY, WEBHOOK_VERIFY_TOKEN.
-- [VERIFY] URL publica estavel para webhook Evolution.
-- [VERIFY] Numero WhatsApp de teste.
-- [VERIFY] voice_id ElevenLabs default.
-- [VERIFY] Modelo OpenAI default.
+
+- [ ] Auth e policies por usuario antes de release publico.
+- [ ] Retencao/exclusao/exportacao de PII.
+- [ ] Aplicar/configurar `INTERNAL_TICK_TOKEN` nos jobs do ambiente publicado.
+- [ ] Executar prova concorrente contra Supabase de staging para P3/P4.
+- [x] Test runner, lint, typecheck, build e CI declarados como gates.
+- [x] Lint herdado corrigido; warnings de Fast Refresh do shadcn permanecem nao bloqueantes.

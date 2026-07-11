@@ -1,3 +1,21 @@
+## 2026-07-10 - schema migration - LDK 0.2.0
+- Command: repository migration requested by the project owner
+- User intent: corrigir integralmente o estado LDK e deixar o projeto pronto para os Knowledges/skills novos
+- State before: LDK 0.1 sem discovery/schema/revision; 13 done, 3 partial, 5 planned; historico misturado ao backlog ativo
+- Actions: snapshot anterior movido para `ldk/history/v0.1/`; discovery revision 1 reconstruido do intake/audit/codigo; project, ledger e roadmap recriados no schema 2; backlog ativo recebeu IDs canonicos
+- Files changed: somente artefatos LDK e infraestrutura de validacao; nenhum codigo de produto nesta etapa
+- Evidence: audit original, commit de cutoff `67fdfae`, estado do repositorio e checker LDK 0.2.0
+- Decision: migracao estrutural; historico nao foi promovido nem usado para inventar novo DONE
+- Known limitations: auth/RLS, credencial dos ticks, retencao LGPD e CI seguem como gates registrados
+- Next: revisar/aprovar o plano F1 e executar conforme modo balanced com reducao guided por risco alto
+
+## 2026-07-10 - migration verification - schema 2
+- Command: LDK check Bash/PowerShell, `npm run build`, `npm run lint`
+- State before: estado ativo recem-migrado; baseline de codigo nao alterada
+- Evidence: checker Bash 0 errors/0 warnings; checker PowerShell 0 errors/0 warnings; production build pass; lint fail com 1.526 apontamentos herdados, majoritariamente Prettier
+- Decision: migracao LDK aprovada; lint nao e declarado como prova nem corrigido junto para evitar diff massivo sem relacao com o schema
+- Known limitations: sem test script; ambiente local Node 20 abaixo do requisito atual de alguns pacotes, embora build tenha passado; CI usa Bun
+- Next: CI da branch e saneamento separado do lint antes de qualquer proof P3/P4
 
 ## 2026-07-08 - ldk-build corretivo - F8
 - Command: ldk-build
@@ -507,3 +525,24 @@ Registro compacto iniciado quando Audit log: on foi habilitado.
 - Decision: DONE (P2) com [VERIFY] em AC5 e AC6
 - Known limitations: secret em texto plano no DB (RLS + sem grant anon); cache 30s no getSecret; envio real apos troca de chave nao testado nesta sessao; botao "Disparar agora" some em prod nao validado em build final
 - Next: /ldk-release ou /ldk-next
+## 2026-07-10 - revisao-geral - runtime e operacao
+- Command: revisao direta antes da atualizacao do LDK no Lovable
+- User intent: revisar e corrigir o Pure Start, usando o audit log como contexto das decisoes anteriores
+- State before: schema 2 migrado; F1/F2/F6 planned; build verde, lint herdado vermelho e sem testes automatizados
+- Actions: ownership por token e revalidacao do agente; auth server-only dos ticks; resiliencia OpenAI/tools; hardening de webhook/logs; liberacao de reservas nos caminhos de skip/erro; workspace scope; rollback de campanha parcial; metadados; Node 22, testes, lint/typecheck/build no CI; runbook e security review
+- Files changed: runtime/provider/routes/migration/testes/workflow/docs e estado LDK correspondente
+- Evidence: typecheck pass; lint zero erros; testes unitarios pass; build pass; CI e prova Supabase aguardando commit/publicacao
+- Decision: F1 PARTIAL/P4, F2 PARTIAL/P2, F6 PARTIAL/P4; nenhuma declaracao de DONE antes de staging/CI
+- Known limitations: painel sem auth; secrets em texto plano; cotas por campanha ainda nao atomicas entre ticks; migration nao aplicada nesta sessao; LGPD pendente
+- Next: publicar commit, observar CI, aplicar migration e atualizar tokens/jobs em ambiente controlado antes de trafego real
+
+## 2026-07-10 - hardening - cota atomica de campanha
+- Command: execucao direta dos itens 1-7 solicitados pelo owner
+- User intent: fechar concorrencia, merge, migrations, ambiente, jobs, publicacao e smoke controlado
+- State before: reserva por conexao atomica; contadores de campanha ainda sujeitos a corrida entre ticks
+- Actions: criada reserva/compensacao transacional por campanha; worker passou a reservar antes do efeito e compensar todos os caminhos sem envio confirmado; protecao temporaria via login Lovable aceita pelo owner
+- Files changed: migration de quota, worker, tipos, security review e estado/evidencia F6
+- Evidence: typecheck pass; lint zero erros; 19 testes pass; prova concorrente remota ainda pendente
+- Decision: F6 BUILDING/P4 ate migration, stress sem provider e CI
+- Known limitations: auth interna do app, secrets em texto plano e LGPD permanecem fora desta execucao
+- Next: publicar no PR, aguardar CI, mergear e aplicar/configurar o ambiente

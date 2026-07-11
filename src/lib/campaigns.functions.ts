@@ -51,7 +51,7 @@ function findPhoneKey(data: Record<string, unknown>): string | null {
 }
 
 export const listCampaigns = createServerFn({ method: "POST" })
-  .inputValidator((raw: unknown) =>
+  .validator((raw: unknown) =>
     z
       .object({
         limit: z.number().int().min(1).max(200).default(50),
@@ -60,10 +60,12 @@ export const listCampaigns = createServerFn({ method: "POST" })
       .parse(raw ?? {}),
   )
   .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import(
-      "@/integrations/supabase/client.server"
-    );
-    const { data: rows, error, count } = await supabaseAdmin
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const {
+      data: rows,
+      error,
+      count,
+    } = await supabaseAdmin
       .from("campaigns")
       .select(
         "id, name, status, connection_id, spreadsheet_id, template_id, created_at, started_at, finished_at, sent_today, daily_cap",
@@ -86,9 +88,7 @@ export const listCampaigns = createServerFn({ method: "POST" })
         .in("campaign_id", ids);
       if (rErr) throw new Error("Falha ao consultar destinatarios");
       for (const r of recs ?? []) {
-        const p =
-          progress.get(r.campaign_id) ??
-          { total: 0, sent: 0, failed: 0, pending: 0 };
+        const p = progress.get(r.campaign_id) ?? { total: 0, sent: 0, failed: 0, pending: 0 };
         p.total++;
         if (r.status === "sent") p.sent++;
         else if (r.status === "failed") p.failed++;
@@ -100,21 +100,16 @@ export const listCampaigns = createServerFn({ method: "POST" })
     return {
       campaigns: (rows ?? []).map((r) => ({
         ...r,
-        progress:
-          progress.get(r.id) ?? { total: 0, sent: 0, failed: 0, pending: 0 },
+        progress: progress.get(r.id) ?? { total: 0, sent: 0, failed: 0, pending: 0 },
       })),
       total: count ?? 0,
     };
   });
 
 export const getCampaign = createServerFn({ method: "POST" })
-  .inputValidator((raw: unknown) =>
-    z.object({ id: z.string().uuid() }).parse(raw),
-  )
+  .validator((raw: unknown) => z.object({ id: z.string().uuid() }).parse(raw))
   .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import(
-      "@/integrations/supabase/client.server"
-    );
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: row, error } = await supabaseAdmin
       .from("campaigns")
       .select("*")
@@ -129,7 +124,15 @@ export const getCampaign = createServerFn({ method: "POST" })
       .select("status")
       .eq("campaign_id", data.id);
     if (cErr) throw new Error("Falha ao consultar destinatarios");
-    const progress = { total: 0, sent: 0, failed: 0, pending: 0, skipped_optout: 0, stopped_reply: 0, stopped_recent_reply: 0 };
+    const progress = {
+      total: 0,
+      sent: 0,
+      failed: 0,
+      pending: 0,
+      skipped_optout: 0,
+      stopped_reply: 0,
+      stopped_recent_reply: 0,
+    };
     for (const r of counts ?? []) {
       progress.total++;
       if (r.status === "sent") progress.sent++;
@@ -143,7 +146,7 @@ export const getCampaign = createServerFn({ method: "POST" })
   });
 
 export const createCampaign = createServerFn({ method: "POST" })
-  .inputValidator((raw: unknown) =>
+  .validator((raw: unknown) =>
     z
       .object({
         name: z.string().min(1).max(200),
@@ -175,20 +178,15 @@ export const createCampaign = createServerFn({ method: "POST" })
       })
       .refine(
         (v) =>
-          v.dispatch_mode === "single"
-            ? !!v.connection_id
-            : (v.connection_ids?.length ?? 0) >= 2,
+          v.dispatch_mode === "single" ? !!v.connection_id : (v.connection_ids?.length ?? 0) >= 2,
         {
-          message:
-            "single requer connection_id; multi requer connection_ids com >=2",
+          message: "single requer connection_id; multi requer connection_ids com >=2",
         },
       )
       .parse(raw),
   )
   .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import(
-      "@/integrations/supabase/client.server"
-    );
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     // Carrega cooldown padrao do workspace.
     const { data: ws } = await supabaseAdmin
@@ -197,16 +195,13 @@ export const createCampaign = createServerFn({ method: "POST" })
       .eq("id", DEFAULT_WORKSPACE)
       .maybeSingle();
     const defaultHours =
-      (ws as { cooldown_default_hours?: number } | null)
-        ?.cooldown_default_hours ?? 24;
+      (ws as { cooldown_default_hours?: number } | null)?.cooldown_default_hours ?? 24;
     const requestedHours = data.cooldown_value
       ? data.cooldown_unit === "days"
         ? data.cooldown_value * 24
         : data.cooldown_value
       : defaultHours;
-    const effectiveHours = data.cooldown_enabled
-      ? Math.max(defaultHours, requestedHours)
-      : 0;
+    const effectiveHours = data.cooldown_enabled ? Math.max(defaultHours, requestedHours) : 0;
 
     // Le linhas da planilha.
     const { data: rows, error: rErr } = await supabaseAdmin
@@ -230,9 +225,7 @@ export const createCampaign = createServerFn({ method: "POST" })
     const optOut = new Set<string>();
     if (phones.size) {
       // Busca por ambas as formas para tolerar contatos legados salvos sem DDI.
-      const lookup = Array.from(
-        new Set(Array.from(phones).flatMap(phoneVariants)),
-      );
+      const lookup = Array.from(new Set(Array.from(phones).flatMap(phoneVariants)));
       const { data: contacts, error: cErr } = await supabaseAdmin
         .from("contacts")
         .select("phone, opt_out")
@@ -250,12 +243,8 @@ export const createCampaign = createServerFn({ method: "POST" })
     // Cooldown: telefones que ja responderam dentro da janela efetiva.
     const inCooldown = new Set<string>();
     if (effectiveHours > 0 && phones.size) {
-      const since = new Date(
-        Date.now() - effectiveHours * 3600_000,
-      ).toISOString();
-      const lookup = Array.from(
-        new Set(Array.from(phones).flatMap(phoneVariants)),
-      );
+      const since = new Date(Date.now() - effectiveHours * 3600_000).toISOString();
+      const lookup = Array.from(new Set(Array.from(phones).flatMap(phoneVariants)));
       // conversations -> contacts -> phone; cruza com os telefones da planilha.
       const { data: contactsForPhones } = await supabaseAdmin
         .from("contacts")
@@ -263,8 +252,7 @@ export const createCampaign = createServerFn({ method: "POST" })
         .eq("workspace_id", DEFAULT_WORKSPACE)
         .in("phone", lookup);
       const phoneByContact = new Map<string, string>();
-      for (const c of contactsForPhones ?? [])
-        phoneByContact.set(c.id, toMsisdn(c.phone));
+      for (const c of contactsForPhones ?? []) phoneByContact.set(c.id, toMsisdn(c.phone));
       const contactIds = Array.from(phoneByContact.keys());
       let convIds: string[] = [];
       const phoneByConv = new Map<string, string>();
@@ -296,15 +284,20 @@ export const createCampaign = createServerFn({ method: "POST" })
       }
     }
 
-    // Se multi, valida que todas as conexoes existem no workspace.
-    if (data.dispatch_mode === "multi" && data.connection_ids) {
+    // Valida as conexoes no workspace antes de criar qualquer estado parcial.
+    const requestedConnectionIds =
+      data.dispatch_mode === "single" ? [data.connection_id!] : (data.connection_ids ?? []);
+    if (requestedConnectionIds.length) {
       const { data: conns } = await supabaseAdmin
         .from("connections")
-        .select("id")
+        .select("id, status")
         .eq("workspace_id", DEFAULT_WORKSPACE)
-        .in("id", data.connection_ids);
-      if ((conns?.length ?? 0) !== data.connection_ids.length) {
+        .in("id", requestedConnectionIds);
+      if ((conns?.length ?? 0) !== requestedConnectionIds.length) {
         throw new Error("Uma ou mais conexoes invalidas para este workspace");
+      }
+      if ((conns ?? []).some((connection) => connection.status !== "connected")) {
+        throw new Error("Todas as conexoes da campanha devem estar conectadas");
       }
     }
 
@@ -313,8 +306,7 @@ export const createCampaign = createServerFn({ method: "POST" })
       workspace_id: DEFAULT_WORKSPACE,
       name: data.name,
       // Em modo multi, connection_id fica null; conexoes vao em campaign_connections.
-      connection_id:
-        data.dispatch_mode === "single" ? (data.connection_id ?? null) : null,
+      connection_id: data.dispatch_mode === "single" ? (data.connection_id ?? null) : null,
       dispatch_mode: data.dispatch_mode,
       spreadsheet_id: data.spreadsheet_id,
       template_id: data.template_id ?? null,
@@ -340,6 +332,15 @@ export const createCampaign = createServerFn({ method: "POST" })
       .single();
     if (cErr || !created) throw new Error("Falha ao criar campanha");
 
+    const rollbackCampaign = async () => {
+      const { error } = await supabaseAdmin
+        .from("campaigns")
+        .delete()
+        .eq("workspace_id", DEFAULT_WORKSPACE)
+        .eq("id", created.id);
+      if (error) console.error("[campaigns] partial campaign cleanup failed", error.code);
+    };
+
     // Registra conexoes vinculadas se modo multi.
     if (data.dispatch_mode === "multi" && data.connection_ids?.length) {
       const links = data.connection_ids.map((connection_id, position) => ({
@@ -348,10 +349,11 @@ export const createCampaign = createServerFn({ method: "POST" })
         connection_id,
         position,
       }));
-      const { error: linkErr } = await supabaseAdmin
-        .from("campaign_connections")
-        .insert(links);
-      if (linkErr) throw new Error("Falha ao vincular conexoes");
+      const { error: linkErr } = await supabaseAdmin.from("campaign_connections").insert(links);
+      if (linkErr) {
+        await rollbackCampaign();
+        throw new Error("Falha ao vincular conexoes");
+      }
     }
 
     // Renderiza recipients.
@@ -388,37 +390,38 @@ export const createCampaign = createServerFn({ method: "POST" })
         contact_name: contactName,
         variables: { rendered_text: text } as Json,
         status: statusValue,
-        next_send_at: isOptOut || isCooldown
-          ? null
-          : new Date(t0 + idx * avgMs).toISOString(),
+        next_send_at: isOptOut || isCooldown ? null : new Date(t0 + idx * avgMs).toISOString(),
       });
       if (!isOptOut && !isCooldown) idx++;
+    }
+
+    if (recipients.length === 0) {
+      await rollbackCampaign();
+      throw new Error("Nenhum destinatario valido encontrado na planilha");
     }
 
     let inserted = 0;
     const batch = 500;
     for (let i = 0; i < recipients.length; i += batch) {
       const slice = recipients.slice(i, i + batch);
-      const { error: iErr } = await supabaseAdmin
-        .from("campaign_recipients")
-        .insert(slice);
-      if (iErr) throw new Error("Falha ao inserir destinatarios");
+      const { error: iErr } = await supabaseAdmin.from("campaign_recipients").insert(slice);
+      if (iErr) {
+        await rollbackCampaign();
+        throw new Error("Falha ao inserir destinatarios");
+      }
       inserted += slice.length;
     }
 
     return {
       id: created.id,
       recipients_created: inserted,
-      opt_outs_skipped: recipients.filter((r) => r.status === "skipped_optout")
-        .length,
-      cooldown_skipped: recipients.filter(
-        (r) => r.status === "stopped_recent_reply",
-      ).length,
+      opt_outs_skipped: recipients.filter((r) => r.status === "skipped_optout").length,
+      cooldown_skipped: recipients.filter((r) => r.status === "stopped_recent_reply").length,
     };
   });
 
 export const updateCampaignStatus = createServerFn({ method: "POST" })
-  .inputValidator((raw: unknown) =>
+  .validator((raw: unknown) =>
     z
       .object({
         id: z.string().uuid(),
@@ -427,9 +430,7 @@ export const updateCampaignStatus = createServerFn({ method: "POST" })
       .parse(raw),
   )
   .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import(
-      "@/integrations/supabase/client.server"
-    );
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const patch: TablesUpdate<"campaigns"> = { status: data.status };
     if (data.status === "running") patch.started_at = new Date().toISOString();
     if (data.status === "finished" || data.status === "canceled") {
@@ -445,7 +446,7 @@ export const updateCampaignStatus = createServerFn({ method: "POST" })
   });
 
 export const listRecipients = createServerFn({ method: "POST" })
-  .inputValidator((raw: unknown) =>
+  .validator((raw: unknown) =>
     z
       .object({
         campaign_id: z.string().uuid(),
@@ -466,9 +467,7 @@ export const listRecipients = createServerFn({ method: "POST" })
       .parse(raw),
   )
   .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import(
-      "@/integrations/supabase/client.server"
-    );
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     let q = supabaseAdmin
       .from("campaign_recipients")
       .select(
@@ -485,29 +484,21 @@ export const listRecipients = createServerFn({ method: "POST" })
     return { recipients: rows ?? [], total: count ?? 0 };
   });
 
-export const listSpreadsheets = createServerFn({ method: "GET" }).handler(
-  async () => {
-    const { supabaseAdmin } = await import(
-      "@/integrations/supabase/client.server"
-    );
-    const { data, error } = await supabaseAdmin
-      .from("spreadsheets")
-      .select("id, name, headers, row_count, updated_at")
-      .eq("workspace_id", DEFAULT_WORKSPACE)
-      .order("updated_at", { ascending: false });
-    if (error) throw new Error("Falha ao listar planilhas");
-    return { spreadsheets: data ?? [] };
-  },
-);
+export const listSpreadsheets = createServerFn({ method: "GET" }).handler(async () => {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data, error } = await supabaseAdmin
+    .from("spreadsheets")
+    .select("id, name, headers, row_count, updated_at")
+    .eq("workspace_id", DEFAULT_WORKSPACE)
+    .order("updated_at", { ascending: false });
+  if (error) throw new Error("Falha ao listar planilhas");
+  return { spreadsheets: data ?? [] };
+});
 
 export const getSpreadsheetPreview = createServerFn({ method: "POST" })
-  .inputValidator((raw: unknown) =>
-    z.object({ spreadsheet_id: z.string().uuid() }).parse(raw),
-  )
+  .validator((raw: unknown) => z.object({ spreadsheet_id: z.string().uuid() }).parse(raw))
   .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import(
-      "@/integrations/supabase/client.server"
-    );
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: sheet, error: sErr } = await supabaseAdmin
       .from("spreadsheets")
       .select("id, name, headers, row_count")
@@ -529,13 +520,9 @@ export const getSpreadsheetPreview = createServerFn({ method: "POST" })
   });
 
 export const deleteCampaign = createServerFn({ method: "POST" })
-  .inputValidator((raw: unknown) =>
-    z.object({ id: z.string().uuid() }).parse(raw),
-  )
+  .validator((raw: unknown) => z.object({ id: z.string().uuid() }).parse(raw))
   .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import(
-      "@/integrations/supabase/client.server"
-    );
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error: rErr } = await supabaseAdmin
       .from("campaign_recipients")
       .delete()
@@ -552,13 +539,9 @@ export const deleteCampaign = createServerFn({ method: "POST" })
   });
 
 export const getCampaignConnections = createServerFn({ method: "POST" })
-  .inputValidator((raw: unknown) =>
-    z.object({ campaign_id: z.string().uuid() }).parse(raw),
-  )
+  .validator((raw: unknown) => z.object({ campaign_id: z.string().uuid() }).parse(raw))
   .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import(
-      "@/integrations/supabase/client.server"
-    );
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: rows, error } = await supabaseAdmin
       .from("campaign_connections")
       .select("connection_id, position, connections(id, name, status, instance_name)")

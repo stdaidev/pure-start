@@ -25,6 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import type { Json } from "@/integrations/supabase/types";
 import { getAgent, saveAgent } from "@/lib/agents.functions";
 
 const MODELS = ["gpt-4.1-mini", "gpt-4.1", "gpt-4o-mini", "gpt-4o"];
@@ -67,6 +68,21 @@ const empty: FormState = {
   debounce_seconds: null,
 };
 
+function parseTools(value: Json): string[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string")
+    : [];
+}
+
+function parseHumanization(value: Json): FormState["humanization"] {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return empty.humanization;
+  return {
+    chunk: typeof value.chunk === "boolean" ? value.chunk : empty.humanization.chunk,
+    min_ms: typeof value.min_ms === "number" ? value.min_ms : empty.humanization.min_ms,
+    max_ms: typeof value.max_ms === "number" ? value.max_ms : empty.humanization.max_ms,
+  };
+}
+
 export function AgentDialog({ open, onOpenChange, agentId }: Props) {
   const qc = useQueryClient();
   const getFn = useServerFn(getAgent);
@@ -85,19 +101,15 @@ export function AgentDialog({ open, onOpenChange, agentId }: Props) {
       return;
     }
     if (agentId && loadQuery.data) {
-      const a = loadQuery.data as any;
+      const a = loadQuery.data;
       setForm({
         name: a.name ?? "",
         description: a.description ?? "",
         model: a.model ?? "gpt-4.1-mini",
         temperature: Number(a.temperature ?? 0.7),
         system_prompt: a.system_prompt ?? "",
-        tools: Array.isArray(a.tools) ? a.tools : [],
-        humanization: {
-          chunk: a.humanization?.chunk ?? true,
-          min_ms: a.humanization?.min_ms ?? 800,
-          max_ms: a.humanization?.max_ms ?? 3500,
-        },
+        tools: parseTools(a.tools),
+        humanization: parseHumanization(a.humanization),
         active: a.active ?? true,
         max_tokens: a.max_tokens ?? null,
         max_tool_rounds: a.max_tool_rounds ?? null,
@@ -175,10 +187,7 @@ export function AgentDialog({ open, onOpenChange, agentId }: Props) {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="a-model">Modelo</Label>
-              <Select
-                value={form.model}
-                onValueChange={(v) => setForm({ ...form, model: v })}
-              >
+              <Select value={form.model} onValueChange={(v) => setForm({ ...form, model: v })}>
                 <SelectTrigger id="a-model">
                   <SelectValue />
                 </SelectTrigger>
@@ -232,10 +241,7 @@ export function AgentDialog({ open, onOpenChange, agentId }: Props) {
             <Label>Tools disponiveis</Label>
             <div className="flex flex-col gap-2">
               {TOOLS.map((t) => (
-                <label
-                  key={t.name}
-                  className="flex items-center gap-2 text-sm"
-                >
+                <label key={t.name} className="flex items-center gap-2 text-sm">
                   <Checkbox
                     checked={form.tools.includes(t.name)}
                     onCheckedChange={(v) => toggleTool(t.name, !!v)}
@@ -313,9 +319,7 @@ export function AgentDialog({ open, onOpenChange, agentId }: Props) {
                 <Switch
                   id="a-max-tokens-on"
                   checked={form.max_tokens != null}
-                  onCheckedChange={(v) =>
-                    setForm({ ...form, max_tokens: v ? 800 : null })
-                  }
+                  onCheckedChange={(v) => setForm({ ...form, max_tokens: v ? 800 : null })}
                 />
               </div>
               {form.max_tokens != null ? (
@@ -338,16 +342,12 @@ export function AgentDialog({ open, onOpenChange, agentId }: Props) {
               <div className="flex items-center justify-between">
                 <Label htmlFor="a-max-rounds">
                   Max iteracoes de tools
-                  {form.max_tool_rounds != null
-                    ? `: ${form.max_tool_rounds}`
-                    : ""}
+                  {form.max_tool_rounds != null ? `: ${form.max_tool_rounds}` : ""}
                 </Label>
                 <Switch
                   id="a-max-rounds-on"
                   checked={form.max_tool_rounds != null}
-                  onCheckedChange={(v) =>
-                    setForm({ ...form, max_tool_rounds: v ? 2 : null })
-                  }
+                  onCheckedChange={(v) => setForm({ ...form, max_tool_rounds: v ? 2 : null })}
                 />
               </div>
               {form.max_tool_rounds != null ? (
@@ -357,9 +357,7 @@ export function AgentDialog({ open, onOpenChange, agentId }: Props) {
                   max={20}
                   step={1}
                   value={[form.max_tool_rounds]}
-                  onValueChange={([v]) =>
-                    setForm({ ...form, max_tool_rounds: v })
-                  }
+                  onValueChange={([v]) => setForm({ ...form, max_tool_rounds: v })}
                 />
               ) : (
                 <p className="mt-1 text-xs text-muted-foreground">
@@ -398,8 +396,8 @@ export function AgentDialog({ open, onOpenChange, agentId }: Props) {
               placeholder="0 = usar padrao"
             />
             <p className="text-xs text-muted-foreground">
-              Janela para agrupar rajadas de mensagens antes de responder.
-              Vazio ou 0 = usa o padrao do sistema (4s). Maximo 10s.
+              Janela para agrupar rajadas de mensagens antes de responder. Vazio ou 0 = usa o padrao
+              do sistema (4s). Maximo 10s.
             </p>
           </div>
 

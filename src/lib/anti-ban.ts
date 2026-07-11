@@ -22,14 +22,8 @@ export function minutesInSaoPaulo(now: Date): number {
     hour12: false,
   });
   const parts = fmt.formatToParts(now);
-  const h = Number.parseInt(
-    parts.find((p) => p.type === "hour")?.value ?? "0",
-    10,
-  );
-  const m = Number.parseInt(
-    parts.find((p) => p.type === "minute")?.value ?? "0",
-    10,
-  );
+  const h = Number.parseInt(parts.find((p) => p.type === "hour")?.value ?? "0", 10);
+  const m = Number.parseInt(parts.find((p) => p.type === "minute")?.value ?? "0", 10);
   return h * 60 + m;
 }
 
@@ -64,7 +58,8 @@ export function nextDelayMs(
   const lo = Math.max(0, Math.min(minMs, maxMs));
   const hi = Math.max(minMs, maxMs);
   if (hi <= lo) return lo;
-  return Math.floor(lo + rand() * (hi - lo + 1));
+  const unit = Math.max(0, Math.min(1 - Number.EPSILON, rand()));
+  return Math.floor(lo + unit * (hi - lo + 1));
 }
 
 /**
@@ -101,10 +96,7 @@ export function dailyCapRemaining(params: {
   now: Date;
 }): number {
   const todayKey = dateKeySaoPaulo(params.now);
-  const used =
-    params.sentTodayDate && params.sentTodayDate === todayKey
-      ? params.sentToday
-      : 0;
+  const used = params.sentTodayDate && params.sentTodayDate === todayKey ? params.sentToday : 0;
   const cap = effectiveCap({
     dailyCap: params.dailyCap,
     warmupPerDay: params.warmupPerDay,

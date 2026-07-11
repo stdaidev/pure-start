@@ -9,14 +9,15 @@
  * - Tools executadas apenas via registry (sem eval/shell).
  */
 
-import type {
-  LlmMessage,
-  LlmProvider,
-  LlmToolSpec,
-} from "@/providers/llm/types";
+import type { LlmMessage, LlmProvider, LlmToolSpec } from "@/providers/llm/types";
+import {
+  evaluateAgentRunState,
+  type AgentRunExpectedState,
+  type AgentRunStopStatus,
+} from "@/lib/agent-run-guard";
+import { phoneVariantsBR } from "@/lib/phone";
 
 const HISTORY_LIMIT = 20;
-const DEFAULT_MAX_TOOL_ROUNDS = 2;
 const HARD_MAX_TOOL_ROUNDS = 20; // teto de seguranca mesmo com "ilimitado"
 const HUMANIZE_HARD_CAP_MS = 12_000;
 const RESET_COMMAND = "/resetar";
@@ -62,10 +63,12 @@ interface HumanizationConfig {
 
 function parseHumanization(raw: unknown): HumanizationConfig {
   const obj = (raw ?? {}) as Partial<HumanizationConfig>;
+  const minMs = typeof obj.min_ms === "number" ? Math.max(0, obj.min_ms) : 800;
+  const maxMs = typeof obj.max_ms === "number" ? Math.max(minMs, obj.max_ms) : 3500;
   return {
     chunk: obj.chunk ?? true,
-    min_ms: typeof obj.min_ms === "number" ? obj.min_ms : 800,
-    max_ms: typeof obj.max_ms === "number" ? obj.max_ms : 3500,
+    min_ms: minMs,
+    max_ms: maxMs,
   };
 }
 
@@ -85,6 +88,9 @@ export interface RunAgentResult {
     | "skipped-no-content"
     | "skipped-no-connection"
     | "skipped-locked"
+    | "skipped-stale"
+    | "skipped-blocklisted"
+    | "skipped-tool-error"
     | "error";
   reason?: string;
   outboundIds?: string[];
@@ -92,25 +98,18 @@ export interface RunAgentResult {
 
 export async function runAgentForMessage(
   messageId: string,
+  runToken: string,
 ): Promise<RunAgentResult> {
-  const { supabaseAdmin } = await import(
-    "@/integrations/supabase/client.server"
-  );
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { getLlmProvider } = await import("@/providers/llm/registry");
-  const { getTool, listToolSpecs } = await import(
-    "@/providers/tools/registry.server"
-  );
+  const { getTool, listToolSpecs } = await import("@/providers/tools/registry.server");
   // Auto-registra provedores
   await import("@/providers/llm/openai.server");
-  const { evolutionProvider } = await import(
-    "@/providers/channel/evolution.server"
-  );
+  const { evolutionProvider } = await import("@/providers/channel/evolution.server");
 
   const { data: msg } = await supabaseAdmin
     .from("messages")
-    .select(
-      "id, workspace_id, conversation_id, direction, content, external_id",
-    )
+    .select("id, workspace_id, conversation_id, direction, content, external_id")
     .eq("id", messageId)
     .maybeSingle();
   if (!msg) return { status: "error", reason: "message not found" };
@@ -131,7 +130,7 @@ export async function runAgentForMessage(
   const { data: conv } = await supabaseAdmin
     .from("conversations")
     .select(
-      "id, agent_id, assigned_to, connection_id, contact_id, tags, lead_value_cents, lead_value_currency, lead_value_note",
+      "id, agent_id, assigned_to, connection_id, contact_id, tags, lead_value_cents, lead_value_currency, lead_value_note, agent_latest_message_id, agent_run_token",
     )
     .eq("id", msg.conversation_id)
     .maybeSingle();
@@ -140,6 +139,9 @@ export async function runAgentForMessage(
   if (!conv.agent_id) return { status: "skipped-no-agent" };
   if (!conv.connection_id || !conv.contact_id) {
     return { status: "skipped-no-connection" };
+  }
+  if (conv.agent_latest_message_id !== messageId || conv.agent_run_token !== runToken) {
+    return { status: "skipped-stale" };
   }
 
   const { data: agent } = await supabaseAdmin
@@ -165,6 +167,73 @@ export async function runAgentForMessage(
   if (!contact?.phone || !connection?.instance_name) {
     return { status: "skipped-no-connection" };
   }
+  const contactPhone = contact.phone;
+  const instanceName = connection.instance_name;
+  const workspaceId = msg.workspace_id;
+  const conversationId = conv.id;
+
+  const expectedRun: AgentRunExpectedState = {
+    messageId,
+    runToken,
+    agentId: agent.id,
+    connectionId: conv.connection_id,
+    contactId: conv.contact_id,
+  };
+
+  async function isBlocklisted(): Promise<boolean> {
+    const { data: blocked, error } = await supabaseAdmin
+      .from("agent_ignored_numbers")
+      .select("id")
+      .eq("workspace_id", workspaceId)
+      .in("phone_e164", phoneVariantsBR(contactPhone))
+      .limit(1)
+      .maybeSingle();
+    if (error) throw new Error("blocklist check failed");
+    return !!blocked;
+  }
+
+  async function revalidateBeforeEffect(): Promise<
+    AgentRunStopStatus | "skipped-blocklisted" | null
+  > {
+    const { data: current, error } = await supabaseAdmin
+      .from("conversations")
+      .select(
+        "assigned_to, agent_id, agent_latest_message_id, agent_run_token, connection_id, contact_id",
+      )
+      .eq("id", conversationId)
+      .eq("workspace_id", workspaceId)
+      .maybeSingle();
+    if (error || !current) return "skipped-stale";
+
+    let agentActive: boolean | null = null;
+    if (current.agent_id) {
+      const { data: currentAgent, error: agentError } = await supabaseAdmin
+        .from("agents")
+        .select("active")
+        .eq("id", current.agent_id)
+        .eq("workspace_id", workspaceId)
+        .maybeSingle();
+      if (agentError) return "skipped-inactive";
+      agentActive = currentAgent?.active ?? null;
+    }
+
+    const stop = evaluateAgentRunState(
+      {
+        assignedTo: current.assigned_to,
+        agentId: current.agent_id,
+        agentActive,
+        latestMessageId: current.agent_latest_message_id,
+        runToken: current.agent_run_token,
+        connectionId: current.connection_id,
+        contactId: current.contact_id,
+      },
+      expectedRun,
+    );
+    if (stop) return stop;
+    return (await isBlocklisted()) ? "skipped-blocklisted" : null;
+  }
+
+  if (await isBlocklisted()) return { status: "skipped-blocklisted" };
 
   // Historico apos ultimo marker de reset.
   const { data: lastReset } = await supabaseAdmin
@@ -195,9 +264,7 @@ export async function runAgentForMessage(
   }));
 
   const toolNames = parseToolNames(agent.tools);
-  const toolSpecs: LlmToolSpec[] = toolNames.length > 0
-    ? listToolSpecs(toolNames)
-    : [];
+  const toolSpecs: LlmToolSpec[] = toolNames.length > 0 ? listToolSpecs(toolNames) : [];
 
   const provider: LlmProvider = getLlmProvider("openai");
 
@@ -206,17 +273,13 @@ export async function runAgentForMessage(
   const contactTags = Array.isArray((contact as { tags?: unknown }).tags)
     ? ((contact as { tags: string[] }).tags ?? []).slice(0, 8)
     : [];
-  const convTags = Array.isArray(conv.tags)
-    ? (conv.tags as string[]).slice(0, 8)
-    : [];
+  const convTags = Array.isArray(conv.tags) ? (conv.tags as string[]).slice(0, 8) : [];
   const leadCtxParts: string[] = [];
   if (contactTags.length) leadCtxParts.push(`tags_contato=[${contactTags.join(",")}]`);
   if (convTags.length) leadCtxParts.push(`tags_conversa=[${convTags.join(",")}]`);
   if (typeof conv.lead_value_cents === "number") {
     const currency = conv.lead_value_currency ?? "BRL";
-    leadCtxParts.push(
-      `valor_estimado=${currency} ${(conv.lead_value_cents / 100).toFixed(2)}`,
-    );
+    leadCtxParts.push(`valor_estimado=${currency} ${(conv.lead_value_cents / 100).toFixed(2)}`);
   }
   if (conv.lead_value_note) {
     leadCtxParts.push(`nota=${String(conv.lead_value_note).slice(0, 140)}`);
@@ -228,23 +291,31 @@ export async function runAgentForMessage(
   const started = Date.now();
   const roundsLimit =
     agent.max_tool_rounds == null
-      ? DEFAULT_MAX_TOOL_ROUNDS
+      ? HARD_MAX_TOOL_ROUNDS
       : Math.min(agent.max_tool_rounds, HARD_MAX_TOOL_ROUNDS);
   let finalText = "";
   let rounds = 0;
+  let toolFailures = 0;
 
   while (rounds < roundsLimit) {
     rounds += 1;
-    const res = await provider.complete({
-      model: agent.model,
-      system: systemPrompt,
-      messages: llmMessages,
-      tools: toolSpecs.length > 0 ? toolSpecs : undefined,
-      temperature: agent.temperature,
-      // null no banco = "ilimitado" (nao envia max_tokens para o provedor)
-      maxTokens: agent.max_tokens ?? undefined,
-      timeoutMs: 12_000,
-    });
+    let res;
+    try {
+      res = await provider.complete({
+        model: agent.model,
+        system: systemPrompt,
+        messages: llmMessages,
+        tools: toolSpecs.length > 0 ? toolSpecs : undefined,
+        temperature: agent.temperature,
+        // null no banco = "ilimitado" (nao envia max_tokens para o provedor)
+        maxTokens: agent.max_tokens ?? undefined,
+        timeoutMs: 12_000,
+      });
+    } catch (error) {
+      const reason =
+        error && typeof error === "object" && "code" in error ? String(error.code) : "llm_failed";
+      return { status: "error", reason };
+    }
 
     if (res.toolCalls.length === 0) {
       finalText = res.text;
@@ -259,26 +330,38 @@ export async function runAgentForMessage(
     });
     let stopAfter = false;
     for (const call of res.toolCalls) {
+      const beforeTool = await revalidateBeforeEffect();
+      if (beforeTool) return { status: beforeTool };
+
       const tool = getTool(call.name);
       if (!tool) {
+        toolFailures += 1;
         llmMessages.push({
           role: "tool",
           content: "tool nao encontrada",
           toolCallId: call.id,
           name: call.name,
         });
+        if (toolFailures >= 2) return { status: "skipped-tool-error" };
         continue;
       }
-      const out = await tool.handler(call.arguments, {
-        workspaceId: msg.workspace_id,
-        conversationId: conv.id,
-      });
+      let out;
+      try {
+        out = await tool.handler(call.arguments, {
+          workspaceId,
+          conversationId,
+        });
+      } catch {
+        out = { ok: false, message: "tool falhou" };
+      }
+      if (!out.ok) toolFailures += 1;
       llmMessages.push({
         role: "tool",
         content: out.message,
         toolCallId: call.id,
         name: call.name,
       });
+      if (toolFailures >= 2) return { status: "skipped-tool-error" };
       if (call.name === "transferir_humano" && out.ok) stopAfter = true;
     }
     if (stopAfter) return { status: "skipped-human" };
@@ -294,23 +377,28 @@ export async function runAgentForMessage(
 
   for (let i = 0; i < chunks.length; i++) {
     const budget = HUMANIZE_HARD_CAP_MS - (Date.now() - started);
-    if (budget <= 0 && i > 0) break;
-    const d = Math.min(
-      chunkDelay(chunks[i], cfg.min_ms, cfg.max_ms),
-      Math.max(600, budget),
-    );
-    if (evolutionProvider.sendTyping) {
-      await evolutionProvider.sendTyping(
-        connection.instance_name,
-        contact.phone,
-        d,
-      );
+    const d =
+      budget > 0 ? Math.min(chunkDelay(chunks[i], cfg.min_ms, cfg.max_ms), Math.max(0, budget)) : 0;
+
+    const beforeTyping = await revalidateBeforeEffect();
+    if (beforeTyping) return { status: beforeTyping, outboundIds };
+
+    if (evolutionProvider.sendTyping && d > 0) {
+      try {
+        await evolutionProvider.sendTyping(instanceName, contactPhone, d);
+      } catch {
+        // Typing e best-effort; falha aqui nao deve duplicar nem bloquear o envio.
+      }
     }
-    await sleep(d);
+    if (d > 0) await sleep(d);
+
+    const beforeSend = await revalidateBeforeEffect();
+    if (beforeSend) return { status: beforeSend, outboundIds };
+
     let providerMessageId: string;
     try {
-      const sent = await evolutionProvider.sendText(connection.instance_name, {
-        to: contact.phone,
+      const sent = await evolutionProvider.sendText(instanceName, {
+        to: contactPhone,
         text: chunks[i],
       });
       providerMessageId = sent.providerMessageId;

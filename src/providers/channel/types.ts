@@ -87,16 +87,9 @@ export interface ChannelProvider {
   sendText(providerInstanceId: string, msg: OutboundText): Promise<SendResult>;
   sendAudio(providerInstanceId: string, msg: OutboundAudio): Promise<SendResult>;
   /** Presence "digitando" best-effort; nunca deve falhar o envio. */
-  sendTyping?(
-    providerInstanceId: string,
-    to: string,
-    durationMs: number,
-  ): Promise<void>;
+  sendTyping?(providerInstanceId: string, to: string, durationMs: number): Promise<void>;
   /** Atualiza settings da instancia (ex.: groups_ignore). Best-effort. */
-  setSettings?(
-    providerInstanceId: string,
-    settings: { groupsIgnore?: boolean },
-  ): Promise<void>;
+  setSettings?(providerInstanceId: string, settings: { groupsIgnore?: boolean }): Promise<void>;
   deleteInstance(providerInstanceId: string): Promise<void>;
   /**
    * Recebe payload bruto validado do webhook e normaliza para InboundMessage[].

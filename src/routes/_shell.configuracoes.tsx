@@ -41,11 +41,7 @@ function ConfigPage() {
   const mut = useMutation({
     mutationFn: (v: boolean) => setFn({ data: { dispatch_paused: v } }),
     onSuccess: (r) => {
-      toast.success(
-        r.dispatch_paused
-          ? "Disparos globais PAUSADOS"
-          : "Disparos globais LIBERADOS",
-      );
+      toast.success(r.dispatch_paused ? "Disparos globais PAUSADOS" : "Disparos globais LIBERADOS");
       qc.invalidateQueries({ queryKey: ["workspace-flags"] });
     },
     onError: (e: Error) => toast.error(e.message || "Falha ao alternar"),
@@ -84,10 +80,7 @@ function ConfigPage() {
         >
           modulo // F6.1
         </p>
-        <h1
-          className="text-2xl font-semibold"
-          style={{ fontFamily: "var(--font-display)" }}
-        >
+        <h1 className="text-2xl font-semibold" style={{ fontFamily: "var(--font-display)" }}>
           Configuracoes
         </h1>
       </header>
@@ -95,14 +88,11 @@ function ConfigPage() {
       <section className="rounded border border-border/60 bg-muted/10 p-4">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-sm font-semibold">
-              Kill-switch global de disparos
-            </h2>
+            <h2 className="text-sm font-semibold">Kill-switch global de disparos</h2>
             <p className="mt-1 text-xs text-muted-foreground max-w-xl">
-              Pausa TODAS as campanhas do workspace imediatamente. O worker
-              detecta no proximo tick (ate ~1 min) e para de enviar. Campanhas
-              continuam com status "running" — desative o interruptor para
-              retomar.
+              Pausa TODAS as campanhas do workspace imediatamente. O worker detecta no proximo tick
+              (ate ~1 min) e para de enviar. Campanhas continuam com status "running" — desative o
+              interruptor para retomar.
             </p>
             {paused ? (
               <p
@@ -132,8 +122,8 @@ function ConfigPage() {
       <section className="rounded border border-border/60 bg-muted/10 p-4">
         <h2 className="text-sm font-semibold">Cooldown padrao por lead</h2>
         <p className="mt-1 text-xs text-muted-foreground max-w-xl">
-          Nao enviar para leads que ja responderam nos ultimos N tempo. Vale
-          como minimo global — cada campanha pode aumentar, nunca reduzir.
+          Nao enviar para leads que ja responderam nos ultimos N tempo. Vale como minimo global —
+          cada campanha pode aumentar, nunca reduzir.
         </p>
         <div className="mt-3 flex items-end gap-2">
           <div className="flex flex-col gap-1">
@@ -152,10 +142,7 @@ function ConfigPage() {
           </div>
           <div className="flex flex-col gap-1">
             <Label className="text-xs">Unidade</Label>
-            <Select
-              value={cdUnit}
-              onValueChange={(v) => setCdUnit(v as "hours" | "days")}
-            >
+            <Select value={cdUnit} onValueChange={(v) => setCdUnit(v as "hours" | "days")}>
               <SelectTrigger className="w-32">
                 <SelectValue />
               </SelectTrigger>
@@ -165,10 +152,7 @@ function ConfigPage() {
               </SelectContent>
             </Select>
           </div>
-          <Button
-            onClick={() => cdMut.mutate()}
-            disabled={cdMut.isPending}
-          >
+          <Button onClick={() => cdMut.mutate()} disabled={cdMut.isPending}>
             {cdMut.isPending ? "Salvando..." : "Salvar"}
           </Button>
           <span

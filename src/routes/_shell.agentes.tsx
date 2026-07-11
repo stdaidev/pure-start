@@ -17,11 +17,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  deleteAgent,
-  listAgents,
-  toggleAgent,
-} from "@/lib/agents.functions";
+import { deleteAgent, listAgents, toggleAgent } from "@/lib/agents.functions";
 import { AgentDialog } from "@/components/agentes/agent-dialog";
 import { IgnoredNumbersCard } from "@/components/agentes/ignored-numbers-card";
 
@@ -51,8 +47,7 @@ function AgentesPage() {
   });
 
   const toggleMut = useMutation({
-    mutationFn: (v: { id: string; active: boolean }) =>
-      toggleFn({ data: v }),
+    mutationFn: (v: { id: string; active: boolean }) => toggleFn({ data: v }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["agents"] }),
     onError: (e: Error) => toast.error(e.message || "Falha ao atualizar"),
   });
@@ -149,9 +144,7 @@ function AgentesPage() {
                 <div className="flex items-center gap-2">
                   <Switch
                     checked={a.active}
-                    onCheckedChange={(v) =>
-                      toggleMut.mutate({ id: a.id, active: v })
-                    }
+                    onCheckedChange={(v) => toggleMut.mutate({ id: a.id, active: v })}
                     aria-label="Ativar agente"
                   />
                 </div>
@@ -177,11 +170,7 @@ function AgentesPage() {
         </div>
       )}
 
-      <AgentDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        agentId={editId}
-      />
+      <AgentDialog open={dialogOpen} onOpenChange={setDialogOpen} agentId={editId} />
 
       <div className="mt-10">
         <IgnoredNumbersCard />

@@ -12,23 +12,19 @@ import { normalizePhone } from "@/lib/phone";
 
 const DEFAULT_WORKSPACE = "00000000-0000-0000-0000-000000000001";
 
-export const listIgnoredNumbers = createServerFn({ method: "GET" }).handler(
-  async () => {
-    const { supabaseAdmin } = await import(
-      "@/integrations/supabase/client.server"
-    );
-    const { data, error } = await supabaseAdmin
-      .from("agent_ignored_numbers")
-      .select("id, phone_e164, label, created_at")
-      .eq("workspace_id", DEFAULT_WORKSPACE)
-      .order("created_at", { ascending: false });
-    if (error) throw new Error("Falha ao listar numeros ignorados");
-    return { items: data ?? [] };
-  },
-);
+export const listIgnoredNumbers = createServerFn({ method: "GET" }).handler(async () => {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data, error } = await supabaseAdmin
+    .from("agent_ignored_numbers")
+    .select("id, phone_e164, label, created_at")
+    .eq("workspace_id", DEFAULT_WORKSPACE)
+    .order("created_at", { ascending: false });
+  if (error) throw new Error("Falha ao listar numeros ignorados");
+  return { items: data ?? [] };
+});
 
 export const addIgnoredNumber = createServerFn({ method: "POST" })
-  .inputValidator((raw: unknown) =>
+  .validator((raw: unknown) =>
     z
       .object({
         phone: z.string().min(3).max(40),
@@ -40,9 +36,7 @@ export const addIgnoredNumber = createServerFn({ method: "POST" })
     const phone = normalizePhone(data.phone);
     if (!phone) throw new Error("Telefone invalido");
 
-    const { supabaseAdmin } = await import(
-      "@/integrations/supabase/client.server"
-    );
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: row, error } = await supabaseAdmin
       .from("agent_ignored_numbers")
       .upsert(
@@ -60,13 +54,9 @@ export const addIgnoredNumber = createServerFn({ method: "POST" })
   });
 
 export const removeIgnoredNumber = createServerFn({ method: "POST" })
-  .inputValidator((raw: unknown) =>
-    z.object({ id: z.string().uuid() }).parse(raw),
-  )
+  .validator((raw: unknown) => z.object({ id: z.string().uuid() }).parse(raw))
   .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import(
-      "@/integrations/supabase/client.server"
-    );
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
       .from("agent_ignored_numbers")
       .delete()
