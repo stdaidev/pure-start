@@ -383,15 +383,6 @@ export async function runAgentForMessage(
     const beforeTyping = await revalidateBeforeEffect();
     if (beforeTyping) return { status: beforeTyping, outboundIds };
 
-    if (evolutionProvider.sendTyping && d > 0) {
-      try {
-        await evolutionProvider.sendTyping(instanceName, contactPhone, d);
-      } catch {
-        // Typing e best-effort; falha aqui nao deve duplicar nem bloquear o envio.
-      }
-    }
-    if (d > 0) await sleep(d);
-
     const beforeSend = await revalidateBeforeEffect();
     if (beforeSend) return { status: beforeSend, outboundIds };
 
@@ -400,6 +391,7 @@ export async function runAgentForMessage(
       const sent = await evolutionProvider.sendText(instanceName, {
         to: contactPhone,
         text: chunks[i],
+        delayMs: d > 0 ? d : undefined,
       });
       providerMessageId = sent.providerMessageId;
     } catch {
