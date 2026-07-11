@@ -546,3 +546,14 @@ Registro compacto iniciado quando Audit log: on foi habilitado.
 - Decision: F6 BUILDING/P4 ate migration, stress sem provider e CI
 - Known limitations: auth interna do app, secrets em texto plano e LGPD permanecem fora desta execucao
 - Next: publicar no PR, aguardar CI, mergear e aplicar/configurar o ambiente
+
+## 2026-07-11 - deploy e smoke - runtime hardening
+- Command: execucao direta dos itens 1-7 solicitados pelo owner
+- User intent: aplicar migrations, configurar jobs, publicar e validar sem mensagens reais
+- State before: PRs mergeados; migrations ainda ausentes no banco; ticks publicados retornavam 404
+- Actions: Lovable Cloud aplicou as tres migrations; gerou token interno; recriou cron jobs; publicou o app; smoke externo confirmou auth negativa e schema; tipos regenerados foram formatados e migration consolidada tornou-se no-op para evitar replay em banco novo
+- Files changed: tipos Supabase, migration marker e evidencias F1/F6
+- Evidence: ownership e quotas passaram smoke DB; home 200; agent/dispatch sem token ou com publishable key 401; webhook invalido 401; colunas ownership via Data API 200; nenhum provider chamado
+- Decision: itens operacionais 1-7 concluidos; F1/F6 permanecem sem DONE/P4 ate harness concorrente versionado
+- Known limitations: metadata de publicacao ainda mostra titulo `Dashboard // HUD`; dois findings pre-existentes do linter; auth interna/LGPD fora do escopo aceito
+- Next: CI verde do commit de reconciliacao e, depois, atualizacao distribuida do LDK
