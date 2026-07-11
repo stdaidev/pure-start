@@ -1,0 +1,1 @@
+UPDATE public.campaign_recipients SET next_send_at = now(), updated_at = now() WHERE id = '1a2b254c-fd99-479b-ab4d-ed5f117446cc' AND status = 'pending';
