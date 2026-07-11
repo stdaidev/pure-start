@@ -562,8 +562,8 @@ Registro compacto iniciado quando Audit log: on foi habilitado.
 - Command: reconciliacao solicitada apos diagnostico do `ldk-doctor`
 - User intent: corrigir o Pure Start atualizado e transformar falsos positivos observados em melhoria do LDK
 - State before: ledger valido; roadmap ainda descrevia F1 antes do build; sync do Lovable regenerou `types.ts` sem a formatacao do repo e tornou o CI do HEAD vermelho
-- Actions: mantido `Last evidence` vazio em F6 `building`; `types.ts` reformatado; roadmap atualizado sem confundir ledger State com roadmap Readiness; blockers passaram a refletir harnesses e infraestrutura realmente existentes
-- Files changed: `src/integrations/supabase/types.ts`, `ldk/roadmap.md`, `ldk/audit/log.md`
+- Actions: mantido `Last evidence` vazio em F6 `building`; `types.ts` reformatado; roadmap atualizado sem confundir ledger State com roadmap Readiness; blockers passaram a refletir harnesses e infraestrutura realmente existentes; actions do CI atualizadas para runtimes suportados
+- Files changed: `src/integrations/supabase/types.ts`, `ldk/roadmap.md`, `.github/workflows/ldk-state.yml`, `ldk/audit/log.md`
 - Evidence: checker deterministico com 0 erros; typecheck/lint sem erros; 19 testes em Node 22 e build passam; diff do commit Lovable `fe279f3`; run `29146775698` falhou somente no lint do arquivo gerado; CI aguarda esta correcao
 - Decision: falso positivo de F6 rejeitado; reconciliacao limitada a drift real e roadmap desatualizado
 - Known limitations: F1 AC5 e F6 T2 continuam sem harness concorrente versionado; F2 depende de F1 done; auth/RLS e LGPD permanecem fora deste recorte
