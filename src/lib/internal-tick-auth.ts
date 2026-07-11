@@ -27,3 +27,23 @@ export function authorizeInternalTick(
   if (!provided || !constantTimeEqual(provided, expected)) return "unauthorized";
   return "authorized";
 }
+
+export async function authorizeConfiguredInternalTick(
+  request: Request,
+  env: TickEnvironment = process.env,
+): Promise<"authorized" | "unauthorized" | "misconfigured"> {
+  let storedInternalToken: string | undefined;
+  let storedWebhookToken: string | undefined;
+  try {
+    const { getSecret } = await import("@/lib/secrets.server");
+    storedInternalToken = await getSecret("INTERNAL_TICK_TOKEN");
+    if (!storedInternalToken) storedWebhookToken = await getSecret("WEBHOOK_VERIFY_TOKEN");
+  } catch {
+    // O fallback de ambiente continua disponivel durante migration/rollback.
+  }
+
+  return authorizeInternalTick(request, {
+    INTERNAL_TICK_TOKEN: storedInternalToken ?? env.INTERNAL_TICK_TOKEN,
+    WEBHOOK_VERIFY_TOKEN: storedWebhookToken ?? env.WEBHOOK_VERIFY_TOKEN,
+  });
+}

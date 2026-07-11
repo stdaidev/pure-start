@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { authorizeInternalTick } from "@/lib/internal-tick-auth";
+import { authorizeConfiguredInternalTick } from "@/lib/internal-tick-auth";
 
 /**
  * F8 - Tick do agente.
@@ -20,7 +20,7 @@ export const Route = createFileRoute("/api/public/agent/tick")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const authorization = authorizeInternalTick(request);
+        const authorization = await authorizeConfiguredInternalTick(request);
         if (authorization === "misconfigured") {
           console.error("[agent.tick] internal token not configured");
           return new Response("Service unavailable", { status: 503 });

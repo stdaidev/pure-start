@@ -8,22 +8,22 @@
 
 ## Variaveis server-only
 
-| Variavel                    | Uso                                                                                                                                             |
-| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `SUPABASE_URL`              | Projeto Supabase.                                                                                                                               |
-| `SUPABASE_SERVICE_ROLE_KEY` | Acesso administrativo somente no servidor.                                                                                                      |
-| `SUPABASE_PUBLISHABLE_KEY`  | Cliente Supabase. Nao autoriza workers.                                                                                                         |
-| `WEBHOOK_VERIFY_TOKEN`      | Assina chamadas recebidas da Evolution.                                                                                                         |
-| `INTERNAL_TICK_TOKEN`       | Autoriza `/api/public/agent/tick` e `/api/public/dispatch/tick`. Se ausente, o runtime aceita `WEBHOOK_VERIFY_TOKEN` como fallback de migracao. |
-| `PUBLIC_APP_URL`            | Origem publica usada para montar o webhook da Evolution. `APP_URL` tambem e aceito como fallback.                                               |
+| Variavel                    | Uso                                                                                                                                                                                      |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SUPABASE_URL`              | Projeto Supabase.                                                                                                                                                                        |
+| `SUPABASE_SERVICE_ROLE_KEY` | Acesso administrativo somente no servidor.                                                                                                                                               |
+| `SUPABASE_PUBLISHABLE_KEY`  | Cliente Supabase. Nao autoriza workers.                                                                                                                                                  |
+| `WEBHOOK_VERIFY_TOKEN`      | Assina chamadas recebidas da Evolution.                                                                                                                                                  |
+| `INTERNAL_TICK_TOKEN`       | Autoriza `/api/public/agent/tick` e `/api/public/dispatch/tick`. A migration gera um valor aleatorio em `workspace_secrets`; ambiente e `WEBHOOK_VERIFY_TOKEN` permanecem como fallback. |
+| `PUBLIC_APP_URL`            | Origem publica usada para montar o webhook da Evolution. `APP_URL` tambem e aceito como fallback.                                                                                        |
 
 As credenciais de Evolution e OpenAI podem vir do ambiente ou da tela de configuracoes. Nunca use uma chave
 publicavel/anon como segredo de worker.
 
 ## Atualizacao dos jobs
 
-Depois de publicar o codigo e aplicar as migrations, atualize os jobs `pg_cron`/`pg_net` para enviar um destes
-headers nos dois ticks:
+Ao aplicar `20260710214500_internal_tick_jobs.sql`, os jobs `pg_cron`/`pg_net` anteriores sao substituidos e passam a
+ler o token interno no banco sem expor o valor no SQL agendado. Em uma instalacao externa, o header equivalente e:
 
 ```text
 Authorization: Bearer <INTERNAL_TICK_TOKEN>
@@ -43,7 +43,7 @@ configurado, o endpoint retorna `503` e nao executa trabalho.
 1. Configure `WEBHOOK_VERIFY_TOKEN`, `INTERNAL_TICK_TOKEN` e a URL publica no ambiente.
 2. Aplique as migrations.
 3. Publique a aplicacao.
-4. Atualize os headers dos jobs agendados.
+4. Confirme que os jobs foram recriados pela migration e usam `x-internal-token`.
 5. Confirme um tick sem trabalho e um webhook de status sem PII nos logs.
 6. So entao habilite agente ou campanha real.
 
