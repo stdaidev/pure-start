@@ -557,3 +557,14 @@ Registro compacto iniciado quando Audit log: on foi habilitado.
 - Decision: itens operacionais 1-7 concluidos; F1/F6 permanecem sem DONE/P4 ate harness concorrente versionado
 - Known limitations: metadata de publicacao ainda mostra titulo `Dashboard // HUD`; dois findings pre-existentes do linter; auth interna/LGPD fora do escopo aceito
 - Next: CI verde do commit de reconciliacao e, depois, atualizacao distribuida do LDK
+
+## 2026-07-11 - doctor reconciliation - roadmap e drift externo
+- Command: reconciliacao solicitada apos diagnostico do `ldk-doctor`
+- User intent: corrigir o Pure Start atualizado e transformar falsos positivos observados em melhoria do LDK
+- State before: ledger valido; roadmap ainda descrevia F1 antes do build; sync do Lovable regenerou `types.ts` sem a formatacao do repo e tornou o CI do HEAD vermelho
+- Actions: mantido `Last evidence` vazio em F6 `building`; `types.ts` reformatado; roadmap atualizado sem confundir ledger State com roadmap Readiness; blockers passaram a refletir harnesses e infraestrutura realmente existentes
+- Files changed: `src/integrations/supabase/types.ts`, `ldk/roadmap.md`, `ldk/audit/log.md`
+- Evidence: checker deterministico com 0 erros; typecheck/lint sem erros; 19 testes em Node 22 e build passam; diff do commit Lovable `fe279f3`; run `29146775698` falhou somente no lint do arquivo gerado; CI aguarda esta correcao
+- Decision: falso positivo de F6 rejeitado; reconciliacao limitada a drift real e roadmap desatualizado
+- Known limitations: F1 AC5 e F6 T2 continuam sem harness concorrente versionado; F2 depende de F1 done; auth/RLS e LGPD permanecem fora deste recorte
+- Next: validar, publicar e recuperar CI verde antes de promover qualquer feature para DONE
