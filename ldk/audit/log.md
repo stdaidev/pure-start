@@ -568,3 +568,14 @@ Registro compacto iniciado quando Audit log: on foi habilitado.
 - Decision: falso positivo de F6 rejeitado; reconciliacao limitada a drift real e roadmap desatualizado
 - Known limitations: F1 AC5 e F6 T2 continuam sem harness concorrente versionado; F2 depende de F1 done; auth/RLS e LGPD permanecem fora deste recorte
 - Next: validar, publicar e recuperar CI verde antes de promover qualquer feature para DONE
+
+## 2026-07-11 - generated types boundary - CI resiliente a sync
+- Command: correcao preventiva apos o segundo overwrite automatico de tipos pelo Lovable
+- User intent: corrigir o Pure Start e impedir que o mesmo drift de plataforma volte a derrubar o CI
+- State before: `types.ts` formatado e CI verde, mas o gerador externo controla o estilo do arquivo e ja o reescreveu duas vezes
+- Actions: mantidas verificacoes TypeScript/ESLint do arquivo; desabilitada somente a regra Prettier para o tipo gerado; arquivo adicionado ao `.prettierignore`
+- Files changed: `eslint.config.js`, `.prettierignore`, `ldk/audit/log.md`
+- Evidence: o CI anterior falhou com 834 erros exclusivamente `prettier/prettier`; `--print-config` confirma regra 0 apenas no arquivo gerado; checker/typecheck/lint sem erros e 19 testes passam; CI aguarda esta correcao
+- Decision: tratar estilo de artefato gerado como fronteira do gerador, sem excluir verificacao de tipos ou regras funcionais
+- Known limitations: mudanca semantica futura em `types.ts` continua exigindo diff/review; somente formatacao foi isentada
+- Next: validar e integrar antes de nova interacao do Lovable
