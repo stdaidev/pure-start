@@ -518,6 +518,8 @@ export type Database = {
           agent_id: string | null
           agent_latest_message_id: string | null
           agent_run_at: string | null
+          agent_run_started_at: string | null
+          agent_run_token: string | null
           agent_running_since: string | null
           assigned_to: string | null
           connection_id: string | null
@@ -539,6 +541,8 @@ export type Database = {
           agent_id?: string | null
           agent_latest_message_id?: string | null
           agent_run_at?: string | null
+          agent_run_started_at?: string | null
+          agent_run_token?: string | null
           agent_running_since?: string | null
           assigned_to?: string | null
           connection_id?: string | null
@@ -560,6 +564,8 @@ export type Database = {
           agent_id?: string | null
           agent_latest_message_id?: string | null
           agent_run_at?: string | null
+          agent_run_started_at?: string | null
+          agent_run_token?: string | null
           agent_running_since?: string | null
           assigned_to?: string | null
           connection_id?: string | null
@@ -901,6 +907,7 @@ export type Database = {
         Returns: {
           conversation_id: string
           message_id: string
+          run_token: string
         }[]
       }
       default_workspace_id: { Args: never; Returns: string }
@@ -909,8 +916,16 @@ export type Database = {
         Returns: boolean
       }
       release_agent_run: {
-        Args: { _conversation_id: string }
-        Returns: undefined
+        Args: { _conversation_id: string; _run_token: string }
+        Returns: boolean
+      }
+      release_campaign_slot: {
+        Args: {
+          _campaign_id: string
+          _reservation_day: string
+          _reservation_hour: string
+        }
+        Returns: boolean
       }
       release_connection_slot: {
         Args: { _connection_id: string }
@@ -925,6 +940,16 @@ export type Database = {
         Returns: undefined
       }
       try_agent_lock: { Args: { _conversation_id: string }; Returns: boolean }
+      try_reserve_campaign_slot: {
+        Args: { _campaign_id: string; _daily_limit: number; _now?: string }
+        Returns: {
+          day_full: boolean
+          hour_full: boolean
+          reservation_day: string
+          reservation_hour: string
+          reserved: boolean
+        }[]
+      }
       try_reserve_connection_slot: {
         Args: { _connection_id: string }
         Returns: {
